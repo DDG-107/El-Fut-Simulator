@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Fut Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="welcome-screen" class="screen-container">
+        <div class="menu-box">
+            <h1>El Fut Simulator</h1>
+            <div class="save-section">
+                <h3>Load Saved Career</h3>
+                <div id="saves-list" class="grid-list"></div>
+            </div>
+            <hr>
+            <div class="new-game-section">
+                <h3>Start New Career</h3>
+                <input type="text" id="new-save-name" placeholder="Enter Save Name...">
+                
+                <div class="mode-options">
+                    <label><strong>Game Mode:</strong></label>
+                    <label><input type="radio" name="game-mode" value="league" checked> League Mode (Double Round Robin)</label>
+                    <label><input type="radio" name="game-mode" value="tournament"> Knockout Tournament</label>
+                </div>
+                
+                <button id="create-save-btn">Create League Blueprint</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="config-screen" class="screen-container" style="display:none;">
+        <div class="menu-box large-box">
+            <h2>Custom League & Team Picker Creator</h2>
+            <p class="subtitle">Select the teams you want to include in this competition from your database, then manage their rosters.</p>
+            
+            <div class="selection-summary-row">
+                <div>Selected Teams: <span id="selected-count-badge">0</span></div>
+                <div id="power-of-two-warning" style="color: #ffb703; display:none;">⚠️ Knockout mode requires exactly 2, 4, 8, or 16 teams.</div>
+            </div>
+
+            <div class="editor-layout">
+                <div class="team-selector-pane">
+                    <h3>Select Competition Teams</h3>
+                    <div id="database-team-picker-list"></div>
+                </div>
+
+                <div class="roster-modifier-pane">
+                    <h3>Modify Lineup: <span id="editing-team-title">None</span></h3>
+                    <button id="claim-team-btn" class="action-btn">Manage This Club</button>
+                    <div class="roster-scroll">
+                        <table class="editor-table">
+                            <thead>
+                                <tr><th>Player</th><th>Pos</th><th>OVR</th><th>Swap Target</th></tr>
+                            </thead>
+                            <tbody id="editor-roster-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <button id="launch-sim-btn" class="launch-btn">Advance to Hub Dashboard</button>
+        </div>
+    </div>
+
+    <div id="hub-screen" class="screen-container" style="display:none;">
+        <div class="sidebar">
+            <h2 id="hub-user-team" class="interactive-text">My Club</h2>
+            <div class="stat-badge">Matchday: <span id="current-matchday-ui">1</span>/<span id="total-matchdays-ui">6</span></div>
+            <div class="stat-badge">Points: <span id="user-points-ui">0</span></div>
+            <button id="advance-matchday-btn" class="advance-btn">Advance Matchday</button>
+            <button id="save-exit-btn" class="exit-btn">Save & Exit to Menu</button>
+        </div>
+
+        <div class="main-content">
+            <div class="live-ticker">
+                <h3>Latest Simulation Feed</h3>
+                <div id="ticker-feed-box" class="feed-scroll">Welcome back, Gaffer. Click 'Advance Matchday' to simulate games.</div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h2 id="table-title">Standings Table</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Pos</th><th>Club</th><th>GD</th><th>Pts</th></tr>
+                        </thead>
+                        <tbody id="league-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="panel">
+                    <h2>Stats Central</h2>
+                    <div class="tabs">
+                        <button class="tab-link active" onclick="switchTab('goals-tab')">Top Scorers</button>
+                        <button class="tab-link" onclick="switchTab('assists-tab')">Assists</button>
+                        <button class="tab-link" onclick="switchTab('sheets-tab')">Clean Sheets</button>
+                    </div>
+                    <div id="goals-tab" class="tab-content active-content">
+                        <ol id="top-scorers-list" class="stat-list"></ol>
+                    </div>
+                    <div id="assists-tab" class="tab-content">
+                        <ol id="top-assists-list" class="stat-list"></ol>
+                    </div>
+                    <div id="sheets-tab" class="tab-content">
+                        <ol id="top-sheets-list" class="stat-list"></ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="team-modal" class="modal-overlay">
+        <div class="modal-window">
+            <span class="modal-close-trigger">&times;</span>
+            <h2 id="modal-team-name">Club Profile</h2>
+            <p id="modal-team-tactics">Tactical Overview</p>
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Pos</th><th>OVR</th></tr>
+                </thead>
+                <tbody id="modal-squad-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
