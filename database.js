@@ -2,25 +2,24 @@
 const gameDatabase = {
     leagues: {
         "ENG 1": {
-            name: "English Premier League",
+            name: "Premier League 25/26",
             teams: [
                 {
                     id: "che",
                     name: "Chelsea FC",
                     budget: 120000000,
                     players: [
-                        { name: "Robert Sánchez", pos: "GK", rating: 80, img: "assets/sanchez.png" },
-                        { name: "R. James", pos: "RB", rating: 82, img: "assets/james.png" },
-                        { name: "L. Colwill", pos: "CB", rating: 79, img: "assets/colwill.png" },
-                        { name: "W. Fofana", pos: "CB", rating: 79, img: "assets/fofana.png" },
-                        { name: "M. Cucurella", pos: "LB", rating: 80, img: "assets/cucurella.png" },
-                        { name: "M. Caicedo", pos: "CDM", rating: 81, img: "assets/caicedo.png" },
-                        { name: "Enzo Fernández", pos: "CM", rating: 80, img: "assets/enzo.png" },
-                        { name: "C. Palmer", pos: "CAM", rating: 84, img: "assets/palmer.png" },
-                        { name: "N. Madueke", pos: "RW", rating: 79, img: "assets/madueke.png" },
-                        { name: "J. Sancho", pos: "LW", rating: 80, img: "assets/sancho.png" },
-                        { name: "N. Jackson", pos: "ST", rating: 81, img: "assets/jackson.png" }
-                    ]
+                        { name: "R. Sánchez", pos: "GK", rating: 81, img: "assets/robertsnchez.png" },
+                        { name: "M. Gusto", pos: "RB", rating: 79, img: "assets/mgusto.png" },
+                        { name: "W. Fofana", pos: "CB", rating: 79, img: "assets/wfofana.png" },
+                        { name: "L. Colwill", pos: "CB", rating: 80, img: "assets/lcolwill.png" },
+                        { name: "M. Cucurella", pos: "LB", rating: 85, img: "assets/marccucurella.png" },
+                        { name: "R. James", pos: "RB", rating: 84, img: "assets/rjames.png" },
+                        { name: "M. Caicedo", pos: "CDM", rating: 88, img: "assets/mcaicedo.png" },
+                        { name: "C. Palmer", pos: "CAM", rating: 88, img: "assets/cpalmer.png" },
+                        { name: "Pedro Neto", pos: "RM", rating: 82, img: "assets/pedroneto.png" },
+                        { name: "E. Fernández", pos: "CM", rating: 85, img: "assets/efernndez.png" },
+                        { name: "João Pedro", pos: "ST", rating: 82, img: "assets/joopedro.png" },                    ]
                 },
                 { id: "liv", name: "Liverpool FC", budget: 140000000, players: [
                         { name: "Alisson", pos: "GK", rating: 88, img: "assets/alisson.png" },
@@ -60,11 +59,28 @@ const gameDatabase = {
                         { name: "Matheus Cunha", pos: "CAM", rating: 83, img: "assets/matheuscunha.png" },
                         { name: "Bruno Fernandes", pos: "CAM", rating: 88, img: "assets/brunofernandes.png" },
                         { name: "B. Mbeumo", pos: "RW", rating: 85, img: "assets/bmbeumo.png" },
-                ] }
+                ] },
+                {id: "mci", name: "Manchester City", budget: 200000000, players: []},
+                {id: "tot", name: "Tottenham Hotspur", budget: 90000000, players: []},
+                {id: "new", name: "Newcastle United", budget: 95000000, players: []},
+                {id: "vil", name: "Aston Villa", budget: 85000000, players: []},
+                {id: "bou", name: "AFC Bournemouth", budget: 75000000, players: []},
+                {id: "ful", name: "Fulham FC", budget: 70000000, players: []},
+                {id: "bre", name: "Brentford FC", budget: 65000000, players: []},
+                {id: "whu", name: "West Ham United", budget: 60000000, players: []},
+                {id: "bha", name: "Brighton & Hove Albion", budget: 55000000, players: []},
+                {id: "sun", name: "Sunderland AFC", budget: 50000000, players: []},
+                {id: "lee", name: "Leeds United", budget: 45000000, players: []},
+                {id: "not", name: "Nottingham Forest", budget: 40000000, players: []},
+                {id: "eve", name: "Everton FC", budget: 35000000, players: []},
+                {id: "crystal", name: "Crystal Palace", budget: 30000000, players: []},
+                {id: "bur", name: "Burnley FC", budget: 25000000, players: []},
+                {id: "wol", name: "Wolverhampton Wanderers", budget: 20000000, players: []},
+
             ]
         },
         "ESP 1": {
-            name: "La Liga",
+            name: "La Liga 25/26",
             teams: [
                 { id: "bar", name: "FC Barcelona", budget: 100000000, players: [
                         { name: "Joan García", pos: "GK", rating: 86, img: "assets/joangarca.png" },
@@ -105,7 +121,7 @@ const gameDatabase = {
                         { name: "A. Tchouaméni", pos: "CDM", rating: 84, potential: 87, age: 25, value: "€50.5M", wage: "€200K", img: "assets/tchouameni.png" },
                         { name: "F. Valverde", pos: "CM", rating: 89, potential: 90, age: 26, value: "€120.5M", wage: "€340K", img: "assets/valverde.png" },
                         { name: "A. Güler", pos: "CM", rating: 83, potential: 89, age: 20, value: "€56.5M", wage: "€150K", img: "assets/guler.png" },
-                        { name: "Sebastian Driussi", pos: "CAM", rating: 80, img: "assets/sebastiandriussi.png" },
+                        { name: "J. Bellingham", pos: "CAM", rating: 80, img: "assets/bellingham.png" },
                         { name: "K. Mbappé", pos: "ST", rating: 91, potential: 92, age: 26, value: "€157M", wage: "€610K", img: "assets/mbappe.png" },
                         { name: "Vini Jr.", pos: "ST", rating: 89, potential: 92, age: 24, value: "€141M", wage: "€320K", img: "assets/vinijr.png" }
                     ]
