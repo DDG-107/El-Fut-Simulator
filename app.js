@@ -454,7 +454,6 @@ function renderLeaderboardCharts() {
 
 // --- CORE SIMULATION PROCESSING ENGINE ---
 document.getElementById('advance-matchday-btn').onclick = () => {
-    // If the season is already completed, just show the pop-up immediately and exit
     if (saveState.isCompleted) {
         triggerEndgameModalDisplay();
         return;
@@ -503,13 +502,11 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         }
     });
 
-    // Check completion criteria boundaries AFTER simulating current matchday
     if (saveState.mode === "league") {
         if (saveState.currentMatchday >= saveState.totalMatchdays) {
             saveState.isCompleted = true;
             refreshHubDashboardUI();
             autoSaveCurrentProgress();
-            // Trigger popup immediately on the last matchday simulation click!
             setTimeout(() => { triggerEndgameModalDisplay(); }, 400); 
             return;
         } else {
@@ -521,75 +518,6 @@ document.getElementById('advance-matchday-btn').onclick = () => {
             refreshHubDashboardUI();
             autoSaveCurrentProgress();
             setTimeout(() => { triggerEndgameModalDisplay(); }, 400);
-            return;
-        } else {
-            let nextRoundMatches = [];
-            for (let i = 0; i < winners.length; i += 2) {
-                nextRoundMatches.push({ home: winners[i].id, away: winners[i+1].id });
-            }
-            saveState.schedule.push(nextRoundMatches);
-            saveState.currentMatchday++;
-        }
-    }
-
-    refreshHubDashboardUI();
-    autoSaveCurrentProgress();
-};
-
-    let roundIndex = saveState.currentMatchday - 1;
-    let currentRoundMatches = saveState.schedule[roundIndex];
-
-    let feedBox = document.getElementById('ticker-feed-box');
-    feedBox.innerHTML = `<strong>--- MATCHDAY ${saveState.currentMatchday} LOGS ---</strong><br>`;
-
-    let winners = [];
-
-    currentRoundMatches.forEach(match => {
-        let homeTeam = saveState.teams.find(t => t.id === match.home);
-        let awayTeam = saveState.teams.find(t => t.id === match.away);
-
-        let sim = runFixtureSimulation(homeTeam, awayTeam);
-        feedBox.innerHTML += sim.text + "<br>";
-
-        if (sim.details.scorersA.length > 0) feedBox.innerHTML += ` &nbsp;&nbsp; Goals [Home]: ${sim.details.scorersA.join(', ')}<br>`;
-        if (sim.details.scorersB.length > 0) feedBox.innerHTML += ` &nbsp;&nbsp; Goals [Away]: ${sim.details.scorersB.join(', ')}<br>`;
-
-        if (saveState.mode === "tournament") {
-            if (sim.details.goalsA === sim.details.goalsB) {
-                if (Math.random() > 0.5) {
-                    feedBox.innerHTML += ` &nbsp;&nbsp; 🏆 ${homeTeam.name} wins on Penalties!<br>`;
-                    winners.push(homeTeam); awayTeam.isEliminated = true;
-                } else {
-                    feedBox.innerHTML += ` &nbsp;&nbsp; 🏆 ${awayTeam.name} wins on Penalties!<br>`;
-                    winners.push(awayTeam); homeTeam.isEliminated = true;
-                }
-            } else {
-                if (sim.details.goalsA > sim.details.goalsB) {
-                    winners.push(homeTeam); awayTeam.isEliminated = true;
-                } else {
-                    winners.push(awayTeam); homeTeam.isEliminated = true;
-                }
-            }
-        }
-    });
-
-    // Check completion criteria boundaries
-    if (saveState.mode === "league") {
-        if (saveState.currentMatchday >= saveState.totalMatchdays) {
-            saveState.isCompleted = true;
-            refreshHubDashboardUI();
-            triggerEndgameModalDisplay();
-            autoSaveCurrentProgress();
-            return;
-        } else {
-            saveState.currentMatchday++;
-        }
-    } else {
-        if (winners.length === 1) {
-            saveState.isCompleted = true;
-            refreshHubDashboardUI();
-            triggerEndgameModalDisplay();
-            autoSaveCurrentProgress();
             return;
         } else {
             let nextRoundMatches = [];
@@ -621,20 +549,15 @@ function triggerEndgameModalDisplay() {
     document.getElementById('endgame-modal').style.display = 'block';
 }
 
-// Button Bind A: Return to Dashboard
 document.getElementById('endgame-dashboard-btn').onclick = () => {
     document.getElementById('endgame-modal').style.display = 'none';
 };
 
-// Button Bind B: Reset league scores but keep custom team selections intact
 document.getElementById('endgame-replay-btn').onclick = () => {
     document.getElementById('endgame-modal').style.display = 'none';
     
-    // Clear matches score tracking across rosters
     saveState.teams.forEach(t => {
         t.points = 0; t.gf = 0; t.ga = 0; t.gd = 0; t.isEliminated = false;
-        
-        // Wipe player metric logs back to absolute zero baseline
         t.players.forEach(p => {
             p.stats = { goals: 0, assists: 0, cleanSheets: 0 };
         });
@@ -643,7 +566,6 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
 
-    // Regene schedules list tree strings
     if (saveState.mode === "league") {
         saveState.schedule = buildDoubleRoundRobin(saveState.teams);
         saveState.totalMatchdays = saveState.schedule.length;
@@ -699,7 +621,6 @@ function resumeTargetSave(storageKey) {
     document.getElementById('hub-screen').style.display = 'flex';
     refreshHubDashboardUI();
     
-    // Immediately reopen the seasonal popup if user saves and loads inside a finished season state
     if (saveState.isCompleted) {
         triggerEndgameModalDisplay();
     }
