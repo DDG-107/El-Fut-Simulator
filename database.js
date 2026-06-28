@@ -47,7 +47,7 @@ const gameDatabase = {
                     { name: "B. Saka", pos: "RW", rating: 88, img: "assets/bsaka.png" },
                     { name: "V. Gyökeres", pos: "ST", rating: 87, img: "assets/vgykeres.png" },
                     { name: "G. Martinelli", pos: "LW", rating: 83, img: "assets/gmartinelli.png" }
-                ] }
+                ] }, // <-- Added the missing comma right here!
                 { id: "mun", name: "Manchester United", budget: 110000000, players: [
                         { name: "S. Lammens", pos: "GK", rating: 81, img: "assets/slammens.png" },
                         { name: "Diogo Dalot", pos: "RB", rating: 78, img: "assets/diogodalot.png" },
@@ -109,8 +109,7 @@ const gameDatabase = {
                         { name: "K. Mbappé", pos: "ST", rating: 91, potential: 92, age: 26, value: "€157M", wage: "€610K", img: "assets/mbappe.png" },
                         { name: "Vini Jr.", pos: "ST", rating: 89, potential: 92, age: 24, value: "€141M", wage: "€320K", img: "assets/vinijr.png" }
                     ]
-                },
-
+                }
             ]
         }
     }
