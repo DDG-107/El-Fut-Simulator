@@ -193,14 +193,46 @@ function loadActiveMenu() {
         if (key.startsWith('elfut_save_')) {
             foundSaves = true;
             let name = key.replace('elfut_save_', '');
-            let btn = document.createElement('button');
-            btn.className = 'save-btn';
-            btn.innerText = name;
-            btn.onclick = () => resumeTargetSave(key);
-            savesList.appendChild(btn);
+            
+            // Create a row container for the save file item
+            let saveRow = document.createElement('div');
+            saveRow.className = 'save-item-row';
+            saveRow.style.display = 'flex';
+            saveRow.style.gap = '10px';
+            saveRow.style.marginBottom = '10px';
+            saveRow.style.width = '100%';
+
+            // The main button to load the save
+            let loadBtn = document.createElement('button');
+            loadBtn.className = 'save-btn';
+            loadBtn.innerText = name;
+            loadBtn.style.margin = '0';
+            loadBtn.style.flex = '1';
+            loadBtn.onclick = () => resumeTargetSave(key);
+
+            // The delete action button
+            let deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.className = 'delete-save-btn';
+            deleteBtn.style.margin = '0';
+            deleteBtn.style.width = '50px';
+            deleteBtn.style.backgroundColor = '#d32f2f'; // Red warning accent
+            deleteBtn.style.boxShadow = 'none';
+            
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // Avoid triggering the parent selection load click
+                if (confirm(`Are you sure you want to permanently delete the save progress for "${name}"?`)) {
+                    localStorage.removeItem(key);
+                    loadActiveMenu(); // Refresh list immediately
+                }
+            };
+
+            saveRow.appendChild(loadBtn);
+            saveRow.appendChild(deleteBtn);
+            savesList.appendChild(saveRow);
         }
     }
-    if (!foundSaves) savesList.innerHTML = '<p style="color:#666;grid-column:1/3;">No past save states found.</p>';
+    if (!foundSaves) savesList.innerHTML = '<p style="color:#aaa4c4;grid-column:1/3;">No past save states found.</p>';
 }
 
 document.getElementById('create-save-btn').onclick = () => {
@@ -251,9 +283,34 @@ function renderDatabasePickerPanel() {
     structuralLeagues.forEach(lName => {
         let groupDiv = document.createElement('div');
         groupDiv.className = 'picker-league-group';
-        groupDiv.innerHTML = `<div class="picker-league-title">${lName}</div>`;
         
+        // Find all teams in this league to determine if they are all checked
         let matchingPoolItems = poolTeamsMap.filter(p => p.leagueName === lName);
+        let allChecked = matchingPoolItems.every(p => p.isSelected);
+
+        // Header with league title and a "Select All" toggle checkbox
+        let headerDiv = document.createElement('div');
+        headerDiv.className = 'picker-league-title';
+        headerDiv.style.display = 'flex';
+        headerDiv.style.justifyContent = 'space-between';
+        headerDiv.style.alignItems = 'center';
+        headerDiv.innerHTML = `
+            <span>${lName}</span>
+            <label style="font-size: 0.85rem; font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="league-select-all" ${allChecked ? 'checked' : ''}> Select League
+            </label>
+        `;
+
+        // Add functionality to the Select League toggle
+        headerDiv.querySelector('.league-select-all').onchange = (e) => {
+            let targetState = e.target.checked;
+            matchingPoolItems.forEach(poolItem => {
+                poolItem.isSelected = targetState;
+            });
+            renderDatabasePickerPanel();
+        };
+
+        groupDiv.appendChild(headerDiv);
         
         matchingPoolItems.forEach(poolItem => {
             let globalIdx = poolTeamsMap.indexOf(poolItem);
@@ -284,6 +341,7 @@ function renderDatabasePickerPanel() {
         listContainer.appendChild(groupDiv);
     });
 
+    // The remainder of renderDatabasePickerPanel remains exactly the same...
     document.getElementById('selected-count-badge').innerText = totalSelected;
 
     const warning = document.getElementById('power-of-two-warning');
