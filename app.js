@@ -6,6 +6,7 @@ let saveState = {
     userTeamId: "",
     currentMatchday: 1,
     totalMatchdays: 0,
+    isCompleted: false, // Flag blocking action ticks once threshold crosses
     teams: [], // User-selected clubs running live inside this environment
     schedule: []
 };
@@ -175,7 +176,6 @@ function selectWeightedIndex(weights) {
     return 0;
 }
 
-// --- POPULATING SELECTION CHECKS FROM DATABASE ---
 let poolTeamsMap = []; 
 let activeConfigEditingIdx = 0;
 
@@ -183,6 +183,7 @@ function loadActiveMenu() {
     document.getElementById('welcome-screen').style.display = 'flex';
     document.getElementById('config-screen').style.display = 'none';
     document.getElementById('hub-screen').style.display = 'none';
+    document.getElementById('endgame-modal').style.display = 'none';
     
     const savesList = document.getElementById('saves-list');
     savesList.innerHTML = '';
@@ -208,22 +209,19 @@ document.getElementById('create-save-btn').onclick = () => {
 
     saveState.saveName = name;
     saveState.mode = document.querySelector('input[name="game-mode"]:checked').value;
+    saveState.isCompleted = false;
     
-    // Reset temporary pool
     poolTeamsMap = [];
     activeConfigEditingIdx = 0;
 
-    // Scan the entire database.js file and flatten every available team out
     for (let leagueKey in gameDatabase.leagues) {
         let currentLeague = gameDatabase.leagues[leagueKey];
         currentLeague.teams.forEach(t => {
             let cloned = JSON.parse(JSON.stringify(t));
             normalizeRoster(cloned, 80);
             
-            // Add state tracking metrics
             cloned.points = 0; cloned.gf = 0; cloned.ga = 0; cloned.gd = 0; cloned.isEliminated = false;
             
-            // Map out metadata and track selection state
             poolTeamsMap.push({
                 leagueName: currentLeague.name,
                 teamData: cloned,
@@ -232,7 +230,6 @@ document.getElementById('create-save-btn').onclick = () => {
         });
     }
 
-    // Default select first two teams to make configuration screen stable
     if(poolTeamsMap.length >= 1) poolTeamsMap[0].isSelected = true;
     if(poolTeamsMap.length >= 2) poolTeamsMap[1].isSelected = true;
     
@@ -248,9 +245,7 @@ function renderDatabasePickerPanel() {
     const listContainer = document.getElementById('database-team-picker-list');
     listContainer.innerHTML = '';
 
-    // Group items neatly by their respective database source league
     let structuralLeagues = [...new Set(poolTeamsMap.map(p => p.leagueName))];
-    
     let totalSelected = 0;
 
     structuralLeagues.forEach(lName => {
@@ -272,14 +267,12 @@ function renderDatabasePickerPanel() {
                 <span class="team-picker-label">${poolItem.teamData.name}</span>
             `;
 
-            // Row selection handler opens roster edit profile pane
             row.onclick = (e) => {
-                if (e.target.type === 'checkbox') return; // Prevent double firing from checklist bubbles
+                if (e.target.type === 'checkbox') return;
                 activeConfigEditingIdx = globalIdx;
                 renderDatabasePickerPanel();
             };
 
-            // Toggle logic
             row.querySelector('input').onchange = (e) => {
                 poolItem.isSelected = e.target.checked;
                 renderDatabasePickerPanel();
@@ -293,7 +286,6 @@ function renderDatabasePickerPanel() {
 
     document.getElementById('selected-count-badge').innerText = totalSelected;
 
-    // Direct error check warnings for Knockout formats
     const warning = document.getElementById('power-of-two-warning');
     if (saveState.mode === "tournament" && ![2,4,8,16,32].includes(totalSelected)) {
         warning.style.display = 'block';
@@ -301,7 +293,6 @@ function renderDatabasePickerPanel() {
         warning.style.display = 'none';
     }
 
-    // Build roster editing panel layout
     let activeItem = poolTeamsMap[activeConfigEditingIdx];
     document.getElementById('editing-team-title').innerText = activeItem.teamData.name + (activeItem.isSelected ? "" : " (Not Selected)");
 
@@ -325,7 +316,6 @@ function renderDatabasePickerPanel() {
     const tbody = document.getElementById('editor-roster-body');
     tbody.innerHTML = '';
     
-    // Flatten baseline pool to make player swaps straightforward
     let allGlobalPlayers = [];
     for (let l in gameDatabase.leagues) {
         gameDatabase.leagues[l].teams.forEach(t => allGlobalPlayers.push(...t.players));
@@ -364,29 +354,27 @@ function renderDatabasePickerPanel() {
     });
 }
 
-// Filter and compile active selections to generate schedule tree arrays
 document.getElementById('launch-sim-btn').onclick = () => {
     saveState.teams = poolTeamsMap.filter(p => p.isSelected).map(p => p.teamData);
 
     if (saveState.teams.length < 2) {
         return alert("Please select at least 2 teams to generate a functional simulator schedule.");
     }
-
     if (saveState.mode === "tournament" && ![2,4,8,16,32].includes(saveState.teams.length)) {
         return alert("Knockout mode requires an even power-of-two team lineup format (2, 4, 8, or 16 teams). Adjust your selections.");
     }
-
     if (saveState.mode === "league" && saveState.teams.length % 2 !== 0) {
         return alert("Round Robin League format requires an even number of selected teams. Add or remove one team.");
     }
 
-    // Confirm active user selection status
     let userAssignedCheck = saveState.teams.find(t => t.id === saveState.userTeamId);
     if(!userAssignedCheck) {
         saveState.userTeamId = saveState.teams[0].id;
     }
 
     saveState.currentMatchday = 1;
+    saveState.isCompleted = false;
+    
     if (saveState.mode === "league") {
         saveState.schedule = buildDoubleRoundRobin(saveState.teams);
         saveState.totalMatchdays = saveState.schedule.length;
@@ -415,15 +403,6 @@ function refreshHubDashboardUI() {
 
     renderActiveStandings();
     renderLeaderboardCharts();
-    renderUserSquadPane(userTeamObj);
-}
-
-function renderUserSquadPane(userTeam) {
-    const tbody = document.getElementById('squad-table');
-    tbody.innerHTML = '';
-    userTeam.players.forEach(p => {
-        tbody.innerHTML += `<tr><td><strong>${p.name}</strong></td><td>${p.pos}</td><td><span class="rating-badge">${p.rating}</span></td></tr>`;
-    });
 }
 
 function renderActiveStandings() {
@@ -473,12 +452,20 @@ function renderLeaderboardCharts() {
     document.getElementById('top-sheets-list').innerHTML = topSheets.map(p => `<li>${p.player.name} (${p.teamName}) - <strong>${p.player.stats.cleanSheets} CS</strong></li>`).join('');
 }
 
+// --- CORE SIMULATION PROCESSING ENGINE ---
 document.getElementById('advance-matchday-btn').onclick = () => {
+    // If the season is already completed, just show the pop-up immediately and exit
+    if (saveState.isCompleted) {
+        triggerEndgameModalDisplay();
+        return;
+    }
+
     let roundIndex = saveState.currentMatchday - 1;
     let currentRoundMatches = saveState.schedule[roundIndex];
 
     if (!currentRoundMatches || currentRoundMatches.length === 0) {
-        alert("The tournament run is finished!");
+        saveState.isCompleted = true;
+        triggerEndgameModalDisplay();
         return;
     }
 
@@ -516,18 +503,25 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         }
     });
 
+    // Check completion criteria boundaries AFTER simulating current matchday
     if (saveState.mode === "league") {
         if (saveState.currentMatchday >= saveState.totalMatchdays) {
-            let finalWinner = [...saveState.teams].sort((a,b) => b.points - a.points || b.gd - a.gd)[0];
-            feedBox.innerHTML += `<br><strong>🏆 SEASON CONCLUDED! CHAMPION: ${finalWinner.name} 🏆</strong>`;
-            saveState.schedule.push([]);
+            saveState.isCompleted = true;
+            refreshHubDashboardUI();
+            autoSaveCurrentProgress();
+            // Trigger popup immediately on the last matchday simulation click!
+            setTimeout(() => { triggerEndgameModalDisplay(); }, 400); 
+            return;
         } else {
             saveState.currentMatchday++;
         }
     } else {
         if (winners.length === 1) {
-            feedBox.innerHTML += `<br><strong>🏆 TOURNAMENT CONCLUDED! CUP CHAMPION: ${winners[0].name} 🏆</strong>`;
-            saveState.schedule.push([]);
+            saveState.isCompleted = true;
+            refreshHubDashboardUI();
+            autoSaveCurrentProgress();
+            setTimeout(() => { triggerEndgameModalDisplay(); }, 400);
+            return;
         } else {
             let nextRoundMatches = [];
             for (let i = 0; i < winners.length; i += 2) {
@@ -537,6 +531,129 @@ document.getElementById('advance-matchday-btn').onclick = () => {
             saveState.currentMatchday++;
         }
     }
+
+    refreshHubDashboardUI();
+    autoSaveCurrentProgress();
+};
+
+    let roundIndex = saveState.currentMatchday - 1;
+    let currentRoundMatches = saveState.schedule[roundIndex];
+
+    let feedBox = document.getElementById('ticker-feed-box');
+    feedBox.innerHTML = `<strong>--- MATCHDAY ${saveState.currentMatchday} LOGS ---</strong><br>`;
+
+    let winners = [];
+
+    currentRoundMatches.forEach(match => {
+        let homeTeam = saveState.teams.find(t => t.id === match.home);
+        let awayTeam = saveState.teams.find(t => t.id === match.away);
+
+        let sim = runFixtureSimulation(homeTeam, awayTeam);
+        feedBox.innerHTML += sim.text + "<br>";
+
+        if (sim.details.scorersA.length > 0) feedBox.innerHTML += ` &nbsp;&nbsp; Goals [Home]: ${sim.details.scorersA.join(', ')}<br>`;
+        if (sim.details.scorersB.length > 0) feedBox.innerHTML += ` &nbsp;&nbsp; Goals [Away]: ${sim.details.scorersB.join(', ')}<br>`;
+
+        if (saveState.mode === "tournament") {
+            if (sim.details.goalsA === sim.details.goalsB) {
+                if (Math.random() > 0.5) {
+                    feedBox.innerHTML += ` &nbsp;&nbsp; 🏆 ${homeTeam.name} wins on Penalties!<br>`;
+                    winners.push(homeTeam); awayTeam.isEliminated = true;
+                } else {
+                    feedBox.innerHTML += ` &nbsp;&nbsp; 🏆 ${awayTeam.name} wins on Penalties!<br>`;
+                    winners.push(awayTeam); homeTeam.isEliminated = true;
+                }
+            } else {
+                if (sim.details.goalsA > sim.details.goalsB) {
+                    winners.push(homeTeam); awayTeam.isEliminated = true;
+                } else {
+                    winners.push(awayTeam); homeTeam.isEliminated = true;
+                }
+            }
+        }
+    });
+
+    // Check completion criteria boundaries
+    if (saveState.mode === "league") {
+        if (saveState.currentMatchday >= saveState.totalMatchdays) {
+            saveState.isCompleted = true;
+            refreshHubDashboardUI();
+            triggerEndgameModalDisplay();
+            autoSaveCurrentProgress();
+            return;
+        } else {
+            saveState.currentMatchday++;
+        }
+    } else {
+        if (winners.length === 1) {
+            saveState.isCompleted = true;
+            refreshHubDashboardUI();
+            triggerEndgameModalDisplay();
+            autoSaveCurrentProgress();
+            return;
+        } else {
+            let nextRoundMatches = [];
+            for (let i = 0; i < winners.length; i += 2) {
+                nextRoundMatches.push({ home: winners[i].id, away: winners[i+1].id });
+            }
+            saveState.schedule.push(nextRoundMatches);
+            saveState.currentMatchday++;
+        }
+    }
+
+    refreshHubDashboardUI();
+    autoSaveCurrentProgress();
+};
+
+// --- POPUP INTERACTIVE OVERLAY TRIGGERS ---
+function triggerEndgameModalDisplay() {
+    let championName = "Unknown";
+    
+    if (saveState.mode === "league") {
+        let sorted = [...saveState.teams].sort((a,b) => b.points - a.points || b.gd - a.gd);
+        championName = sorted[0].name;
+    } else {
+        let activeRemaining = saveState.teams.filter(t => !t.isEliminated);
+        championName = activeRemaining.length > 0 ? activeRemaining[0].name : "Tournament Finalist";
+    }
+
+    document.getElementById('endgame-winner-name').innerText = championName;
+    document.getElementById('endgame-modal').style.display = 'block';
+}
+
+// Button Bind A: Return to Dashboard
+document.getElementById('endgame-dashboard-btn').onclick = () => {
+    document.getElementById('endgame-modal').style.display = 'none';
+};
+
+// Button Bind B: Reset league scores but keep custom team selections intact
+document.getElementById('endgame-replay-btn').onclick = () => {
+    document.getElementById('endgame-modal').style.display = 'none';
+    
+    // Clear matches score tracking across rosters
+    saveState.teams.forEach(t => {
+        t.points = 0; t.gf = 0; t.ga = 0; t.gd = 0; t.isEliminated = false;
+        
+        // Wipe player metric logs back to absolute zero baseline
+        t.players.forEach(p => {
+            p.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+        });
+    });
+
+    saveState.currentMatchday = 1;
+    saveState.isCompleted = false;
+
+    // Regene schedules list tree strings
+    if (saveState.mode === "league") {
+        saveState.schedule = buildDoubleRoundRobin(saveState.teams);
+        saveState.totalMatchdays = saveState.schedule.length;
+    } else {
+        saveState.schedule = buildDirectKnockoutTree(saveState.teams);
+        saveState.totalMatchdays = Math.log2(saveState.teams.length);
+    }
+
+    let feedBox = document.getElementById('ticker-feed-box');
+    feedBox.innerHTML = "Competition restarted! Roster configurations preserved. Advance matchday to play.";
 
     refreshHubDashboardUI();
     autoSaveCurrentProgress();
@@ -581,6 +698,11 @@ function resumeTargetSave(storageKey) {
     document.getElementById('welcome-screen').style.display = 'none';
     document.getElementById('hub-screen').style.display = 'flex';
     refreshHubDashboardUI();
+    
+    // Immediately reopen the seasonal popup if user saves and loads inside a finished season state
+    if (saveState.isCompleted) {
+        triggerEndgameModalDisplay();
+    }
 }
 
 window.onload = loadActiveMenu;

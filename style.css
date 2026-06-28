@@ -129,8 +129,19 @@ th { background: #1c1c27; color: #9d4edd; font-size: 0.9rem; }
 
 /* Modal Windows */
 .modal-overlay { display: none; position: fixed; z-index: 999; left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.75); }
-.modal-window { background: #13131a; margin: 8% auto; padding: 25px; width: 550px; border-radius: 10px; border: 1px solid #3a3a52; color: #fff; }
-.modal-close-trigger { float: right; font-size: 28px; cursor: pointer; color: #a0a0b1; }
+.modal-window { background: #13131a; margin: 8% auto; padding: 25px; width: 550px; border-radius: 10px; border: 1px solid #3a3a52; color: #fff; text-align: center; }
+.modal-close-trigger { float: right; font-size: 28px; cursor: pointer; color: #a0a0b1; line-height: 20px; }
 .modal-close-trigger:hover { color: #fff; }
 
 .editor-select { background: #13131a; color: white; border: 1px solid #3a3a52; padding: 4px; border-radius: 4px; }
+
+/* Season Endgame Overlay Layouts */
+.endgame-window { border: 2px solid #9d4edd; padding: 40px 30px; box-shadow: 0 0 25px rgba(157, 78, 221, 0.4); }
+.winner-announcement { background: #241931; border: 1px solid #9d4edd; padding: 15px; border-radius: 8px; color: #ffb703; font-size: 1.6rem; font-weight: 800; margin: 20px 0; text-transform: uppercase; letter-spacing: 1px; }
+.endgame-subtitle { color: #a0a0b1; margin-bottom: 30px; font-size: 0.95rem; }
+.endgame-button-group { display: flex; gap: 15px; justify-content: center; }
+.endgame-btn-action { flex: 1; padding: 14px; font-size: 0.95rem; text-transform: uppercase; }
+.endgame-btn-action.dashboard-btn { background: #232330; color: #f1f1f6; border: 1px solid #3a3a52; }
+.endgame-btn-action.dashboard-btn:hover { background: #2d2d3d; }
+.endgame-btn-action.replay-btn { background: #9d4edd; color: white; }
+.endgame-btn-action.replay-btn:hover { background: #b5179e; }
