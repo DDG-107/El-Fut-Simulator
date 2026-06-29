@@ -1,7 +1,7 @@
 // database.js - The central repository of baseline teams and players
 const gameDatabase = {
     leagues: {
-        "ENG 1": {
+        "ENG 1 25/26": {
             name: "Premier League 25/26",
             teams: [
                 {
@@ -79,7 +79,7 @@ const gameDatabase = {
 
             ]
         },
-        "ESP 1": {
+        "ESP 1 25/26": {
             name: "La Liga 25/26",
             teams: [
                 { id: "bar", name: "FC Barcelona", budget: 100000000, players: [
@@ -205,7 +205,24 @@ const gameDatabase = {
                 {id: "gir", name: "Girona FC", budget: 250000, players: []},
                 {id: "ovi", name: "Real Oviedo", budget: 100000, players: []}
             ]
+        },
+        "PT": {
+            name: "Past Teams", teams: [
+                { id: "atx22", name: "Austin FC 2022", budget: 100000000, players: [
+                        { name: "B. Stuver", pos: "GK", rating: 75, img: "assets/bstuver.png" },
+                        { name: "Z. Kolmanić", pos: "LB", rating: 68, img: "assets/zkolmani.png" },
+                        { name: "J. Cascante", pos: "CB", rating: 70, img: "assets/jcascante.png" },
+                        { name: "R. Gabrielsen", pos: "CB", rating: 74, img: "assets/rgabrielsen.png" },
+                        { name: "J. Gallagher", pos: "RB", rating: 68, img: "assets/jgallagher.png" },
+                        { name: "D. Pereira", pos: "CDM", rating: 67, img: "assets/dpereira.png" },
+                        { name: "A. Ring", pos: "CDM", rating: 65, img: "assets/aring.png" },
+                        { name: "S. Driussi", pos: "CAM", rating: 81, img: "assets/sdriussi.png" },
+                        { name: "D. Fagundez", pos: "LW", rating: 74, img: "assets/dfagundez.png" },
+                        { name: "M. Djittè", pos: "ST", rating: 76, img: "assets/mdjitt.png" },
+                        { name: "E. Rigoni", pos: "RW", rating: 72, img: "assets/erigoni.png" },
+                ] }
+            ]
         }
-        
+
     }
 };
