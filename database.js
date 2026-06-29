@@ -206,6 +206,24 @@ const gameDatabase = {
                 {id: "ovi", name: "Real Oviedo", budget: 100000, players: []}
             ]
         },
+
+        "WC 2026": {
+            name: "World Cup 2026", teams: [
+                {id:"fra", name: "France", budget: 100000000, players: [
+                        { name: "M. Maignan", pos: "GK", rating: 85, img: "assets/mmaignan.png" },
+                        { name: "T. Hernandez", pos: "LB", rating: 82, img: "assets/thernandez.png" },
+                        { name: "D. Upamecano", pos: "CB", rating: 86, img: "assets/dupamecano.png" },
+                        { name: "W. Saliba", pos: "CB", rating: 88, img: "assets/wsaliba.png" },
+                        { name: "J. Koundé", pos: "RB", rating: 85, img: "assets/jkound.png" },
+                        { name: "A. Tchouaméni", pos: "CDM", rating: 84, img: "assets/atchouamni.png" },
+                        { name: "A. Rabiot", pos: "CM", rating: 84, img: "assets/arabiot.png" },
+                        { name: "M. Olise", pos: "CAM", rating: 90, img: "assets/molise.png" },
+                        { name: "D. Doué", pos: "LW", rating: 87, img: "assets/ddou.png" },
+                        { name: "K. Mbappé", pos: "ST", rating: 91, img: "assets/kmbapp.png" },
+                        { name: "O. Dembélé", pos: "RW", rating: 91, img: "assets/odembl.png" },
+                ]},
+            ]
+        },
         "PT": {
             name: "Past Teams", teams: [
                 { id: "atx22", name: "Austin FC 2022", budget: 100000000, players: [
