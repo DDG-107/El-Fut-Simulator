@@ -238,3 +238,43 @@ tr:last-child td {
         overflow-x: auto; /* Allows tables to scroll smoothly sideways on narrow mobile panels instead of compressing */
     }
 }
+
+/* --- HIGHLIGHT POLISHING --- */
+.team-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 6px;
+    background-color: #1a1530;
+    border: 1px solid #2c2254;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.team-picker-row:hover {
+    background-color: #231c42;
+    border-color: #7c4dff;
+}
+
+/* Vibrant styling for when a team is included in the competition */
+.team-picker-row.selected-active {
+    background-color: #281a4d;
+    border-color: #7c4dff;
+    color: #ffffff;
+    box-shadow: inset 0 0 8px rgba(124, 77, 255, 0.2);
+}
+
+/* Distinct visual border indicator for the team currently being actively edited/viewed */
+.team-picker-row.active-edit {
+    border: 2px dashed #a370f7 !important;
+}
+
+/* Custom alignment rule for delete save rows */
+.delete-save-btn {
+    transition: background-color 0.15s ease-in-out;
+}
+.delete-save-btn:hover {
+    background-color: #b71c1c !important;
+}

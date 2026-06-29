@@ -13,7 +13,7 @@ let saveState = {
 
 const POSITIONS = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
-// 4. Expanded names pools for more diverse generated players
+// Expanded names pools for more diverse generated players
 const FIRST_NAMES = [
     "Oliver", "Lucas", "Mateo", "Santiago", "Marcus", "Julian", "Ethan", "Leo", "Tom", "Ben",
     "Alexander", "Daniel", "Gabriel", "Harry", "Jack", "Liam", "Noah", "Mason", "William", "Elias",
@@ -42,7 +42,7 @@ function generateRandomPlayer(position, targetRating) {
     };
 }
 
-// 1. Fixed Roster Normalization to prevent multiple GKs from overpowering defenses
+// Fixed Roster Normalization to prevent multiple GKs from overpowering defenses
 function normalizeRoster(team, baselineOvr = 80) {
     if (!team.players) team.players = [];
     team.players.forEach(p => {
@@ -52,7 +52,6 @@ function normalizeRoster(team, baselineOvr = 80) {
     const outfieldPositions = ["CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
     while (team.players.length < 11) {
-        // Enforce exactly 1 goalkeeper per roster to balance structural calculations
         let hasGK = team.players.some(p => p.pos === "GK");
         let assignedPos;
         
@@ -204,6 +203,7 @@ function selectWeightedIndex(weights) {
 let poolTeamsMap = []; 
 let activeConfigEditingIdx = 0;
 
+// Brought back and completely integrated the save deletion functionality
 function loadActiveMenu() {
     document.getElementById('welcome-screen').style.display = 'flex';
     document.getElementById('config-screen').style.display = 'none';
@@ -218,14 +218,43 @@ function loadActiveMenu() {
         if (key.startsWith('elfut_save_')) {
             foundSaves = true;
             let name = key.replace('elfut_save_', '');
-            let btn = document.createElement('button');
-            btn.className = 'save-btn';
-            btn.innerText = name;
-            btn.onclick = () => resumeTargetSave(key);
-            savesList.appendChild(btn);
+            
+            let saveRow = document.createElement('div');
+            saveRow.className = 'save-item-row';
+            saveRow.style.display = 'flex';
+            saveRow.style.gap = '10px';
+            saveRow.style.marginBottom = '10px';
+            saveRow.style.width = '100%';
+
+            let loadBtn = document.createElement('button');
+            loadBtn.className = 'save-btn';
+            loadBtn.innerText = name;
+            loadBtn.style.margin = '0';
+            loadBtn.style.flex = '1';
+            loadBtn.onclick = () => resumeTargetSave(key);
+
+            let deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.className = 'delete-save-btn';
+            deleteBtn.style.margin = '0';
+            deleteBtn.style.width = '55px';
+            deleteBtn.style.backgroundColor = '#d32f2f';
+            deleteBtn.style.boxShadow = 'none';
+            
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Are you sure you want to permanently delete the save progress for "${name}"?`)) {
+                    localStorage.removeItem(key);
+                    loadActiveMenu();
+                }
+            };
+
+            saveRow.appendChild(loadBtn);
+            saveRow.appendChild(deleteBtn);
+            savesList.appendChild(saveRow);
         }
     }
-    if (!foundSaves) savesList.innerHTML = '<p style="color:#666;grid-column:1/3;">No past save states found.</p>';
+    if (!foundSaves) savesList.innerHTML = '<p style="color:#aaa4c4;grid-column:1/3;">No past save states found.</p>';
 }
 
 document.getElementById('create-save-btn').onclick = () => {
@@ -266,11 +295,9 @@ document.getElementById('create-save-btn').onclick = () => {
     renderDatabasePickerPanel();
 };
 
-// 2 & 3. Integrated Live Team Search Bar and Select All per League buttons
 function renderDatabasePickerPanel() {
     const listContainer = document.getElementById('database-team-picker-list');
     
-    // Inject the search bar structural base if it does not exist yet to protect phone inputs focus
     let searchInput = document.getElementById('team-search-bar');
     if (!searchInput) {
         listContainer.innerHTML = `
@@ -296,21 +323,19 @@ function renderDatabasePickerRows() {
     let structuralLeagues = [...new Set(poolTeamsMap.map(p => p.leagueName))];
     let totalSelected = 0;
 
-    // Tally selections globally
     poolTeamsMap.forEach(p => { if (p.isSelected) totalSelected++; });
 
     structuralLeagues.forEach(lName => {
         let matchingPoolItems = poolTeamsMap.filter(p => p.leagueName === lName);
         let filteredItems = matchingPoolItems.filter(p => p.teamData.name.toLowerCase().includes(query));
 
-        if (filteredItems.length === 0) return; // Hide league group completely if search has no results
+        if (filteredItems.length === 0) return;
 
         let groupDiv = document.createElement('div');
         groupDiv.className = 'picker-league-group';
         
         let allChecked = matchingPoolItems.every(p => p.isSelected);
 
-        // 2. Select All per League heading element implementation
         let headerDiv = document.createElement('div');
         headerDiv.className = 'picker-league-title';
         headerDiv.style.display = 'flex';
@@ -328,7 +353,6 @@ function renderDatabasePickerRows() {
             matchingPoolItems.forEach(poolItem => {
                 poolItem.isSelected = targetState;
             });
-            // Re-sync numbers and graphics
             renderDatabasePickerPanel();
         };
 
@@ -336,9 +360,11 @@ function renderDatabasePickerRows() {
 
         filteredItems.forEach(poolItem => {
             let globalIdx = poolTeamsMap.indexOf(poolItem);
-
+            let isCurrentEdit = (globalIdx === activeConfigEditingIdx);
+            
+            // Refined button-like rows with active highlighting states
             let row = document.createElement('div');
-            row.className = `team-picker-row ${globalIdx === activeConfigEditingIdx ? 'active-edit' : ''}`;
+            row.className = `team-picker-row ${poolItem.isSelected ? 'selected-active' : ''} ${isCurrentEdit ? 'active-edit' : ''}`;
             
             row.innerHTML = `
                 <input type="checkbox" ${poolItem.isSelected ? 'checked' : ''}>
@@ -491,7 +517,10 @@ function renderActiveStandings() {
         let sorted = [...saveState.teams].sort((a,b) => b.points - a.points || b.gd - a.gd);
         sorted.forEach((t, i) => {
             let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${i+1}</td><td class="clickable-row-team"><strong>${t.name}</strong></td><td>${t.gd}</td><td><strong>${t.points}</strong></td>`;
+            if (t.id === saveState.userTeamId) {
+                tr.style.backgroundColor = 'rgba(124, 77, 255, 0.15)';
+            }
+            tr.innerHTML = `<td>${i+1}</td><td class="clickable-row-team"><strong>${t.name}</strong> ${t.id === saveState.userTeamId ? '⭐' : ''}</td><td>${t.gd}</td><td><strong>${t.points}</strong></td>`;
             tr.querySelector('.clickable-row-team').onclick = () => launchProfileModal(t);
             tbody.appendChild(tr);
         });
@@ -505,6 +534,9 @@ function renderActiveStandings() {
             let homeObj = saveState.teams.find(t => t.id === f.home);
             let awayObj = saveState.teams.find(t => t.id === f.away);
             let tr = document.createElement('tr');
+            if (homeObj.id === saveState.userTeamId || awayObj.id === saveState.userTeamId) {
+                tr.style.backgroundColor = 'rgba(124, 77, 255, 0.15)';
+            }
             tr.innerHTML = `<td>M${idx+1}</td><td class="clickable-row-team"><strong>${homeObj.name}</strong></td><td>vs</td><td class="clickable-row-team"><strong>${awayObj.name}</strong></td>`;
             tr.querySelectorAll('.clickable-row-team')[0].onclick = () => launchProfileModal(homeObj);
             tr.querySelectorAll('.clickable-row-team')[1].onclick = () => launchProfileModal(awayObj);
@@ -549,6 +581,8 @@ document.getElementById('advance-matchday-btn').onclick = () => {
     let feedBox = document.getElementById('ticker-feed-box');
     feedBox.innerHTML = `<strong>--- MATCHDAY ${saveState.currentMatchday} LOGS ---</strong><br>`;
 
+    let userMatchHtml = "";
+    let basicMatchesHtml = "";
     let winners = [];
 
     currentRoundMatches.forEach(match => {
@@ -556,16 +590,14 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         let awayTeam = saveState.teams.find(t => t.id === match.away);
 
         let sim = runFixtureSimulation(homeTeam, awayTeam);
-        
-        // 5. Highlight the managed team's results in the log feed container
         let isUserMatch = (homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId);
         
         let matchRowHtml = "";
         if (isUserMatch) {
-            matchRowHtml += `<div class="user-match-log" style="background: linear-gradient(90deg, rgba(124,77,255,0.25) 0%, rgba(0,0,0,0) 100%); padding: 8px 12px; border-left: 4px solid #7c4dff; margin: 6px 0; border-radius: 4px;">`;
+            matchRowHtml += `<div class="user-match-log" style="background: linear-gradient(90deg, rgba(124,77,255,0.25) 0%, rgba(0,0,0,0) 100%); padding: 10px 14px; border-left: 4px solid #7c4dff; margin: 8px 0; border-radius: 6px;">`;
             matchRowHtml += `<strong>⭐ ${sim.text}</strong>`;
         } else {
-            matchRowHtml += `<div class="standard-match-log" style="padding: 4px 12px; margin: 2px 0;">`;
+            matchRowHtml += `<div class="standard-match-log" style="padding: 6px 12px; margin: 4px 0; border-bottom: 1px solid #1c1635;">`;
             matchRowHtml += `${sim.text}`;
         }
 
@@ -591,8 +623,17 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         }
         
         matchRowHtml += `</div>`;
-        feedBox.innerHTML += matchRowHtml;
+        
+        // Push your match to the top array stack, otherwise collect below
+        if (isUserMatch) {
+            userMatchHtml += matchRowHtml;
+        } else {
+            basicMatchesHtml += matchRowHtml;
+        }
     });
+
+    // Render results with your match guaranteed at the top
+    feedBox.innerHTML += userMatchHtml + basicMatchesHtml;
 
     if (saveState.mode === "league") {
         if (saveState.currentMatchday >= saveState.totalMatchdays) {
@@ -625,7 +666,6 @@ document.getElementById('advance-matchday-btn').onclick = () => {
     autoSaveCurrentProgress();
 };
 
-// --- POPUP INTERACTIVE OVERLAY TRIGGERS ---
 function triggerEndgameModalDisplay() {
     let championName = "Unknown";
     
