@@ -70,17 +70,37 @@ function normalizeRoster(team, baselineOvr = 80) {
 
 function parseTacticalStrength(team) {
     let attackWeight = 0, defenseWeight = 0;
+    
     team.players.forEach(p => {
         let r = p.rating;
-        if (["ST", "LW", "RW"].includes(p.pos)) { attackWeight += r * 1.3; defenseWeight += r * 0.2; }
-        else if (["CAM", "CM"].includes(p.pos)) { attackWeight += r * 1.0; defenseWeight += r * 0.6; }
-        else if (["CDM"].includes(p.pos)) { attackWeight += r * 0.5; defenseWeight += r * 1.1; }
-        else if (["CB", "LB", "RB"].includes(p.pos)) { attackWeight += r * 0.2; defenseWeight += r * 1.4; }
-        else if (p.pos === "GK") { defenseWeight += r * 1.8; }
+        if (["ST", "LW", "RW"].includes(p.pos)) { 
+            attackWeight += r * 1.80; 
+            defenseWeight += r * 0.10; 
+        }
+        else if (["CAM", "CM"].includes(p.pos)) { 
+            attackWeight += r * 1.20; 
+            defenseWeight += r * 0.50; 
+        }
+        else if (["CDM"].includes(p.pos)) { 
+            attackWeight += r * 0.40; 
+            defenseWeight += r * 1.30; 
+        }
+        else if (["CB", "LB", "RB"].includes(p.pos)) { 
+            attackWeight += r * 0.15; 
+            defenseWeight += r * 1.65; 
+        }
+        else if (p.pos === "GK") { 
+            attackWeight += r * 0.00; 
+            defenseWeight += r * 1.90; 
+        }
     });
-    return { att: attackWeight / 11, def: defenseWeight / 11 };
-}
 
+    // Dividing by 11 keeps the final team ratings strictly bounded to the 1-99 range
+    return { 
+        att: Math.max(1, Math.min(99, attackWeight / 11)), 
+        def: Math.max(1, Math.min(99, defenseWeight / 11)) 
+    };
+}
 function buildDoubleRoundRobin(teamsList) {
     let list = [...teamsList];
     let fixtures = [];
