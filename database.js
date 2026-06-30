@@ -19,7 +19,7 @@ const gameDatabase = {
                         { name: "C. Palmer", pos: "CAM", rating: 88, img: "assets/cpalmer.png" },
                         { name: "Pedro Neto", pos: "RM", rating: 82, img: "assets/pedroneto.png" },
                         { name: "E. Fernández", pos: "CM", rating: 85, img: "assets/efernndez.png" },
-                        { name: "João Pedro", pos: "ST", rating: 82, img: "assets/joopedro.png" },                    ]
+                        { name: "João Pedro", pos: "ST", rating: 82, img: "assets/joopedro.png" }                   ]
                 },
                 { id: "liv", name: "Liverpool FC", budget: 140000000, players: [
                         { name: "Alisson", pos: "GK", rating: 88, img: "assets/alisson.png" },
@@ -32,7 +32,7 @@ const gameDatabase = {
                         { name: "M. Salah", pos: "RM", rating: 89, img: "assets/msalah.png" },
                         { name: "C. Gakpo", pos: "LM", rating: 83, img: "assets/cgakpo.png" },
                         { name: "F. Wirtz", pos: "CAM", rating: 87, img: "assets/fwirtz.png" },
-                        { name: "A. Isak", pos: "ST", rating: 87, img: "assets/aisak.png" },
+                        { name: "A. Isak", pos: "ST", rating: 87, img: "assets/aisak.png" }
                 ] },
                 { id: "ars", name: "Arsenal", budget: 130000000, players: [
                     { name: "D. Raya", pos: "GK", rating: 84, img: "assets/draya.png" },
@@ -46,7 +46,7 @@ const gameDatabase = {
                     { name: "B. Saka", pos: "RW", rating: 88, img: "assets/bsaka.png" },
                     { name: "V. Gyökeres", pos: "ST", rating: 87, img: "assets/vgykeres.png" },
                     { name: "G. Martinelli", pos: "LW", rating: 83, img: "assets/gmartinelli.png" }
-                ] }, // <-- Added the missing comma right here!
+                ] }, 
                 { id: "mun", name: "Manchester United", budget: 110000000, players: [
                         { name: "S. Lammens", pos: "GK", rating: 81, img: "assets/slammens.png" },
                         { name: "Diogo Dalot", pos: "RB", rating: 78, img: "assets/diogodalot.png" },
@@ -55,10 +55,10 @@ const gameDatabase = {
                         { name: "L. Shaw", pos: "LB", rating: 79, img: "assets/lshaw.png" },
                         { name: "Casemiro", pos: "CDM", rating: 82, img: "assets/casemiro.png" },
                         { name: "K. Mainoo", pos: "CDM", rating: 79, img: "assets/kmainoo.png" },
-                        { name: "Amad", pos: "RM", rating: 80, img: "assets/amad.png" },
-                        { name: "Matheus Cunha", pos: "CAM", rating: 83, img: "assets/matheuscunha.png" },
+                        { name: "Amad", pos: "RW", rating: 80, img: "assets/amad.png" },
+                        { name: "Matheus Cunha", pos: "ST", rating: 83, img: "assets/matheuscunha.png" },
                         { name: "Bruno Fernandes", pos: "CAM", rating: 88, img: "assets/brunofernandes.png" },
-                        { name: "B. Mbeumo", pos: "RW", rating: 85, img: "assets/bmbeumo.png" },
+                        { name: "B. Mbeumo", pos: "RW", rating: 85, img: "assets/bmbeumo.png" }
                 ] },
                 {id: "mci", name: "Manchester City", budget: 200000000, players: [
                         { name: "G. Donnaruma", pos: "GK", rating: 88, img: "assets/gdonnaruma.png" },
@@ -71,17 +71,51 @@ const gameDatabase = {
                         { name: "J. Doku", pos: "LW", rating: 83, img: "assets/jdoku.png" },
                         { name: "R. Cherki", pos: "CAM", rating: 85, img: "assets/rcherki.png" },
                         { name: "A. Semenyo", pos: "RW", rating: 84, img: "assets/asemenyo.png" },
-                        { name: "E. Haaland", pos: "ST", rating: 91, img: "assets/ehaaland.png" },
+                        { name: "E. Haaland", pos: "ST", rating: 91, img: "assets/ehaaland.png" }
                 ]},
                 {id: "tot", name: "Tottenham Hotspur", budget: 90000000, players: []},
-                {id: "new", name: "Newcastle United", budget: 95000000, players: []},
-                {id: "vil", name: "Aston Villa", budget: 85000000, players: []},
+                {id: "new", name: "Newcastle United", budget: 95000000, players: [
+                        { name: "A. Ramsdale", pos: "GK", rating: 78, img: "assets/aramsdale.png" },
+                        { name: "L. Hall", pos: "LB", rating: 81, img: "assets/lhall.png" },
+                        { name: "S. Botman", pos: "CB", rating: 81, img: "assets/sbotman.png" },
+                        { name: "M. Thiaw", pos: "CB", rating: 82, img: "assets/mthiaw.png" },
+                        { name: "T. Livramento", pos: "RB", rating: 81, img: "assets/tlivramento.png" },
+                        { name: "S. Tonali", pos: "CDM", rating: 85, img: "assets/stonali.png" },
+                        { name: "Joelinton", pos: "CM", rating: 81, img: "assets/joelinton.png" },
+                        { name: "Bruno Guimarães", pos: "CM", rating: 86, img: "assets/brunoguimares.png" },
+                        { name: "A. Gordon", pos: "LW", rating: 83, img: "assets/agordon.png" },
+                        { name: "N. Woltemade", pos: "ST", rating: 81, img: "assets/nwoltemade.png" }
+                ]},
+                {id: "vil", name: "Aston Villa", budget: 85000000, players: [
+                        { name: "E. Martínez", pos: "GK", rating: 84, img: "assets/emartnez.png" },
+                        { name: "L. Digne", pos: "LB", rating: 80, img: "assets/ldigne.png" },
+                        { name: "Pau Torres", pos: "CB", rating: 80, img: "assets/pautorres.png" },
+                        { name: "E. Konsa", pos: "CB", rating: 84, img: "assets/ekonsa.png" },
+                        { name: "M. Cash", pos: "RB", rating: 81, img: "assets/mcash.png" },
+                        { name: "Y. Tielemans", pos: "CDM", rating: 85, img: "assets/ytielemans.png" },
+                        { name: "A. Onana", pos: "CDM", rating: 81, img: "assets/aonana.png" },
+                        { name: "E. Buendía", pos: "LW", rating: 81, img: "assets/ebuenda.png" },
+                        { name: "M. Rogers", pos: "CAM", rating: 86, img: "assets/mrogers.png" },
+                        { name: "J. McGinn", pos: "RW", rating: 81, img: "assets/jmcginn.png" },
+                        { name: "O. Watkins", pos: "ST", rating: 83, img: "assets/owatkins.png" }                ]},
                 {id: "bou", name: "AFC Bournemouth", budget: 75000000, players: []},
                 {id: "ful", name: "Fulham FC", budget: 70000000, players: []},
                 {id: "bre", name: "Brentford FC", budget: 65000000, players: []},
                 {id: "whu", name: "West Ham United", budget: 60000000, players: []},
                 {id: "bha", name: "Brighton & Hove Albion", budget: 55000000, players: []},
-                {id: "sun", name: "Sunderland AFC", budget: 50000000, players: []},
+                {id: "sun", name: "Sunderland AFC", budget: 50000000, players: [
+                        { name: "R. Roefs", pos: "GK", rating: 83, img: "assets/rroefs.png" },
+                        { name: "Reinildo", pos: "LB", rating: 80, img: "assets/reinildo.png" },
+                        { name: "O. Alderete", pos: "CB", rating: 80, img: "assets/oalderete.png" },
+                        { name: "D. Ballard", pos: "CB", rating: 79, img: "assets/dballard.png" },
+                        { name: "N. Mukiele", pos: "RB", rating: 82, img: "assets/nmukiele.png" },
+                        { name: "N. Sadiki", pos: "CDM", rating: 78, img: "assets/nsadiki.png" },
+                        { name: "G. Xhaka", pos: "CDM", rating: 85, img: "assets/gxhaka.png" },
+                        { name: "C. Talbi", pos: "LW", rating: 78, img: "assets/ctalbi.png" },
+                        { name: "E. Le Fée", pos: "CAM", rating: 78, img: "assets/elefe.png" },
+                        { name: "T. Hume", pos: "RW", rating: 78, img: "assets/thume.png" },
+                        { name: "B. Brobbey", pos: "ST", rating: 81, img: "assets/bbrobbey.png" }
+                ]},
                 {id: "lee", name: "Leeds United", budget: 45000000, players: []},
                 {id: "not", name: "Nottingham Forest", budget: 40000000, players: []},
                 {id: "eve", name: "Everton FC", budget: 35000000, players: []},
@@ -105,7 +139,7 @@ const gameDatabase = {
                         { name: "Fermín", pos: "CAM", rating: 83, img: "assets/fermn.png" },
                         { name: "Lamine Yamal", pos: "RW", rating: 89, img: "assets/lamineyamal.png" },
                         { name: "Ferran Torres", pos: "ST", rating: 84, img: "assets/ferrantorres.png" },
-                        { name: "Raphinha", pos: "LW", rating: 89, img: "assets/raphinha.png" },
+                        { name: "Raphinha", pos: "LW", rating: 89, img: "assets/raphinha.png" }
                 ] },
                 { id: "atm", name: "Atlético Madrid", budget: 80000000, players: [
                         { name: "J. Oblak", pos: "GK", rating: 88, img: "assets/joblak.png" },
@@ -118,7 +152,7 @@ const gameDatabase = {
                         { name: "Koke", pos: "CM", rating: 81, img: "assets/koke.png" },
                         { name: "A. Lookman", pos: "ST", rating: 83, img: "assets/alookman.png" },
                         { name: "A. Griezmann", pos: "ST", rating: 84, img: "assets/agriezmann.png" },
-                        { name: "J. Alvarez", pos: "ST", rating: 86, img: "assets/jalvarez.png" },
+                        { name: "J. Alvarez", pos: "ST", rating: 86, img: "assets/jalvarez.png" }
                 ] },
                 {
                     id: "rmd",
@@ -133,7 +167,7 @@ const gameDatabase = {
                         { name: "A. Tchouaméni", pos: "CDM", rating: 84, potential: 87, age: 25, value: "€50.5M", wage: "€200K", img: "assets/tchouameni.png" },
                         { name: "F. Valverde", pos: "CM", rating: 89, potential: 90, age: 26, value: "€120.5M", wage: "€340K", img: "assets/valverde.png" },
                         { name: "A. Güler", pos: "CM", rating: 83, potential: 89, age: 20, value: "€56.5M", wage: "€150K", img: "assets/guler.png" },
-                        { name: "J. Bellingham", pos: "CAM", rating: 80, img: "assets/bellingham.png" },
+                        { name: "J. Bellingham", pos: "CAM", rating: 90, img: "assets/bellingham.png" },
                         { name: "K. Mbappé", pos: "ST", rating: 91, potential: 92, age: 26, value: "€157M", wage: "€610K", img: "assets/mbappe.png" },
                         { name: "Vini Jr.", pos: "ST", rating: 89, potential: 92, age: 24, value: "€141M", wage: "€320K", img: "assets/vinijr.png" }
                     ]
@@ -162,7 +196,7 @@ const gameDatabase = {
                         { name: "S. Amrabat", pos: "CDM", rating: 79, img: "assets/samrabat.png" },
                         { name: "Antony", pos: "RW", rating: 81, img: "assets/antony.png" },
                         { name: "Cucho Hernández", pos: "ST", rating: 79, img: "assets/cuchohernndez.png" },
-                        { name: "Abde", pos: "LW", rating: 80, img: "assets/abde.png" },
+                        { name: "Abde", pos: "LW", rating: 80, img: "assets/abde.png" }
                 ]},
                 {id: "sev", name: "Sevilla FC", budget: 55000000, players: []},
                 {id: "ath", name: "Athletic Bilbao", budget: 50000000, players: [
@@ -176,7 +210,7 @@ const gameDatabase = {
                         { name: "Iñaki Williams", pos: "RW", rating: 81, img: "assets/iakiwilliams.png" },
                         { name: "Nico Williams", pos: "LW", rating: 85, img: "assets/nicowilliams.png" },
                         { name: "Sancet", pos: "CAM", rating: 82, img: "assets/sancet.png" },
-                        { name: "Guruzeta", pos: "ST", rating: 78, img: "assets/guruzeta.png" },
+                        { name: "Guruzeta", pos: "ST", rating: 78, img: "assets/guruzeta.png" }
                 ]},
                 {id: "val", name: "Valencia CF", budget: 45000000, players: []},
                 {id: "cel", name: "Celta Vigo", budget: 40000000, players: []},
@@ -192,7 +226,7 @@ const gameDatabase = {
                         { name: "I. Akhomach", pos: "RW", rating: 75, img: "assets/iakhomach.png" },
                         { name: "Álvaro García", pos: "LW", rating: 81, img: "assets/lvarogarca.png" },
                         { name: "Isi", pos: "CAM", rating: 80, img: "assets/isi.png" },
-                        { name: "De Frutos", pos: "RW", rating: 81, img: "assets/defrutos.png" },
+                        { name: "De Frutos", pos: "RW", rating: 81, img: "assets/defrutos.png" }
                 ]},
                 {id:"get", name: "Getafe CF", budget: 25000000, players: []},
                 {id: "soc", name: "Real Sociedad", budget: 20000000, players: [
@@ -206,9 +240,8 @@ const gameDatabase = {
                         { name: "Brais Méndez", pos: "CM", rating: 78, img: "assets/braismndez.png" },
                         { name: "Carlos Soler", pos: "CM", rating: 78, img: "assets/carlossoler.png" },
                         { name: "Barrenetxea", pos: "LW", rating: 78, img: "assets/barrenetxea.png" },
-                        { name: "Oyarzabal", pos: "ST", rating: 83, img: "assets/oyarzabal.png" },
+                        { name: "Oyarzabal", pos: "ST", rating: 83, img: "assets/oyarzabal.png" }
                 ]},
-                {id: "esp", name: "RCD Espanyol", budget: 15000000, players: []},
                 {id: "ala", name: "Alavés", budget: 10000000, players: []},
                 {id: "elc", name: "Elche CF", budget: 5000000, players: []},
                 {id: "lev", name: "Levante UD", budget: 2500000, players: []},
@@ -232,7 +265,7 @@ const gameDatabase = {
                         { name: "M. Olise", pos: "CAM", rating: 90, img: "assets/molise.png" },
                         { name: "D. Doué", pos: "LW", rating: 87, img: "assets/ddou.png" },
                         { name: "K. Mbappé", pos: "ST", rating: 91, img: "assets/kmbapp.png" },
-                        { name: "O. Dembélé", pos: "RW", rating: 91, img: "assets/odembl.png" },
+                        { name: "O. Dembélé", pos: "RW", rating: 91, img: "assets/odembl.png" }
                 ]},
                 {id: "mex", name: "Mexico", budget: 80000000, players: [
                         { name: "R. Rangel", pos: "GK", rating: 78, img: "assets/rrangel.png" },
@@ -245,7 +278,7 @@ const gameDatabase = {
                         { name: "G. Mora", pos: "CAM", rating: 77, img: "assets/gmora.png" },
                         { name: "J. Quiñones", pos: "LW", rating: 83, img: "assets/jquiones.png" },
                         { name: "R. Jimenéz", pos: "ST", rating: 78, img: "assets/rjimenz.png" },
-                        { name: "R. Alvarado", pos: "RW", rating: 79, img: "assets/ralvarado.png" },
+                        { name: "R. Alvarado", pos: "RW", rating: 79, img: "assets/ralvarado.png" }
                 ]},
                 {id:"bra", name: "Brazil", budget: 120000000, players: [
                         { name: "Alisson", pos: "GK", rating: 88, img: "assets/alisson.png" },
@@ -258,7 +291,7 @@ const gameDatabase = {
                         { name: "Bruno Guimarães", pos: "CM", rating: 85, img: "assets/brunoguimares.png" },
                         { name: "Vini Jr.", pos: "LW", rating: 91, img: "assets/vinijr.png" },
                         { name: "M. Cunha", pos: "ST", rating: 86, img: "assets/mcunha.png" },
-                        { name: "Raphinha", pos: "RW", rating: 85, img: "assets/raphinha.png" },
+                        { name: "Raphinha", pos: "RW", rating: 85, img: "assets/raphinha.png" }
                 ]},
                 {id:"spa", name: "Spain", budget: 110000000, players: [
                         { name: "Unai Simón", pos: "GK", rating: 85, img: "assets/unaisimn.png" },
@@ -271,7 +304,7 @@ const gameDatabase = {
                         { name: "D. Olmo", pos: "CAM", rating: 84, img: "assets/dolmo.png" },
                         { name: "N. Williams Jr.", pos: "LW", rating: 82, img: "assets/nwilliamsjr.png" },
                         { name: "F. Torres", pos: "ST", rating: 80, img: "assets/ftorres.png" },
-                        { name: "Lamine Yamal", pos: "RW", rating: 90, img: "assets/lamineyamal.png" },
+                        { name: "Lamine Yamal", pos: "RW", rating: 90, img: "assets/lamineyamal.png" }
                 ]}
             ]
         },
@@ -288,7 +321,7 @@ const gameDatabase = {
                         { name: "S. Driussi", pos: "CAM", rating: 81, img: "assets/sdriussi.png" },
                         { name: "D. Fagundez", pos: "LW", rating: 74, img: "assets/dfagundez.png" },
                         { name: "M. Djittè", pos: "ST", rating: 76, img: "assets/mdjitt.png" },
-                        { name: "E. Rigoni", pos: "RW", rating: 72, img: "assets/erigoni.png" },
+                        { name: "E. Rigoni", pos: "RW", rating: 72, img: "assets/erigoni.png" }
                 ] }
             ]
         }

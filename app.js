@@ -68,26 +68,37 @@ function normalizeRoster(team, baselineOvr = 80) {
     }
 }
 
+// Optimized 1-99 Position-Agnostic Multiplier Engine
 function parseTacticalStrength(team) {
+    // --- FIXED SAFETY NET ---
+    // If a team is completely empty or missing players, auto-generate them immediately before parsing stats!
+    if (!team.players || team.players.length === 0) {
+        normalizeRoster(team, 80);
+    }
+
     let attackWeight = 0, defenseWeight = 0;
     
     team.players.forEach(p => {
         let r = p.rating;
         if (["ST", "LW", "RW"].includes(p.pos)) { 
-            attackWeight += r * 1.80; 
+            attackWeight += r * 2.20;  // Increases impact of elite front-line stars
             defenseWeight += r * 0.10; 
         }
-        else if (["CAM", "CM"].includes(p.pos)) { 
-            attackWeight += r * 1.20; 
-            defenseWeight += r * 0.50; 
+        else if (["CAM"].includes(p.pos)) { 
+            attackWeight += r * 1.50; 
+            defenseWeight += r * 0.40; 
+        }
+        else if (["CM"].includes(p.pos)) { 
+            attackWeight += r * 1.10; 
+            defenseWeight += r * 0.60; 
         }
         else if (["CDM"].includes(p.pos)) { 
-            attackWeight += r * 0.40; 
-            defenseWeight += r * 1.30; 
+            attackWeight += r * 0.50; 
+            defenseWeight += r * 1.20; 
         }
         else if (["CB", "LB", "RB"].includes(p.pos)) { 
-            attackWeight += r * 0.15; 
-            defenseWeight += r * 1.65; 
+            attackWeight += r * 0.22;  // Balanced so 4 defenders provide appropriate weight
+            defenseWeight += r * 1.60; 
         }
         else if (p.pos === "GK") { 
             attackWeight += r * 0.00; 
@@ -95,12 +106,13 @@ function parseTacticalStrength(team) {
         }
     });
 
-    // Dividing by 11 keeps the final team ratings strictly bounded to the 1-99 range
+    // Keeping outputs accurately scaled to the 1-99 range
     return { 
         att: Math.max(1, Math.min(99, attackWeight / 11)), 
         def: Math.max(1, Math.min(99, defenseWeight / 11)) 
     };
 }
+
 function buildDoubleRoundRobin(teamsList) {
     let list = [...teamsList];
     let fixtures = [];
@@ -135,15 +147,47 @@ function buildDirectKnockoutTree(teamsList) {
     return fixtures;
 }
 
+// Rewritten High-Fidelity Realistic Match Simulation Engine
 function runFixtureSimulation(homeTeam, awayTeam) {
     let tA = parseTacticalStrength(homeTeam);
     let tB = parseTacticalStrength(awayTeam);
 
-    let baseChanceA = Math.max(0, (tA.att - tB.def) / 5) + 1.2;
-    let baseChanceB = Math.max(0, (tB.att - tA.def) / 5) + 1.0;
+    // 1. Calculate tactical supremacy performance gap
+    let attackAdvantageA = tA.att - tB.def; // Positive means your attack slices their defense
+    let attackAdvantageB = tB.att - tA.def;
 
-    let goalsA = Math.floor(Math.random() * 2.8) + (Math.random() < baseChanceA / 4 ? 1 : 0);
-    let goalsB = Math.floor(Math.random() * 2.8) + (Math.random() < baseChanceB / 4 ? 1 : 0);
+    // 2. Tightly controlled, compressed random baseline factor (Maximum 1 goal from pure chaos)
+    let randomBaseA = Math.random() < 0.35 ? 1 : 0;
+    let randomBaseB = Math.random() < 0.25 ? 1 : 0; 
+
+    // 3. Performance Based Dynamic Bonus Goals (High ratings safely generate goals here)
+    let dynamicGoalsA = 0;
+    let dynamicGoalsB = 0;
+
+    // Home Team Attack execution loops
+    if (attackAdvantageA > 0) {
+        // Elite teams completely punishing weak defenses
+        dynamicGoalsA += Math.floor(attackAdvantageA / 6); 
+        if (Math.random() * 15 < (attackAdvantageA % 6)) dynamicGoalsA++;
+    } else {
+        // Severe attacking deficit creates a steep slope to score
+        if (Math.random() < (1 / (Math.abs(attackAdvantageA) + 1))) dynamicGoalsA++;
+    }
+
+    // Away Team Attack execution loops
+    if (attackAdvantageB > 0) {
+        dynamicGoalsB += Math.floor(attackAdvantageB / 7); 
+        if (Math.random() * 18 < (attackAdvantageB % 7)) dynamicGoalsB++;
+    } else {
+        if (Math.random() < (1 / (Math.abs(attackAdvantageB) + 1))) dynamicGoalsB++;
+    }
+
+    let goalsA = randomBaseA + dynamicGoalsA;
+    let goalsB = randomBaseB + dynamicGoalsB;
+
+    // Clamp goals to realistic football metrics
+    goalsA = Math.min(7, goalsA);
+    goalsB = Math.min(7, goalsB);
 
     let scorersA = distributeGoals(homeTeam, goalsA);
     let assistersA = distributeAssists(homeTeam, scorersA);
@@ -223,7 +267,6 @@ function selectWeightedIndex(weights) {
 let poolTeamsMap = []; 
 let activeConfigEditingIdx = 0;
 
-// Brought back and completely integrated the save deletion functionality
 function loadActiveMenu() {
     document.getElementById('welcome-screen').style.display = 'flex';
     document.getElementById('config-screen').style.display = 'none';
@@ -292,6 +335,9 @@ document.getElementById('create-save-btn').onclick = () => {
         let currentLeague = gameDatabase.leagues[leagueKey];
         currentLeague.teams.forEach(t => {
             let cloned = JSON.parse(JSON.stringify(t));
+            
+            // --- FIXED ORDER OF OPERATIONS ---
+            // Normalize immediately on clone so empty arrays are resolved before any rendering/parsing happens
             normalizeRoster(cloned, 80);
             
             cloned.points = 0; cloned.gf = 0; cloned.ga = 0; cloned.gd = 0; cloned.isEliminated = false;
@@ -382,7 +428,6 @@ function renderDatabasePickerRows() {
             let globalIdx = poolTeamsMap.indexOf(poolItem);
             let isCurrentEdit = (globalIdx === activeConfigEditingIdx);
             
-            // Refined button-like rows with active highlighting states
             let row = document.createElement('div');
             row.className = `team-picker-row ${poolItem.isSelected ? 'selected-active' : ''} ${isCurrentEdit ? 'active-edit' : ''}`;
             
@@ -456,7 +501,7 @@ function renderDatabasePickerRows() {
         
         let select = tr.querySelector('select');
         let defOpt = document.createElement('option');
-        defOpt.innerText = "Swap with..."; defOpt.value = "";
+        defOpt.innerText = "Swap with...", defOpt.value = "";
         select.appendChild(defOpt);
 
         allGlobalPlayers.forEach(gp => {
@@ -644,7 +689,6 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         
         matchRowHtml += `</div>`;
         
-        // Push your match to the top array stack, otherwise collect below
         if (isUserMatch) {
             userMatchHtml += matchRowHtml;
         } else {
@@ -652,7 +696,6 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         }
     });
 
-    // Render results with your match guaranteed at the top
     feedBox.innerHTML += userMatchHtml + basicMatchesHtml;
 
     if (saveState.mode === "league") {
