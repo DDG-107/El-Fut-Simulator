@@ -387,8 +387,8 @@ const gameDatabase = {
                         { name: "Nagi", pos: "CAM", rating: 93, img: "assets/nagi.png" },
                         { name: "Yukimiya Kenyu", pos: "LW", rating: 89, img: "assets/yukimiyakenyu.png" },
                         { name: "Shoei Barou", pos: "ST", rating: 90, img: "assets/shoeibarou.png" },
-                        { name: "Rin Itoshi", pos: "RW", rating: 94, img: "assets/rinitoshi.png" },
+                        { name: "Rin Itoshi", pos: "RW", rating: 94, img: "assets/rinitoshi.png" }]}
                 ]
 
-    }
+    }}
 };
