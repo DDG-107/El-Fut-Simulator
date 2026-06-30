@@ -73,7 +73,19 @@ const gameDatabase = {
                         { name: "A. Semenyo", pos: "RW", rating: 84, img: "assets/asemenyo.png" },
                         { name: "E. Haaland", pos: "ST", rating: 91, img: "assets/ehaaland.png" }
                 ]},
-                {id: "tot", name: "Tottenham Hotspur", budget: 90000000, players: []},
+                {id: "tot", name: "Tottenham Hotspur", budget: 90000000, players: [
+                        { name: "A. Kinský", pos: "GK", rating: 75, img: "assets/akinsk.png" },
+                        { name: "D. Spence", pos: "LB", rating: 80, img: "assets/dspence.png" },
+                        { name: "M. van de Ven", pos: "CB", rating: 84, img: "assets/mvandeven.png" },
+                        { name: "C. Romero", pos: "CB", rating: 80, img: "assets/cromero.png" },
+                        { name: "P. Porro", pos: "RB", rating: 80, img: "assets/pporro.png" },
+                        { name: "R. Betancur", pos: "CDM", rating: 78, img: "assets/rbetancur.png" },
+                        { name: "Palinha", pos: "CDM", rating: 80, img: "assets/palinha.png" },
+                        { name: "M. Tel", pos: "LW", rating: 78, img: "assets/mtel.png" },
+                        { name: "X. Simmons", pos: "CAM", rating: 83, img: "assets/xsimmons.png" },
+                        { name: "R. Kolo Muani", pos: "RW", rating: 78, img: "assets/rkolomuani.png" },
+                        { name: "D. Solanke", pos: "ST", rating: 79, img: "assets/dsolanke.png" },
+                ]},
                 {id: "new", name: "Newcastle United", budget: 95000000, players: [
                         { name: "A. Ramsdale", pos: "GK", rating: 78, img: "assets/aramsdale.png" },
                         { name: "L. Hall", pos: "LB", rating: 81, img: "assets/lhall.png" },
@@ -305,7 +317,18 @@ const gameDatabase = {
                         { name: "N. Williams Jr.", pos: "LW", rating: 82, img: "assets/nwilliamsjr.png" },
                         { name: "F. Torres", pos: "ST", rating: 80, img: "assets/ftorres.png" },
                         { name: "Lamine Yamal", pos: "RW", rating: 90, img: "assets/lamineyamal.png" }
-                ]}
+                ]},
+                {id: "eng", name: "England", budget: 90000000, players: [                        { name: "J. Pickford", pos: "GK", rating: 85, img: "assets/jpickford.png" },
+                        { name: "N. O'Reilly", pos: "LB", rating: 84, img: "assets/noreilly.png" },
+                        { name: "E. Konsa", pos: "CB", rating: 84, img: "assets/ekonsa.png" },
+                        { name: "M. Guéhi", pos: "CB", rating: 85, img: "assets/mguhi.png" },
+                        { name: "R. James", pos: "RB", rating: 84, img: "assets/rjames.png" },
+                        { name: "E. Anderson", pos: "CDM", rating: 83, img: "assets/eanderson.png" },
+                        { name: "D. Rice", pos: "CM", rating: 88, img: "assets/drice.png" },
+                        { name: "J. Bellingham", pos: "CAM", rating: 91, img: "assets/jbellingham.png" },
+                        { name: "M. Rashford", pos: "LW", rating: 85, img: "assets/mrashford.png" },
+                        { name: "H. Kane", pos: "ST", rating: 90, img: "assets/hkane.png" },
+                        { name: "B. Saka", pos: "RW", rating: 87, img: "assets/bsaka.png" }]}
             ]
         },
         "PT": {
@@ -322,9 +345,50 @@ const gameDatabase = {
                         { name: "D. Fagundez", pos: "LW", rating: 74, img: "assets/dfagundez.png" },
                         { name: "M. Djittè", pos: "ST", rating: 76, img: "assets/mdjitt.png" },
                         { name: "E. Rigoni", pos: "RW", rating: 72, img: "assets/erigoni.png" }
-                ] }
+                ] },
+                {id: "rma-tp", name : "Real Madrid Three-Peat", budget: 150000000, players: [
+                        { name: "K. Navas", pos: "GK", rating: 86, img: "assets/knavas.png" },
+                        { name: "Marcelo", pos: "LB", rating: 87, img: "assets/marcelo.png" },
+                        { name: "Sergio Ramos", pos: "CB", rating: 90, img: "assets/sergioramos.png" },
+                        { name: "Pepe", pos: "CB", rating: 88, img: "assets/pepe.png" },
+                        { name: "D. Carvajal", pos: "RB", rating: 85, img: "assets/dcarvajal.png" },
+                        { name: "T. Kroos", pos: "CM", rating: 90, img: "assets/tkroos.png" },
+                        { name: "L. Modrić", pos: "CM", rating: 90, img: "assets/lmodri.png" },
+                        { name: "J. Rodríguez", pos: "CAM", rating: 88, img: "assets/jrodrguez.png" },
+                        { name: "Cristiano Ronaldo", pos: "LW", rating: 94, img: "assets/cristianoronaldo.png" },
+                        { name: "K. Benzema", pos: "ST", rating: 88, img: "assets/kbenzema.png" },
+                        { name: "G. Bale", pos: "RW", rating: 90, img: "assets/gbale.png" }]
+                },
+                {id: "mci-treb", name: "Manchester City Treble Winners", budget: 200000000, players: [
+                        { name: "Ederson", pos: "GK", rating: 88, img: "assets/ederson.png" },
+                        { name: "M. Akanji", pos: "LB", rating: 85, img: "assets/makanji.png" },
+                        { name: "Rúben Dias", pos: "CB", rating: 88, img: "assets/rbendias.png" },
+                        { name: "J. Stones", pos: "CB", rating: 85, img: "assets/jstones.png" },
+                        { name: "K. Walker", pos: "RB", rating: 84, img: "assets/kwalker.png" },
+                        { name: "Rodri", pos: "CDM", rating: 90, img: "assets/rodri.png" },
+                        { name: "İ. Gündoğan", pos: "CM", rating: 86, img: "assets/gndoan.png" },
+                        { name: "K. De Bruyne", pos: "CM", rating: 92, img: "assets/kdebruyne.png" },
+                        { name: "J. Grealish", pos: "LW", rating: 85, img: "assets/jgrealish.png" },
+                        { name: "E. Haaland", pos: "ST", rating: 92, img: "assets/ehaaland.png" },
+                        { name: "R. Mahrez", pos: "RW", rating: 87, img: "assets/rmahrez.png" },]
+                }
             ]
-        }
+        },
+        "MISC": {
+            name: "Miscellaneous", teams: [
+                { id: "BLXI", name: "Bluelock XI", budget: 100000000, players: [
+                        { name: "Gagamaru", pos: "GK", rating: 85, img: "assets/gagamaru.png" },
+                        { name: "Hyoma Chigiri", pos: "LB", rating: 84, img: "assets/hyomachigiri.png" },
+                        { name: "Ikki Niko", pos: "CB", rating: 87, img: "assets/ikkiniko.png" },
+                        { name: "Aryu Jyubei", pos: "CB", rating: 86, img: "assets/aryujyubei.png" },
+                        { name: "Meguru Bachira", pos: "RB", rating: 88, img: "assets/megurubachira.png" },
+                        { name: "Karasu Tabito", pos: "CDM", rating: 88, img: "assets/karasutabito.png" },
+                        { name: "Yoichi Isagi", pos: "CAM", rating: 90, img: "assets/yoichiisagi.png" },
+                        { name: "Nagi", pos: "CAM", rating: 93, img: "assets/nagi.png" },
+                        { name: "Yukimiya Kenyu", pos: "LW", rating: 89, img: "assets/yukimiyakenyu.png" },
+                        { name: "Shoei Barou", pos: "ST", rating: 90, img: "assets/shoeibarou.png" },
+                        { name: "Rin Itoshi", pos: "RW", rating: 94, img: "assets/rinitoshi.png" },
+                ]
 
     }
 };
