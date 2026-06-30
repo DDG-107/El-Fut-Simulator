@@ -390,5 +390,6 @@ const gameDatabase = {
                         { name: "Rin Itoshi", pos: "RW", rating: 94, img: "assets/rinitoshi.png" }]}
                 ]
 
-    }}
+    }
+}
 };
