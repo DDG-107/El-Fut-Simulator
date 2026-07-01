@@ -113,7 +113,19 @@ const gameDatabase = {
                 {id: "bou", name: "AFC Bournemouth", budget: 75000000, players: []},
                 {id: "ful", name: "Fulham FC", budget: 70000000, players: []},
                 {id: "bre", name: "Brentford FC", budget: 65000000, players: []},
-                {id: "whu", name: "West Ham United", budget: 60000000, players: []},
+                {id: "whu", name: "West Ham United", budget: 60000000, players: [
+                        { name: "M. Hermansen", pos: "GK", rating: 75, img: "assets/mhermansen.png" },
+                        { name: "K. Walker-Peters", pos: "RB", rating: 76, img: "assets/kwalkerpeters.png" },
+                        { name: "K. Mavropanos", pos: "CB", rating: 77, img: "assets/kmavropanos.png" },
+                        { name: "A. Disasi", pos: "CB", rating: 77, img: "assets/adisasi.png" },
+                        { name: "E. Diouf", pos: "LB", rating: 78, img: "assets/ediouf.png" },
+                        { name: "J. Bowen", pos: "RM", rating: 83, img: "assets/jbowen.png" },
+                        { name: "T. Souček", pos: "CDM", rating: 76, img: "assets/tsouek.png" },
+                        { name: "Mateus Fernandes", pos: "CM", rating: 79, img: "assets/mateusfernandes.png" },
+                        { name: "C. Summerville", pos: "LW", rating: 78, img: "assets/csummerville.png" },
+                        { name: "T. Castellanos", pos: "ST", rating: 79, img: "assets/tcastellanos.png" },
+                        { name: "Pablo", pos: "ST", rating: 73, img: "assets/pablo.png" },
+                ]},
                 {id: "bha", name: "Brighton & Hove Albion", budget: 55000000, players: []},
                 {id: "sun", name: "Sunderland AFC", budget: 50000000, players: [
                         { name: "R. Roefs", pos: "GK", rating: 83, img: "assets/rroefs.png" },
@@ -131,7 +143,19 @@ const gameDatabase = {
                 {id: "lee", name: "Leeds United", budget: 45000000, players: []},
                 {id: "not", name: "Nottingham Forest", budget: 40000000, players: []},
                 {id: "eve", name: "Everton FC", budget: 35000000, players: []},
-                {id: "crystal", name: "Crystal Palace", budget: 30000000, players: []},
+                {id: "crystal", name: "Crystal Palace", budget: 30000000, players: [
+                        { name: "D. Henderson", pos: "GK", rating: 82, img: "assets/dhenderson.png" },
+                        { name: "D. Muñoz", pos: "RB", rating: 82, img: "assets/dmuoz.png" },
+                        { name: "C. Richards", pos: "CB", rating: 79, img: "assets/crichards.png" },
+                        { name: "M. Lacroix", pos: "CB", rating: 81, img: "assets/mlacroix.png" },
+                        { name: "J. Canvot", pos: "CB", rating: 74, img: "assets/jcanvot.png" },
+                        { name: "T. Mitchell", pos: "LB", rating: 79, img: "assets/tmitchell.png" },
+                        { name: "A. Wharton", pos: "CDM", rating: 81, img: "assets/awharton.png" },
+                        { name: "W. Hughes", pos: "CDM", rating: 77, img: "assets/whughes.png" },
+                        { name: "I. Sarr", pos: "RW", rating: 81, img: "assets/isarr.png" },
+                        { name: "J. Strand Larsen", pos: "ST", rating: 77, img: "assets/jstrandlarsen.png" },
+                        { name: "Yeremy Pino", pos: "LW", rating: 79, img: "assets/yeremypino.png" },
+                ]},
                 {id: "bur", name: "Burnley FC", budget: 25000000, players: []},
                 {id: "wol", name: "Wolverhampton Wanderers", budget: 20000000, players: []},
 
@@ -264,6 +288,68 @@ const gameDatabase = {
             ]
         },
 
+        "BL 25/26": {
+            name: "Bundesliga 25/26",
+            teams: [
+                {id: "rbl", name: "RB Leipzig", budget: 100000000, players: [
+                        { name: "M. Vandevoordt", pos: "GK", rating: 77, img: "assets/mvandevoordt.png" },
+                        { name: "R. Baku", pos: "RB", rating: 79, img: "assets/rbaku.png" },
+                        { name: "W. Orban", pos: "CB", rating: 83, img: "assets/worban.png" },
+                        { name: "C. Lukeba", pos: "CB", rating: 83, img: "assets/clukeba.png" },
+                        { name: "D. Raum", pos: "LB", rating: 83, img: "assets/draum.png" },
+                        { name: "N. Seiwald", pos: "CDM", rating: 80, img: "assets/nseiwald.png" },
+                        { name: "A. Ouédraogo", pos: "CM", rating: 74, img: "assets/aoudraogo.png" },
+                        { name: "C. Baumgartner", pos: "CAM", rating: 81, img: "assets/cbaumgartner.png" },
+                        { name: "Y. Diomande", pos: "RW", rating: 85, img: "assets/ydiomande.png" },
+                        { name: "Rômulo", pos: "ST", rating: 78, img: "assets/rmulo.png" },
+                        { name: "A. Nusa", pos: "LW", rating: 80, img: "assets/anusa.png" },
+                ]},
+            ]},
+
+            "SA 25/26": {
+                name: "Serie A 25/26",
+                teams: [
+                        {id:"int", name: "Inter Milan", budget: 120000000, players: [
+                        { name: "Y. Sommer", pos: "GK", rating: 86, img: "assets/ysommer.png" },
+                        { name: "D. Dumfries", pos: "RB", rating: 84, img: "assets/ddumfries.png" },
+                        { name: "Y. Bisseck", pos: "CB", rating: 76, img: "assets/ybisseck.png" },
+                        { name: "M. Akanji", pos: "CB", rating: 83, img: "assets/makanji.png" },
+                        { name: "A. Bastoni", pos: "CB", rating: 87, img: "assets/abastoni.png" },
+                        { name: "F. Dimarco", pos: "LB", rating: 86, img: "assets/fdimarco.png" },
+                        { name: "P. Zieliński", pos: "CM", rating: 81, img: "assets/pzieliski.png" },
+                        { name: "N. Barella", pos: "CM", rating: 88, img: "assets/nbarella.png" },
+                        { name: "P. Sučić", pos: "CM", rating: 77, img: "assets/psui.png" },
+                        { name: "M. Thuram", pos: "ST", rating: 85, img: "assets/mthuram.png" },
+                        { name: "L. Martínez", pos: "ST", rating: 88, img: "assets/lmartnez.png" },]
+                        },
+                        {id: "juv", name: "Juventus FC", budget: 100000000, players: [
+                        { name: "M. Di Gregorio", pos: "GK", rating: 81, img: "assets/mdigregorio.png" },
+                        { name: "P. Kalulu", pos: "CB", rating: 80, img: "assets/pkalulu.png" },
+                        { name: "Bremer", pos: "CB", rating: 86, img: "assets/bremer.png" },
+                        { name: "L. Kelly", pos: "CB", rating: 78, img: "assets/lkelly.png" },
+                        { name: "W. McKennie", pos: "CM", rating: 79, img: "assets/wmckennie.png" },
+                        { name: "M. Locatelli", pos: "CDM", rating: 84, img: "assets/mlocatelli.png" },
+                        { name: "K. Thuram", pos: "CM", rating: 81, img: "assets/kthuram.png" },
+                        { name: "A. Cambiaso", pos: "LB", rating: 80, img: "assets/acambiaso.png" },
+                        { name: "Francisco Conceição", pos: "CAM", rating: 79, img: "assets/franciscoconceio.png" },
+                        { name: "K. Yıldız", pos: "CAM", rating: 82, img: "assets/kyldz.png" },
+                        { name: "J. David", pos: "ST", rating: 81, img: "assets/jdavid.png" },
+                        ]},
+                {id: "acm", name: "AC Milan", budget: 90000000, players: [
+                        { name: "M. Maignan", pos: "GK", rating: 87, img: "assets/mmaignan.png" },
+                        { name: "A. Saelemaekers", pos: "RM", rating: 80, img: "assets/asaelemaekers.png" },
+                        { name: "F. Tomori", pos: "CB", rating: 81, img: "assets/ftomori.png" },
+                        { name: "M. Gabbia", pos: "CB", rating: 80, img: "assets/mgabbia.png" },
+                        { name: "S. Pavlović", pos: "CB", rating: 77, img: "assets/spavlovi.png" },
+                        { name: "D. Bartesaghi", pos: "LB", rating: 71, img: "assets/dbartesaghi.png" },
+                        { name: "L. Modrić", pos: "CM", rating: 85, img: "assets/lmodri.png" },
+                        { name: "Y. Fofana", pos: "CDM", rating: 81, img: "assets/yfofana.png" },
+                        { name: "A. Rabiot", pos: "CM", rating: 85, img: "assets/arabiot.png" },
+                        { name: "C. Nkunku", pos: "CAM", rating: 81, img: "assets/cnkunku.png" },
+                        { name: "Rafael Leão", pos: "LW", rating: 84, img: "assets/rafaelleo.png" },
+                        ]}
+                ]},
+
         "WC 2026": {
             name: "World Cup 2026", teams: [
                 {id:"fra", name: "France", budget: 100000000, players: [
@@ -328,9 +414,58 @@ const gameDatabase = {
                         { name: "J. Bellingham", pos: "CAM", rating: 91, img: "assets/jbellingham.png" },
                         { name: "M. Rashford", pos: "LW", rating: 85, img: "assets/mrashford.png" },
                         { name: "H. Kane", pos: "ST", rating: 90, img: "assets/hkane.png" },
-                        { name: "B. Saka", pos: "RW", rating: 87, img: "assets/bsaka.png" }]}
-            ]
-        },
+                        { name: "B. Saka", pos: "RW", rating: 87, img: "assets/bsaka.png" }]},
+                {id: "arg", name: "Argentina", budget: 95000000, players: [
+                        { name: "E. Martínez", pos: "GK", rating: 85, img: "assets/emartnez.png" },
+                        { name: "N. Molina", pos: "RB", rating: 77, img: "assets/nmolina.png" },
+                        { name: "C. Romero", pos: "CB", rating: 82, img: "assets/cromero.png" },
+                        { name: "L. Martínez", pos: "CB", rating: 81, img: "assets/lmartnez.png" },
+                        { name: "F. Medina", pos: "CB", rating: 79, img: "assets/fmedina.png" },
+                        { name: "R. De Paul", pos: "CM", rating: 83, img: "assets/rdepaul.png" },
+                        { name: "A. Mac Allister", pos: "CM", rating: 85, img: "assets/amacallister.png" },
+                        { name: "E. Fernández", pos: "CM", rating: 85, img: "assets/efernndez.png" },
+                        { name: "T. ALWada", pos: "CAM", rating: 78, img: "assets/talwada.png" },
+                        { name: "L. Messi", pos: "CAM", rating: 86, img: "assets/lmessi.png" },
+                        { name: "L. Martínez", pos: "ST", rating: 88, img: "assets/lmartnez.png" }
+                        ]},
+                {id:"mor", name: "Morocco", budget: 85000000, players: [
+                        { name: "Y. Bounou", pos: "GK", rating: 82, img: "assets/ybounou.png" },
+                        { name: "A. Hakimi", pos: "RB", rating: 89, img: "assets/ahakimi.png" },
+                        { name: "I. Diop", pos: "CB", rating: 76, img: "assets/idiop.png" },
+                        { name: "C. Riad", pos: "CB", rating: 72, img: "assets/criad.png" },
+                        { name: "N. Mazraoui", pos: "RB", rating: 80, img: "assets/nmazraoui.png" },
+                        { name: "A. Bouaddi", pos: "CDM", rating: 78, img: "assets/abouaddi.png" },
+                        { name: "N. El Aynaoui", pos: "CM", rating: 76, img: "assets/nelaynaoui.png" },
+                        { name: "Brahim", pos: "RM", rating: 81, img: "assets/brahim.png" },
+                        { name: "B. El Khannouss", pos: "CAM", rating: 78, img: "assets/belkhannouss.png" },
+                        { name: "A. Ounahi", pos: "CM", rating: 79, img: "assets/aounahi.png" },
+                        { name: "I. Saibari", pos: "CAM", rating: 80, img: "assets/isaibari.png" },
+                ]},
+        {id: "usa", name: "United States", budget: 75000000, players: [
+                        { name: "M. Freese", pos: "GK", rating: 71, img: "assets/mfreese.png" },
+                        { name: "S. Dest", pos: "RB", rating: 79, img: "assets/sdest.png" },
+                        { name: "C. Richards", pos: "CB", rating: 79, img: "assets/crichards.png" },
+                        { name: "T. Ream", pos: "CB", rating: 72, img: "assets/tream.png" },
+                        { name: "A. Robinson", pos: "LB", rating: 81, img: "assets/arobinson.png" },
+                        { name: "C. Pulisic", pos: "RW", rating: 85, img: "assets/cpulisic.png" },
+                        { name: "W. McKennie", pos: "CM", rating: 79, img: "assets/wmckennie.png" },
+                        { name: "T. Adams", pos: "CDM", rating: 79, img: "assets/tadams.png" },
+                        { name: "T. Weah", pos: "RM", rating: 77, img: "assets/tweah.png" },
+                        { name: "M. Tillman", pos: "CAM", rating: 79, img: "assets/mtillman.png" },
+                        { name: "F. Balogun", pos: "ST", rating: 79, img: "assets/fbalogun.png" },
+                ]},
+        {id:"por", name: "Portugal", budget: 70000000, players: [                        { name: "Diogo Costa", pos: "GK", rating: 84, img: "assets/diogocosta.png" },
+                        { name: "João Cancelo", pos: "RB", rating: 84, img: "assets/joocancelo.png" },
+                        { name: "Tomás Araújo", pos: "CB", rating: 78, img: "assets/tomsarajo.png" },
+                        { name: "Gonçalo Inácio", pos: "CB", rating: 81, img: "assets/gonaloincio.png" },
+                        { name: "Nuno Mendes", pos: "LB", rating: 88, img: "assets/nunomendes.png" },
+                        { name: "Vitinha", pos: "CM", rating: 90, img: "assets/vitinha.png" },
+                        { name: "João Neves", pos: "CM", rating: 88, img: "assets/jooneves.png" },
+                        { name: "Bruno Fernandes", pos: "CAM", rating: 88, img: "assets/brunofernandes.png" },
+                        { name: "Bernardo Silva", pos: "CM", rating: 83, img: "assets/bernardosilva.png" },
+                        { name: "Cristiano Ronaldo", pos: "ST", rating: 85, img: "assets/cristianoronaldo.png" },]}
+            ]},
+       
         "PT": {
             name: "Past Teams", teams: [
                 { id: "atx22", name: "Austin FC 2022", budget: 100000000, players: [
@@ -371,7 +506,34 @@ const gameDatabase = {
                         { name: "J. Grealish", pos: "LW", rating: 85, img: "assets/jgrealish.png" },
                         { name: "E. Haaland", pos: "ST", rating: 92, img: "assets/ehaaland.png" },
                         { name: "R. Mahrez", pos: "RW", rating: 87, img: "assets/rmahrez.png" },]
-                }
+
+                },
+                {id: "juv 18/19", name: "Juventus 2018/19", budget: 150000000, players: [
+                        { name: "W. Szczęsny", pos: "GK", rating: 86, img: "assets/wszczsny.png" },
+                        { name: "João Cancelo", pos: "RB", rating: 83, img: "assets/joocancelo.png" },
+                        { name: "L. Bonucci", pos: "CB", rating: 86, img: "assets/lbonucci.png" },
+                        { name: "G. Chiellini", pos: "CB", rating: 90, img: "assets/gchiellini.png" },
+                        { name: "Alex Sandro", pos: "LB", rating: 86, img: "assets/alexsandro.png" },
+                        { name: "M. Pjanić", pos: "CM", rating: 86, img: "assets/mpjani.png" },
+                        { name: "E. Can", pos: "CM", rating: 80, img: "assets/ecan.png" },
+                        { name: "B. Matuidi", pos: "CDM", rating: 85, img: "assets/bmatuidi.png" },
+                        { name: "P. Dybala", pos: "CAM", rating: 89, img: "assets/pdybala.png" },
+                        { name: "M. Mandžukić", pos: "ST", rating: 85, img: "assets/mmanduki.png" },
+                        { name: "Cristiano Ronaldo", pos: "ST", rating: 94, img: "assets/cristianoronaldo.png" },
+                ]},
+                {id: "fra22", name: "France 2022 World Cup", budget: 100000000, players: [
+                        { name: "H. Lloris", pos: "GK", rating: 87, img: "assets/hlloris.png" },
+                        { name: "J. Koundé", pos: "CB", rating: 83, img: "assets/jkound.png" },
+                        { name: "R. Varane", pos: "CB", rating: 85, img: "assets/rvarane.png" },
+                        { name: "L. Hernández", pos: "CB", rating: 84, img: "assets/lhernndez.png" },
+                        { name: "N. Kanté", pos: "CDM", rating: 90, img: "assets/nkant.png" },
+                        { name: "P. Pogba", pos: "CM", rating: 86, img: "assets/ppogba.png" },
+                        { name: "K. Coman", pos: "LW", rating: 85, img: "assets/kcoman.png" },
+                        { name: "T. Hernández", pos: "LB", rating: 84, img: "assets/thernndez.png" },
+                        { name: "A. Griezmann", pos: "ST", rating: 85, img: "assets/agriezmann.png" },
+                        { name: "O. Giroud", pos: "ST", rating: 81, img: "assets/ogiroud.png" },
+                        { name: "K. Mbappé", pos: "ST", rating: 91, img: "assets/kmbapp.png" },
+                ]}
             ]
         },
         "MISC": {
