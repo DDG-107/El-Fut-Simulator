@@ -27,6 +27,7 @@
                 </div>
                 
                 <button id="create-save-btn">Create League Blueprint</button>
+                <button id="db-manager-btn" class="db-manager-btn">🗂️ Edit Database (Teams & Players)</button>
             </div>
         </div>
     </div>
@@ -38,7 +39,7 @@
             
             <div class="selection-summary-row">
                 <div>Selected Teams: <span id="selected-count-badge">0</span></div>
-                <div id="power-of-two-warning" style="color: #ffb703; display:none;">⚠️ Knockout mode requires exactly 2, 4, 8, or 16 teams.</div>
+                <div id="power-of-two-warning" style="color: #ffb703; display:none;">⚠️ Knockout mode requires exactly 2, 4, 8, 16, 32, or 64 teams.</div>
             </div>
 
             <div class="editor-layout">
@@ -53,7 +54,7 @@
                     <div class="roster-scroll">
                         <table class="editor-table">
                             <thead>
-                                <tr><th>Player</th><th>Pos</th><th>OVR</th><th>Swap Target</th></tr>
+                                <tr><th>Player</th><th>Pos</th><th>OVR</th><th>Swap</th></tr>
                             </thead>
                             <tbody id="editor-roster-body"></tbody>
                         </table>
@@ -61,6 +62,33 @@
                 </div>
             </div>
             <button id="launch-sim-btn" class="launch-btn">Advance to Hub Dashboard</button>
+        </div>
+    </div>
+
+    <div id="swap-modal" class="modal-overlay swap-overlay">
+        <div class="modal-window swap-window">
+            <div class="swap-header">
+                <div>
+                    <h2>Swap Player</h2>
+                    <p id="swap-slot-label" class="swap-slot-label">Replacing: None</p>
+                </div>
+                <span class="modal-close-trigger swap-close-trigger">&times;</span>
+            </div>
+            <input type="text" id="swap-search" class="swap-search" placeholder="🔍 Search players by name, position, team or rating...">
+            <div class="swap-filters" id="swap-filters">
+                <button class="chip active" data-pos="all">All</button>
+                <button class="chip" data-pos="GK">GK</button>
+                <button class="chip" data-pos="DEF">DEF</button>
+                <button class="chip" data-pos="MID">MID</button>
+                <button class="chip" data-pos="FWD">FWD</button>
+            </div>
+            <div class="swap-results-wrap">
+                <div class="swap-results-meta">
+                    <span id="swap-results-count">0 players</span>
+                    <button id="swap-clear-search" class="swap-clear-btn">Clear</button>
+                </div>
+                <div id="swap-results-list" class="swap-results-list"></div>
+            </div>
         </div>
     </div>
 
@@ -138,6 +166,58 @@
             </div>
         </div>
     </div>
+
+    <div id="db-screen" class="screen-container" style="display:none;">
+        <div class="menu-box db-editor-box">
+            <div class="db-header-row">
+                <h2>🗂️ Database Manager</h2>
+                <div class="db-actions">
+                    <button id="db-export-btn">⬇️ Export JSON</button>
+                    <button id="db-import-btn">⬆️ Import JSON</button>
+                    <button id="db-reset-btn" class="btn-secondary">Reset to Default</button>
+                    <button id="db-back-btn" class="btn-secondary">← Back to Menu</button>
+                </div>
+            </div>
+            <p class="subtitle">Edit leagues, teams and players without touching code. Changes are saved in your browser and override the built-in database.</p>
+            <div class="db-layout">
+                <div class="db-pane">
+                    <h3>Leagues</h3>
+                    <p class="pane-title-sub">Select a league to view its teams</p>
+                    <input type="text" id="db-league-search" class="db-pane-search" placeholder="🔍 Search leagues...">
+                    <button class="db-add-row-btn" id="db-add-league-btn">+ Add League</button>
+                    <div id="db-league-list" class="db-list"></div>
+                </div>
+                <div class="db-pane">
+                    <h3>Teams</h3>
+                    <p class="pane-title-sub" id="db-team-pane-title">Select a league first</p>
+                    <input type="text" id="db-team-search" class="db-pane-search" placeholder="🔍 Search teams...">
+                    <button class="db-add-row-btn" id="db-add-team-btn">+ Add Team</button>
+                    <div id="db-team-list" class="db-list"></div>
+                </div>
+                <div class="db-pane">
+                    <h3>Players</h3>
+                    <p class="pane-title-sub" id="db-player-pane-title">Select a team first</p>
+                    <input type="text" id="db-player-search" class="db-pane-search" placeholder="🔍 Search players...">
+                    <button class="db-add-row-btn" id="db-add-player-btn">+ Add Player</button>
+                    <div id="db-player-list" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="db-edit-modal" class="modal-overlay">
+        <div class="modal-window">
+            <span class="modal-close-trigger" id="db-form-close">&times;</span>
+            <h2 id="db-form-title">Edit</h2>
+            <div id="db-form-body"></div>
+            <div class="form-actions">
+                <button id="db-form-cancel" class="btn-secondary">Cancel</button>
+                <button id="db-form-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="db-import-file" style="display:none;" accept=".json,application/json">
 
     <script src="database.js"></script>
     <script src="app.js"></script>

@@ -11,6 +11,77 @@ let saveState = {
     schedule: []
 };
 
+// --- CUSTOM DATABASE LAYER ---
+// The built-in database comes from database.js. Edits made in the in-app
+// Database Manager are stored as a full snapshot in localStorage and override
+// the built-in data at load time.
+let activeDatabase = null;                    // Working copy used everywhere
+const DB_STORAGE_KEY = 'elfut_db_custom';
+let dbEditorState = { leagueKey: null, teamIdx: null }; // Selection in the DB manager
+
+function cloneDeep(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
+function loadActiveDatabase() {
+    if (typeof gameDatabase === 'undefined' || !gameDatabase.leagues) return null;
+    activeDatabase = cloneDeep(gameDatabase);
+    try {
+        const raw = localStorage.getItem(DB_STORAGE_KEY);
+        if (raw) {
+            const custom = JSON.parse(raw);
+            if (custom && custom.leagues && typeof custom.leagues === 'object') {
+                activeDatabase = custom;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not load custom database edits:', e);
+    }
+    return activeDatabase;
+}
+
+function saveCustomDatabase() {
+    if (!activeDatabase) return;
+    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(activeDatabase));
+}
+
+function resetCustomDatabase() {
+    localStorage.removeItem(DB_STORAGE_KEY);
+    activeDatabase = cloneDeep(gameDatabase);
+}
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function slugify(name) {
+    return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'team';
+}
+
+function teamIdExists(id) {
+    for (let k in activeDatabase.leagues) {
+        if ((activeDatabase.leagues[k].teams || []).some(t => t.id === id)) return true;
+    }
+    return false;
+}
+
+function uniqueTeamId(name) {
+    const base = slugify(name);
+    let id = base;
+    let n = 1;
+    while (teamIdExists(id)) { id = `${base}-${n}`; n++; }
+    return id;
+}
+
+function fmtBudget(b) {
+    const m = (b || 0) / 1e6;
+    return '€' + (m % 1 === 0 ? m : m.toFixed(1)) + 'M';
+}
+
+function pluralCount(n, word) {
+    return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
 const POSITIONS = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
 // Expanded names pools for more diverse generated players
@@ -321,7 +392,7 @@ function loadActiveMenu() {
 }
 
 document.getElementById('create-save-btn').onclick = () => {
-    if (typeof gameDatabase === 'undefined' || !gameDatabase.leagues) {
+    if (!activeDatabase) {
         return alert('Could not start a save: the team database (database.js) failed to load. It may contain a syntax error. Check the browser console for details.');
     }
 
@@ -335,8 +406,8 @@ document.getElementById('create-save-btn').onclick = () => {
     poolTeamsMap = [];
     activeConfigEditingIdx = 0;
 
-    for (let leagueKey in gameDatabase.leagues) {
-        let currentLeague = gameDatabase.leagues[leagueKey];
+    for (let leagueKey in activeDatabase.leagues) {
+        let currentLeague = activeDatabase.leagues[leagueKey];
         currentLeague.teams.forEach(t => {
             let cloned = JSON.parse(JSON.stringify(t));
             
@@ -460,13 +531,14 @@ function renderDatabasePickerRows() {
     document.getElementById('selected-count-badge').innerText = totalSelected;
 
     const warning = document.getElementById('power-of-two-warning');
-    if (saveState.mode === "tournament" && ![2,4,8,16,32].includes(totalSelected)) {
+    if (saveState.mode === "tournament" && ![2,4,8,16,32,64].includes(totalSelected)) {
         warning.style.display = 'block';
     } else {
         warning.style.display = 'none';
     }
 
     let activeItem = poolTeamsMap[activeConfigEditingIdx];
+    if (!activeItem) return;
     document.getElementById('editing-team-title').innerText = activeItem.teamData.name + (activeItem.isSelected ? "" : " (Not Selected)");
 
     let claimBtn = document.getElementById('claim-team-btn');
@@ -488,42 +560,124 @@ function renderDatabasePickerRows() {
 
     const tbody = document.getElementById('editor-roster-body');
     tbody.innerHTML = '';
-    
-    let allGlobalPlayers = [];
-    for (let l in gameDatabase.leagues) {
-        gameDatabase.leagues[l].teams.forEach(t => allGlobalPlayers.push(...t.players));
-    }
 
     activeItem.teamData.players.forEach((p, pIdx) => {
         let tr = document.createElement('tr');
+        const initials = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
         tr.innerHTML = `
-            <td><strong>${p.name}</strong></td>
-            <td>${p.pos}</td>
-            <td><span class="rating-badge">${p.rating}</span></td>
-            <td><select class="editor-select" id="swap-select-${pIdx}"></select></td>
+            <td>
+                <div class="player-profile">
+                    <div class="player-avatar"><span>${esc(initials)}</span></div>
+                    <strong>${esc(p.name)}</strong>
+                </div>
+            </td>
+            <td>${esc(p.pos)}</td>
+            <td><span class="rating-badge">${esc(p.rating)}</span></td>
+            <td><button class="swap-row-btn">Swap</button></td>
         `;
-        
-        let select = tr.querySelector('select');
-        let defOpt = document.createElement('option');
-        defOpt.innerText = "Swap with...", defOpt.value = "";
-        select.appendChild(defOpt);
+        tr.querySelector('.swap-row-btn').onclick = () => openSwapModal(activeItem, pIdx);
+        tbody.appendChild(tr);
+    });
+}
 
-        allGlobalPlayers.forEach(gp => {
-            let opt = document.createElement('option');
-            opt.value = JSON.stringify(gp);
-            opt.innerText = `${gp.name} (${gp.pos} ${gp.rating})`;
-            select.appendChild(opt);
+// --- SWAP PLAYER MODAL ---
+let swapContext = null;      // { teamItem, playerIdx } of the slot being edited
+let swapPosFilter = 'all';   // 'all' | 'GK' | 'DEF' | 'MID' | 'FWD'
+
+const POS_GROUPS = {
+    GK: 'GK', CB: 'DEF', LB: 'DEF', RB: 'DEF',
+    CDM: 'MID', CM: 'MID', CAM: 'MID', RM: 'MID', LM: 'MID',
+    ST: 'FWD', LW: 'FWD', RW: 'FWD'
+};
+
+function getAllDatabasePlayers() {
+    const out = [];
+    if (!activeDatabase) return out;
+    for (let leagueKey in activeDatabase.leagues) {
+        const league = activeDatabase.leagues[leagueKey];
+        (league.teams || []).forEach(t => {
+            (t.players || []).forEach(p => {
+                out.push({ player: p, teamName: t.name, leagueName: league.name || leagueKey });
+            });
         });
+    }
+    return out;
+}
 
-        select.onchange = (e) => {
-            if(!e.target.value) return;
-            let chosenObj = JSON.parse(e.target.value);
-            chosenObj.stats = { goals: 0, assists: 0, cleanSheets: 0 };
-            activeItem.teamData.players[pIdx] = chosenObj;
+function openSwapModal(teamItem, playerIdx) {
+    swapContext = { teamItem, playerIdx };
+    const replaced = teamItem.teamData.players[playerIdx];
+    document.getElementById('swap-slot-label').innerText = `Replacing: ${replaced.name} (${replaced.pos})`;
+    document.getElementById('swap-search').value = '';
+    swapPosFilter = 'all';
+    document.querySelectorAll('#swap-filters .chip').forEach(c => c.classList.toggle('active', c.dataset.pos === 'all'));
+    renderSwapResults();
+    document.getElementById('swap-modal').style.display = 'flex';
+}
+
+function closeSwapModal() {
+    document.getElementById('swap-modal').style.display = 'none';
+    swapContext = null;
+}
+
+function renderSwapResults() {
+    const listEl = document.getElementById('swap-results-list');
+    const countEl = document.getElementById('swap-results-count');
+    if (!swapContext) { listEl.innerHTML = ''; countEl.innerText = '0 players'; return; }
+
+    const query = (document.getElementById('swap-search').value || '').trim().toLowerCase();
+    const currentRoster = swapContext.teamItem.teamData.players;
+    const replacedIdx = swapContext.playerIdx;
+    const replacedPos = currentRoster[replacedIdx] ? currentRoster[replacedIdx].pos : '';
+    const replacedGroup = POS_GROUPS[replacedPos] || '';
+
+    const pool = getAllDatabasePlayers().filter(entry => {
+        const p = entry.player;
+        if (!p || !p.pos) return false;
+        // Don't offer players already standing in this lineup (except the slot being swapped)
+        if (currentRoster.some((rp, i) => i !== replacedIdx && rp.name === p.name)) return false;
+        if (swapPosFilter !== 'all' && (POS_GROUPS[p.pos] || '') !== swapPosFilter) return false;
+        if (!query) return true;
+        const hay = `${p.name} ${p.pos} ${p.rating} ${entry.teamName} ${entry.leagueName}`.toLowerCase();
+        return hay.includes(query);
+    });
+
+    pool.sort((a, b) => {
+        const aSame = (POS_GROUPS[a.player.pos] || '') === replacedGroup ? 0 : 1;
+        const bSame = (POS_GROUPS[b.player.pos] || '') === replacedGroup ? 0 : 1;
+        return aSame - bSame || b.player.rating - a.player.rating;
+    });
+
+    countEl.innerText = `${pool.length} player${pool.length === 1 ? '' : 's'}`;
+    listEl.innerHTML = '';
+
+    if (pool.length === 0) {
+        listEl.innerHTML = '<p class="swap-empty">No players match your search.</p>';
+        return;
+    }
+
+    pool.forEach(entry => {
+        const p = entry.player;
+        const initials = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+        const imgHtml = p.img ? `<img src="${esc(p.img)}" onerror="this.style.display='none'">` : '';
+        const card = document.createElement('div');
+        card.className = 'swap-result-card';
+        card.innerHTML = `
+            <div class="player-avatar">${imgHtml}<span>${esc(initials)}</span></div>
+            <div class="swap-card-info">
+                <div class="swap-card-name">${esc(p.name)}</div>
+                <div class="swap-card-sub">${esc(p.pos)} · ${esc(entry.teamName)} <span class="swap-card-league">${esc(entry.leagueName)}</span></div>
+            </div>
+            <div class="swap-card-rating"><span class="rating-badge">${esc(p.rating)}</span></div>
+        `;
+        card.onclick = () => {
+            const chosen = cloneDeep(p);
+            chosen.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+            swapContext.teamItem.teamData.players[swapContext.playerIdx] = chosen;
+            closeSwapModal();
             renderDatabasePickerPanel();
         };
-
-        tbody.appendChild(tr);
+        listEl.appendChild(card);
     });
 }
 
@@ -533,8 +687,8 @@ document.getElementById('launch-sim-btn').onclick = () => {
     if (saveState.teams.length < 2) {
         return alert("Please select at least 2 teams to generate a functional simulator schedule.");
     }
-    if (saveState.mode === "tournament" && ![2,4,8,16,32].includes(saveState.teams.length)) {
-        return alert("Knockout mode requires an even power-of-two team lineup format (2, 4, 8, or 16 teams). Adjust your selections.");
+    if (saveState.mode === "tournament" && ![2,4,8,16,32,64].includes(saveState.teams.length)) {
+        return alert("Knockout mode requires an even power-of-two team lineup format (2, 4, 8, 16, 32, or 64 teams). Adjust your selections.");
     }
     if (saveState.mode === "league" && saveState.teams.length % 2 !== 0) {
         return alert("Round Robin League format requires an even number of selected teams. Add or remove one team.");
@@ -745,7 +899,7 @@ function triggerEndgameModalDisplay() {
     }
 
     document.getElementById('endgame-winner-name').innerText = championName;
-    document.getElementById('endgame-modal').style.display = 'block';
+    document.getElementById('endgame-modal').style.display = 'flex';
 }
 
 document.getElementById('endgame-dashboard-btn').onclick = () => {
@@ -793,7 +947,339 @@ function launchProfileModal(team) {
     document.getElementById('team-modal').style.display = 'block';
 }
 
-document.querySelector('.modal-close-trigger').onclick = () => document.getElementById('team-modal').style.display = 'none';
+document.querySelector('#team-modal .modal-close-trigger').onclick = () => document.getElementById('team-modal').style.display = 'none';
+
+// --- SWAP MODAL EVENT WIRING ---
+document.getElementById('swap-search').oninput = renderSwapResults;
+document.getElementById('swap-clear-search').onclick = () => {
+    document.getElementById('swap-search').value = '';
+    renderSwapResults();
+};
+document.querySelectorAll('#swap-filters .chip').forEach(chip => {
+    chip.onclick = () => {
+        swapPosFilter = chip.dataset.pos;
+        document.querySelectorAll('#swap-filters .chip').forEach(c => c.classList.toggle('active', c === chip));
+        renderSwapResults();
+    };
+});
+document.querySelector('.swap-close-trigger').onclick = closeSwapModal;
+
+// --- DATABASE MANAGER ---
+function openDBScreen() {
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('db-screen').style.display = 'flex';
+    dbEditorState = { leagueKey: Object.keys(activeDatabase.leagues)[0] || null, teamIdx: null };
+    renderDBEditor();
+}
+
+function closeDBScreen() {
+    document.getElementById('db-screen').style.display = 'none';
+    document.getElementById('welcome-screen').style.display = 'flex';
+}
+
+function renderDBEditor() {
+    renderDBLeagueList();
+    renderDBTeamList();
+    renderDBPlayerList();
+}
+
+function currentDBLeague() {
+    return dbEditorState.leagueKey ? activeDatabase.leagues[dbEditorState.leagueKey] : null;
+}
+
+function currentDBTeam() {
+    const league = currentDBLeague();
+    if (!league) return null;
+    const teams = league.teams || [];
+    return teams[dbEditorState.teamIdx] || null;
+}
+
+// --- Leagues ---
+function renderDBLeagueList() {
+    const container = document.getElementById('db-league-list');
+    const query = (document.getElementById('db-league-search').value || '').trim().toLowerCase();
+    container.innerHTML = '';
+    let count = 0;
+    for (let key in activeDatabase.leagues) {
+        const league = activeDatabase.leagues[key];
+        const label = league.name || key;
+        if (query && !`${label} ${key}`.toLowerCase().includes(query)) continue;
+        count++;
+        const row = document.createElement('div');
+        row.className = 'db-row' + (dbEditorState.leagueKey === key ? ' active' : '');
+        row.innerHTML = `
+            <div class="db-row-main">
+                <strong>${esc(label)}</strong>
+                <div class="db-row-sub">${pluralCount((league.teams || []).length, 'team')}</div>
+            </div>
+            <div class="db-row-actions">
+                <button class="mini-btn" data-act="edit" title="Edit league">✏️</button>
+                <button class="mini-btn danger" data-act="del" title="Delete league">🗑️</button>
+            </div>`;
+        row.querySelector('.db-row-main').onclick = () => {
+            dbEditorState.leagueKey = key;
+            dbEditorState.teamIdx = null;
+            renderDBEditor();
+        };
+        row.querySelector('[data-act="edit"]').onclick = (e) => { e.stopPropagation(); openDBForm('league', key); };
+        row.querySelector('[data-act="del"]').onclick = (e) => {
+            e.stopPropagation();
+            if (!confirm(`Delete the "${label}" league and all ${pluralCount((league.teams || []).length, 'team')} in it?`)) return;
+            delete activeDatabase.leagues[key];
+            if (dbEditorState.leagueKey === key) dbEditorState = { leagueKey: Object.keys(activeDatabase.leagues)[0] || null, teamIdx: null };
+            saveCustomDatabase();
+            renderDBEditor();
+        };
+        container.appendChild(row);
+    }
+    if (count === 0) container.innerHTML = '<p class="db-empty">No leagues found.</p>';
+}
+
+// --- Teams ---
+function renderDBTeamList() {
+    const container = document.getElementById('db-team-list');
+    const titleEl = document.getElementById('db-team-pane-title');
+    const addBtn = document.getElementById('db-add-team-btn');
+    const league = currentDBLeague();
+    container.innerHTML = '';
+    if (!league) {
+        titleEl.innerText = 'Select a league first';
+        addBtn.style.display = 'none';
+        container.innerHTML = '<p class="db-empty">Select a league on the left to manage its teams.</p>';
+        return;
+    }
+    addBtn.style.display = '';
+    titleEl.innerText = `${league.name || dbEditorState.leagueKey} (${pluralCount((league.teams || []).length, 'team')})`;
+    const query = (document.getElementById('db-team-search').value || '').trim().toLowerCase();
+    const teams = league.teams || [];
+    let count = 0;
+    teams.forEach((t, idx) => {
+        if (query && !`${t.name} ${t.id}`.toLowerCase().includes(query)) return;
+        count++;
+        const row = document.createElement('div');
+        row.className = 'db-row' + (dbEditorState.teamIdx === idx ? ' active' : '');
+        row.innerHTML = `
+            <div class="db-row-main">
+                <strong>${esc(t.name)}</strong>
+                <div class="db-row-sub">${pluralCount((t.players || []).length, 'player')} · ${fmtBudget(t.budget)}</div>
+            </div>
+            <div class="db-row-actions">
+                <button class="mini-btn" data-act="edit" title="Edit team">✏️</button>
+                <button class="mini-btn danger" data-act="del" title="Delete team">🗑️</button>
+            </div>`;
+        row.querySelector('.db-row-main').onclick = () => {
+            dbEditorState.teamIdx = idx;
+            renderDBEditor();
+        };
+        row.querySelector('[data-act="edit"]').onclick = (e) => { e.stopPropagation(); openDBForm('team', dbEditorState.leagueKey, idx); };
+        row.querySelector('[data-act="del"]').onclick = (e) => {
+            e.stopPropagation();
+            if (!confirm(`Delete team "${t.name}" and its ${pluralCount((t.players || []).length, 'player')}?`)) return;
+            teams.splice(idx, 1);
+            if (dbEditorState.teamIdx === idx) dbEditorState.teamIdx = null;
+            else if (dbEditorState.teamIdx > idx) dbEditorState.teamIdx--;
+            saveCustomDatabase();
+            renderDBEditor();
+        };
+        container.appendChild(row);
+    });
+    if (count === 0) container.innerHTML = '<p class="db-empty">No teams found.</p>';
+}
+
+// --- Players ---
+function renderDBPlayerList() {
+    const container = document.getElementById('db-player-list');
+    const titleEl = document.getElementById('db-player-pane-title');
+    const addBtn = document.getElementById('db-add-player-btn');
+    const team = currentDBTeam();
+    container.innerHTML = '';
+    if (!team) {
+        titleEl.innerText = 'Select a team first';
+        addBtn.style.display = 'none';
+        container.innerHTML = '<p class="db-empty">Select a team in the middle pane to manage its players.</p>';
+        return;
+    }
+    addBtn.style.display = '';
+    titleEl.innerText = `${team.name} (${pluralCount((team.players || []).length, 'player')})`;
+    const query = (document.getElementById('db-player-search').value || '').trim().toLowerCase();
+    const players = team.players || [];
+    let count = 0;
+    players.forEach((p, idx) => {
+        if (query && !`${p.name} ${p.pos} ${p.rating}`.toLowerCase().includes(query)) return;
+        count++;
+        const row = document.createElement('div');
+        row.className = 'db-row';
+        row.innerHTML = `
+            <div class="db-row-main">
+                <strong>${esc(p.name)}</strong>
+                <div class="db-row-sub">${esc(p.pos)} · OVR ${esc(p.rating)}</div>
+            </div>
+            <div class="db-row-actions">
+                <button class="mini-btn" data-act="edit" title="Edit player">✏️</button>
+                <button class="mini-btn danger" data-act="del" title="Remove player">🗑️</button>
+            </div>`;
+        row.querySelector('[data-act="edit"]').onclick = (e) => { e.stopPropagation(); openDBForm('player', dbEditorState.leagueKey, dbEditorState.teamIdx, idx); };
+        row.querySelector('[data-act="del"]').onclick = (e) => {
+            e.stopPropagation();
+            if (!confirm(`Remove player "${p.name}" from ${team.name}?`)) return;
+            players.splice(idx, 1);
+            saveCustomDatabase();
+            renderDBEditor();
+        };
+        container.appendChild(row);
+    });
+    if (count === 0) container.innerHTML = '<p class="db-empty">No players found.</p>';
+}
+
+// --- Add/Edit form ---
+let dbFormContext = null; // { kind, leagueKey, teamIdx, playerIdx }
+
+const ALL_POSITIONS = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LW', 'RW', 'ST', 'RM', 'LM'];
+
+function openDBForm(kind, leagueKey, teamIdx, playerIdx) {
+    dbFormContext = { kind, leagueKey, teamIdx, playerIdx };
+    const title = document.getElementById('db-form-title');
+    const body = document.getElementById('db-form-body');
+
+    if (kind === 'league') {
+        const existing = leagueKey ? activeDatabase.leagues[leagueKey] : null;
+        title.innerText = existing ? 'Edit League' : 'Add League';
+        body.innerHTML = `
+            <div class="form-field"><label>League name</label><input id="f-name" type="text" value="${esc(existing ? existing.name : '')}" placeholder="e.g. Ligue 1 25/26"></div>
+            <div class="form-field"><label>Key / ID ${existing ? '' : '(optional — auto-generated if blank)'}</label><input id="f-key" type="text" value="${esc(existing ? leagueKey : '')}" placeholder="e.g. FR 1 25/26"></div>`;
+    } else if (kind === 'team') {
+        const league = activeDatabase.leagues[leagueKey];
+        const existing = teamIdx != null && league && league.teams ? league.teams[teamIdx] : null;
+        title.innerText = existing ? 'Edit Team' : 'Add Team';
+        body.innerHTML = `
+            <div class="form-field"><label>Team name</label><input id="f-name" type="text" value="${esc(existing ? existing.name : '')}" placeholder="e.g. Paris Saint-Germain"></div>
+            <div class="form-field"><label>Budget (€ millions)</label><input id="f-budget" type="number" step="0.5" min="0" value="${existing ? (existing.budget || 0) / 1e6 : 50}"></div>`;
+    } else {
+        const league = activeDatabase.leagues[leagueKey];
+        const team = league && league.teams ? league.teams[teamIdx] : null;
+        const existing = playerIdx != null && team ? team.players[playerIdx] : null;
+        title.innerText = existing ? 'Edit Player' : 'Add Player';
+        const posOptions = ALL_POSITIONS.map(pos => `<option value="${pos}" ${existing && existing.pos === pos ? 'selected' : ''}>${pos}</option>`).join('');
+        body.innerHTML = `
+            <div class="form-field"><label>Player name</label><input id="f-name" type="text" value="${esc(existing ? existing.name : '')}" placeholder="e.g. K. Mbappé"></div>
+            <div class="form-field"><label>Position</label><select id="f-pos">${posOptions}</select></div>
+            <div class="form-field"><label>Rating (OVR)</label><input id="f-rating" type="number" min="1" max="99" value="${existing ? esc(existing.rating) : 80}"></div>
+            <div class="form-field"><label>Image path (optional)</label><input id="f-img" type="text" value="${esc(existing && existing.img ? existing.img : '')}" placeholder="assets/player.png"></div>`;
+    }
+    document.getElementById('db-edit-modal').style.display = 'flex';
+}
+
+function closeDBForm() {
+    document.getElementById('db-edit-modal').style.display = 'none';
+    dbFormContext = null;
+}
+
+function saveDBForm() {
+    const ctx = dbFormContext;
+    if (!ctx) return;
+    const val = (id) => document.getElementById(id).value.trim();
+
+    if (ctx.kind === 'league') {
+        const name = val('f-name');
+        if (!name) return alert('League name is required.');
+        let key = val('f-key') || slugify(name);
+        if (ctx.leagueKey && key === ctx.leagueKey) {
+            activeDatabase.leagues[key].name = name;
+        } else {
+            if (activeDatabase.leagues[key]) return alert(`A league with the key "${key}" already exists.`);
+            const old = ctx.leagueKey ? activeDatabase.leagues[ctx.leagueKey] : null;
+            if (old) delete activeDatabase.leagues[ctx.leagueKey];
+            activeDatabase.leagues[key] = Object.assign({}, old || {}, { name, teams: old ? old.teams : [] });
+        }
+        dbEditorState.leagueKey = key;
+    } else if (ctx.kind === 'team') {
+        const name = val('f-name');
+        if (!name) return alert('Team name is required.');
+        const budgetM = parseFloat(document.getElementById('f-budget').value);
+        const league = activeDatabase.leagues[ctx.leagueKey];
+        const teams = league.teams || (league.teams = []);
+        if (ctx.teamIdx != null && teams[ctx.teamIdx]) {
+            teams[ctx.teamIdx].name = name;
+            if (!isNaN(budgetM)) teams[ctx.teamIdx].budget = budgetM * 1e6;
+        } else {
+            teams.push({ id: uniqueTeamId(name), name, budget: isNaN(budgetM) ? 50000000 : budgetM * 1e6, players: [] });
+            dbEditorState.teamIdx = teams.length - 1;
+        }
+    } else {
+        const name = val('f-name');
+        if (!name) return alert('Player name is required.');
+        const pos = document.getElementById('f-pos').value;
+        const rating = parseInt(document.getElementById('f-rating').value, 10);
+        const img = document.getElementById('f-img').value.trim();
+        const team = activeDatabase.leagues[ctx.leagueKey].teams[ctx.teamIdx];
+        const players = team.players || (team.players = []);
+        const player = { name, pos, rating: isNaN(rating) ? 80 : Math.max(1, Math.min(99, rating)) };
+        if (img) player.img = img;
+        if (ctx.playerIdx != null && players[ctx.playerIdx]) {
+            players[ctx.playerIdx] = Object.assign(player, { stats: players[ctx.playerIdx].stats });
+        } else {
+            players.push(player);
+        }
+    }
+
+    saveCustomDatabase();
+    closeDBForm();
+    renderDBEditor();
+}
+
+// --- DB manager wiring ---
+document.getElementById('db-manager-btn').onclick = openDBScreen;
+document.getElementById('db-back-btn').onclick = closeDBScreen;
+document.getElementById('db-add-league-btn').onclick = () => openDBForm('league');
+document.getElementById('db-add-team-btn').onclick = () => {
+    if (!currentDBLeague()) return alert('Select a league first.');
+    openDBForm('team', dbEditorState.leagueKey);
+};
+document.getElementById('db-add-player-btn').onclick = () => {
+    if (!currentDBTeam()) return alert('Select a team first.');
+    openDBForm('player', dbEditorState.leagueKey, dbEditorState.teamIdx);
+};
+document.getElementById('db-form-save').onclick = saveDBForm;
+document.getElementById('db-form-cancel').onclick = closeDBForm;
+document.getElementById('db-form-close').onclick = closeDBForm;
+document.getElementById('db-league-search').oninput = renderDBLeagueList;
+document.getElementById('db-team-search').oninput = renderDBTeamList;
+document.getElementById('db-player-search').oninput = renderDBPlayerList;
+document.getElementById('db-export-btn').onclick = () => {
+    const blob = new Blob([JSON.stringify(activeDatabase, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'elfut-database.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+};
+document.getElementById('db-import-btn').onclick = () => document.getElementById('db-import-file').click();
+document.getElementById('db-import-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            if (!data || !data.leagues || typeof data.leagues !== 'object') throw new Error('file is missing a "leagues" object');
+            activeDatabase = data;
+            saveCustomDatabase();
+            dbEditorState = { leagueKey: Object.keys(activeDatabase.leagues)[0] || null, teamIdx: null };
+            renderDBEditor();
+            alert('Database imported successfully.');
+        } catch (err) {
+            alert('Import failed: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+});
+document.getElementById('db-reset-btn').onclick = () => {
+    if (!confirm('Reset the database to the built-in default? This removes ALL custom leagues, teams and players you added.')) return;
+    resetCustomDatabase();
+    dbEditorState = { leagueKey: Object.keys(activeDatabase.leagues)[0] || null, teamIdx: null };
+    renderDBEditor();
+};
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active-content'));
@@ -825,4 +1311,7 @@ function resumeTargetSave(storageKey) {
     }
 }
 
-window.onload = loadActiveMenu;
+window.onload = () => {
+    loadActiveDatabase();
+    loadActiveMenu();
+};
