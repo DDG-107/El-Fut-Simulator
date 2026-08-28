@@ -321,6 +321,10 @@ function loadActiveMenu() {
 }
 
 document.getElementById('create-save-btn').onclick = () => {
+    if (typeof gameDatabase === 'undefined' || !gameDatabase.leagues) {
+        return alert('Could not start a save: the team database (database.js) failed to load. It may contain a syntax error. Check the browser console for details.');
+    }
+
     let name = document.getElementById('new-save-name').value.trim();
     if (!name) return alert('Please input a valid Save Name.');
 

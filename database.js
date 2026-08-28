@@ -590,7 +590,7 @@ const gameDatabase = {
                         { name: "M. Özil", pos: "CAM", rating: 87, img: "assets/mzil.png" },
                         { name: "K. Benzema", pos: "ST", rating: 85, img: "assets/kbenzema.png" },]},
 
-                        {id:"acm 08/09" name: "AC Milan 2008/09", budget: 120000000, players: [                         { name: "C. Abbiati", pos: "GK", rating: 83, img: "assets/cabbiati.png" },
+                        {id:"acm 08/09", name: "AC Milan 2008/09", budget: 120000000, players: [                         { name: "C. Abbiati", pos: "GK", rating: 83, img: "assets/cabbiati.png" },
                         { name: "G. Zambrotta", pos: "RB", rating: 83, img: "assets/gzambrotta.png" },
                         { name: "D. Bonera", pos: "CB", rating: 84, img: "assets/dbonera.png" },
                         { name: "P. Maldini", pos: "CB", rating: 88, img: "assets/pmaldini.png" },
