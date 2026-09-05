@@ -20,48 +20,108 @@
                 <h3>Start New Career</h3>
                 <input type="text" id="new-save-name" placeholder="Enter Save Name...">
                 
-                <div class="mode-options">
-                    <label><strong>Game Mode:</strong></label>
-                    <label><input type="radio" name="game-mode" value="league" checked> League Mode (Double Round Robin)</label>
-                    <label><input type="radio" name="game-mode" value="tournament"> Knockout Tournament</label>
+                <div class="mode-picker">
+                    <h3>Game Mode</h3>
+                    <p class="subtitle">Each mode has its own rules. Realistic Career is a full club save; the other modes are one-session runs that start from the menu each time.</p>
+                    <div id="mode-picker-grid" class="mode-picker-grid"></div>
+                    <div class="mode-options" id="competition-format-row">
+                        <label><strong>Competition Format:</strong></label>
+                        <label><input type="radio" name="competition-format" value="league" checked> League Mode (Double Round Robin)</label>
+                        <label><input type="radio" name="competition-format" value="tournament"> Knockout Tournament</label>
+                    </div>
                 </div>
                 
                 <button id="create-save-btn">Create League Blueprint</button>
                 <button id="db-manager-btn" class="db-manager-btn">🗂️ Edit Database (Teams & Players)</button>
+
+                <div class="sim-settings-box">
+                    <div class="sim-settings-head">
+                        <h3>⚙️ Match Engine Chaos</h3>
+                        <span id="chaos-mode-name" class="chaos-mode-tag">Realistic</span>
+                    </div>
+                    <div class="chaos-slider-row">
+                        <span class="chaos-scale-label">🎯 Realistic</span>
+                        <input type="range" id="chaos-slider" class="chaos-slider" min="0" max="100" step="1" value="0">
+                        <span class="chaos-scale-label">🎲 Arcade</span>
+                    </div>
+                    <p id="chaos-hint" class="sim-settings-hint">Ratings decide every match — the tuned, realistic engine. Favorites win, underdogs shock rarely.</p>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div id="placeholder-screen" class="screen-container" style="display:none;">
+        <div class="menu-box placeholder-box">
+            <div class="placeholder-icon" id="placeholder-icon">⚡</div>
+            <h2 id="placeholder-title">Coming Soon</h2>
+            <p id="placeholder-desc" class="subtitle">This mode is on its way.</p>
+            <div class="placeholder-note">🚧 This mode&apos;s full gameplay arrives in a later phase. Your save has been created — exit to the menu and it will be waiting in your load list.</div>
+            <button id="placeholder-save-exit-btn" class="exit-btn">Save &amp; Exit to Menu</button>
         </div>
     </div>
 
     <div id="config-screen" class="screen-container" style="display:none;">
         <div class="menu-box large-box">
-            <h2>Custom League & Team Picker Creator</h2>
-            <p class="subtitle">Select the teams you want to include in this competition from your database, then manage their rosters.</p>
-            
-            <div class="selection-summary-row">
-                <div>Selected Teams: <span id="selected-count-badge">0</span></div>
-                <div id="power-of-two-warning" style="color: #ffb703; display:none;">⚠️ Knockout mode requires exactly 2, 4, 8, 16, 32, or 64 teams.</div>
+            <div class="config-topbar">
+                <button id="config-back-btn" class="btn-secondary config-back-btn">← Back to Menu</button>
+                <div class="config-title-group">
+                    <h2>Set Up Your Competition</h2>
+                    <p class="subtitle" id="config-format-line">—</p>
+                </div>
             </div>
 
             <div class="editor-layout">
                 <div class="team-selector-pane">
-                    <h3>Select Competition Teams</h3>
+                    <div class="pane-head">
+                        <span class="pane-eyebrow">STEP 1 · PICK THE FIELD</span>
+                        <h3>Choose the Clubs Competing</h3>
+                    </div>
                     <div id="database-team-picker-list"></div>
                 </div>
 
                 <div class="roster-modifier-pane">
-                    <h3>Modify Lineup: <span id="editing-team-title">None</span></h3>
+                    <div class="pane-head">
+                        <span class="pane-eyebrow">STEP 2 · YOUR CLUB</span>
+                        <h3>Club &amp; Lineup</h3>
+                    </div>
+
+                    <div id="club-focus-card" class="club-card">
+                        <div class="club-card-top">
+                            <div class="club-avatar big" id="focus-club-avatar">?</div>
+                            <div class="club-card-meta">
+                                <strong id="editing-team-title">None</strong>
+                                <span class="club-league" id="editing-team-league">—</span>
+                            </div>
+                        </div>
+                        <div class="club-card-stats">
+                            <div class="mini-stat"><span>Avg OVR</span><strong id="club-avg-rating">—</strong></div>
+                            <div class="mini-stat"><span>Attack</span><strong id="club-att-ui">—</strong></div>
+                            <div class="mini-stat"><span>Defense</span><strong id="club-def-ui">—</strong></div>
+                            <div class="mini-stat"><span>Budget</span><strong id="club-budget-ui">—</strong></div>
+                        </div>
+                        <span id="club-status-chip" class="status-chip">Selected</span>
+                    </div>
+
                     <button id="claim-team-btn" class="action-btn">Manage This Club</button>
                     <div class="roster-scroll">
                         <table class="editor-table">
                             <thead>
-                                <tr><th>Player</th><th>Pos</th><th>OVR</th><th>Swap</th></tr>
+                                <tr><th></th><th>Player</th><th>Pos</th><th>OVR</th><th>Swap</th></tr>
                             </thead>
                             <tbody id="editor-roster-body"></tbody>
                         </table>
                     </div>
+                    <p class="pane-hint bottom-hint">⚡ Swap pulls any player from the whole database into this lineup. Players marked <em>(Gen)</em> are auto-generated.</p>
                 </div>
             </div>
-            <button id="launch-sim-btn" class="launch-btn">Advance to Hub Dashboard</button>
+
+            <div class="config-footer">
+                <div class="config-footer-left">
+                    <span class="config-count"><strong id="selected-count-badge">0</strong> <span id="selected-count-label">clubs selected</span></span>
+                    <span id="power-of-two-warning" class="config-warning" style="display:none;"></span>
+                </div>
+                <button id="launch-sim-btn" class="launch-btn">🏁 Launch Season &amp; Open Hub</button>
+            </div>
         </div>
     </div>
 
@@ -93,33 +153,74 @@
     </div>
 
     <div id="hub-screen" class="screen-container" style="display:none;">
-        <div class="sidebar">
-            <h2 id="hub-user-team" class="interactive-text">My Club</h2>
-            <div class="stat-badge">Matchday: <span id="current-matchday-ui">1</span>/<span id="total-matchdays-ui">6</span></div>
-            <div class="stat-badge">Points: <span id="user-points-ui">0</span></div>
-            <button id="advance-matchday-btn" class="advance-btn">Advance Matchday</button>
-            <button id="save-exit-btn" class="exit-btn">Save & Exit to Menu</button>
+        <div class="sidebar hub-sidebar">
+            <div class="club-card sidebar-club" id="sidebar-club-card" title="View your squad">
+                <div class="club-avatar" id="hub-club-avatar">?</div>
+                <div class="club-card-meta">
+                    <h2 id="hub-user-team">My Club</h2>
+                    <div class="club-sub" id="hub-competition-line">—</div>
+                </div>
+            </div>
+
+            <div class="hub-stat-grid">
+                <div class="stat-badge stat-tile"><span class="stat-label" id="hub-pos-label">Position</span><span class="stat-value" id="hub-position-ui">—</span></div>
+                <div class="stat-badge stat-tile"><span class="stat-label" id="hub-pts-label">Points</span><span class="stat-value" id="user-points-ui">0</span></div>
+                <div class="stat-badge stat-tile"><span class="stat-label" id="hub-gd-label">Goal Diff</span><span class="stat-value" id="hub-gd-ui">0</span></div>
+            </div>
+
+            <div class="stat-badge progress-block">
+                <div class="progress-line">
+                    <span>Season Progress</span>
+                    <span id="hub-progress-pct">0%</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" id="hub-progress-fill"></div></div>
+                <div class="progress-sub" id="hub-progress-sub">Matchday <span id="current-matchday-ui">1</span> of <span id="total-matchdays-ui">0</span></div>
+            </div>
+
+            <button id="view-squad-btn" class="btn-secondary sidebar-btn">👥 View Squad</button>
+            <div class="sim-controls">
+                <button id="advance-matchday-btn" class="advance-btn">▶ Simulate Season</button>
+                <button id="step-matchday-btn" class="step-btn" title="Simulate one matchday only">⏭ Step</button>
+            </div>
+            <div id="sim-status-ui" class="sim-status" style="display:none;"></div>
+            <button id="save-exit-btn" class="exit-btn sidebar-btn">💾 Save &amp; Exit to Menu</button>
         </div>
 
         <div class="main-content">
-            <div class="live-ticker">
-                <h3>Latest Simulation Feed</h3>
-                <div id="ticker-feed-box" class="feed-scroll">Welcome back, Gaffer. Click 'Advance Matchday' to simulate games.</div>
+            <div class="hub-tabbar">
+                <button class="hub-tab-btn active" data-pane="table">🏆 Table / Bracket</button>
+                <button class="hub-tab-btn" data-pane="feed">📰 Match Feed</button>
+                <button class="hub-tab-btn" data-pane="stats">⭐ Top Players</button>
             </div>
 
-            <div class="dashboard-grid">
+            <div class="hub-tabpane active" id="hub-pane-table">
                 <div class="panel">
-                    <h2 id="table-title">Standings Table</h2>
-                    <table>
-                        <thead>
-                            <tr><th>Pos</th><th>Club</th><th>GD</th><th>Pts</th></tr>
-                        </thead>
-                        <tbody id="league-table-body"></tbody>
-                    </table>
+                    <div class="panel-head">
+                        <h2 id="table-title">Standings Table</h2>
+                        <span class="panel-sub" id="table-sub-ui"></span>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead id="table-head-ui"></thead>
+                            <tbody id="league-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
+            </div>
 
+            <div class="hub-tabpane" id="hub-pane-feed">
+                <div class="panel feed-panel">
+                    <div class="panel-head">
+                        <h3>Latest Simulation Feed</h3>
+                        <span class="panel-sub" id="feed-round-ui"></span>
+                    </div>
+                    <div id="ticker-feed-box" class="feed-scroll">Welcome back, Gaffer. Click 'Simulate Season' to run the matchdays, or 'Step' for one at a time.</div>
+                </div>
+            </div>
+
+            <div class="hub-tabpane" id="hub-pane-stats">
                 <div class="panel">
-                    <h2>Stats Central</h2>
+                    <div class="panel-head"><h2>Stats Central</h2></div>
                     <div class="tabs">
                         <button class="tab-link active" onclick="switchTab('goals-tab')">Top Scorers</button>
                         <button class="tab-link" onclick="switchTab('assists-tab')">Assists</button>
@@ -159,6 +260,7 @@
             <div class="winner-announcement">
                 Winner: <span id="endgame-winner-name">None</span>
             </div>
+            <div id="endgame-verdict" class="endgame-verdict" style="display:none;"></div>
             <p class="endgame-subtitle">The matches are over and all statistics have been finalized.</p>
             <div class="endgame-button-group">
                 <button id="endgame-dashboard-btn" class="endgame-btn-action dashboard-btn">Go Back to Dashboard</button>
@@ -166,6 +268,8 @@
             </div>
         </div>
     </div>
+
+    <div id="modes-screen" class="screen-container" style="display:none;"></div>
 
     <div id="db-screen" class="screen-container" style="display:none;">
         <div class="menu-box db-editor-box">
@@ -221,5 +325,7 @@
 
     <script src="database.js"></script>
     <script src="app.js"></script>
+    <script src="modes-draft.js"></script>
+    <script src="modes-worldcup.js"></script>
 </body>
 </html>

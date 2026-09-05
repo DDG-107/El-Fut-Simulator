@@ -2,7 +2,8 @@
 
 let saveState = {
     saveName: "",
-    mode: "league", // "league" or "tournament"
+    mode: "realistic", // 'realistic' | 'draft' | 'draftChallenge' | 'omnipotent' | 'national'
+    competitionType: "league", // 'league' or 'tournament' — Realistic Career only
     userTeamId: "",
     currentMatchday: 1,
     totalMatchdays: 0,
@@ -11,16 +12,115 @@ let saveState = {
     schedule: []
 };
 
+// --- GAME MODES ---
+// 'mode' on the save object selects which ruleset governs this career.
+// 'realistic' is the persistent full-club save; every other mode is a
+// one-session run that opens its own setup flow (implemented in modes-*.js).
+const GAME_MODES = [
+    { id: 'realistic', icon: '🏟️', name: 'Realistic Career', desc: 'Full season (league or knockout) with transfers and a youth academy. The complete El Fut experience.' },
+    { id: 'draft', icon: '📋', name: 'Single Season Draft', desc: 'For every position the game deals you 5 real players from any league — keep the best pick of each.' },
+    { id: 'draftChallenge', icon: '🥊', name: 'Single Season Draft Challenge', desc: 'The same five-card draft, but preset guidelines decide the pool and must be met before the season starts.' },
+    { id: 'omnipotent', icon: '👑', name: 'Omnipotent Mode', desc: 'Unlimited budget and god-tier control over your club.' },
+    { id: 'national', icon: '🌍', name: 'National Team / World Cup', desc: 'Take a national team to the World Cup.' }
+];
+
+function isRealistic() { return saveState.mode === 'realistic'; }
+// Competition format helpers apply to every game mode that runs a league or
+// bracket season (Daily/Draft/Omnipotent runs a league; National runs a World Cup).
+function isLeagueFormat() { return saveState.competitionType === 'league'; }
+function isKnockoutFormat() { return saveState.competitionType === 'tournament'; }
+function isWorldCupFormat() { return saveState.competitionType === 'worldcup'; }
+function getModeName() {
+    const m = GAME_MODES.find(x => x.id === saveState.mode);
+    return m ? m.name : saveState.mode;
+}
+// Old saves stored the competition format directly on 'mode'; migrate them so
+// they load as a Realistic Career with the format preserved.
+function migrateSaveState(data) {
+    if (!data || typeof data !== 'object') return data;
+    if (data.mode === 'league' || data.mode === 'tournament') {
+        data.competitionType = data.mode;
+        data.mode = 'realistic';
+    }
+    if (data.mode === 'realistic' && !data.competitionType) data.competitionType = 'league';
+    // Draft Challenge was merged into Single Season Draft.
+    if (data.mode === 'draftChallenge') data.mode = 'draft';
+    return data;
+}
+
 // --- CUSTOM DATABASE LAYER ---
 // The built-in database comes from database.js. Edits made in the in-app
 // Database Manager are stored as a full snapshot in localStorage and override
 // the built-in data at load time.
 let activeDatabase = null;                    // Working copy used everywhere
 const DB_STORAGE_KEY = 'elfut_db_custom';
+const DB_SCHEMA_VERSION = 10;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps
 let dbEditorState = { leagueKey: null, teamIdx: null }; // Selection in the DB manager
 
 function cloneDeep(obj) {
     return JSON.parse(JSON.stringify(obj));
+}
+
+// Stored custom snapshots are full copies taken at save time, so an old
+// snapshot would silently hide leagues/teams added to the built-in database
+// later. Snapshots carry a schemaVersion; on upgrade, built-in leagues and
+// teams the snapshot predates are merged in once, while every user edit
+// (including added leagues) is preserved. Saves written afterwards keep the
+// new version and load as-is.
+function upgradeStoredDatabase(stored) {
+    const db = cloneDeep(stored);
+    const version = db.schemaVersion || 1;
+    if (version >= DB_SCHEMA_VERSION) return db;
+    const builtin = (typeof gameDatabase !== 'undefined' && gameDatabase) || {};
+    for (let key in (builtin.leagues || {})) {
+        const bLeague = builtin.leagues[key];
+        if (!db.leagues[key]) {
+            db.leagues[key] = cloneDeep(bLeague);
+            continue;
+        }
+        const customTeams = db.leagues[key].teams || (db.leagues[key].teams = []);
+        const have = new Set(customTeams.map(t => t.id));
+        (bLeague.teams || []).forEach(t => {
+            if (!have.has(t.id)) customTeams.push(cloneDeep(t));
+        });
+    }
+    // Schema 3+: built-in rosters were added for clubs that snapshots copied
+    // while still empty. Fill an empty custom team ONLY when the built-in
+    // version of that exact team id now carries players — teams the user has
+    // already built (non-empty) are never touched.
+    if (version < DB_SCHEMA_VERSION) {
+        for (let key in db.leagues) {
+            const bLeague = builtin.leagues ? builtin.leagues[key] : null;
+            if (!bLeague) continue;
+            const bTeams = bLeague.teams || [];
+            (db.leagues[key].teams || []).forEach(customTeam => {
+                const built = bTeams.find(t => t.id === customTeam.id);
+                if (built && (built.players || []).length > 0 && !(customTeam.players || []).length) {
+                    customTeam.players = cloneDeep(built.players);
+                }
+            });
+        }
+    }
+    // Schema 10: national-team ratings were recalibrated. Sync player ratings
+    // of World Cup league teams from the built-in baseline (matched by name) so
+    // stored snapshots inherit the new gaps. Players the user added themselves
+    // and every other league are left untouched.
+    if (version < 10) {
+        const bwc = builtin.leagues ? builtin.leagues['WC 2026'] : null;
+        const swc = db.leagues ? db.leagues['WC 2026'] : null;
+        if (bwc && swc) {
+            (swc.teams || []).forEach(st => {
+                const bt = (bwc.teams || []).find(t => t.id === st.id);
+                if (!bt) return;
+                (st.players || []).forEach(sp => {
+                    const bp = (bt.players || []).find(p => p.name === sp.name);
+                    if (bp) sp.rating = bp.rating;
+                });
+            });
+        }
+    }
+    db.schemaVersion = DB_SCHEMA_VERSION;
+    return db;
 }
 
 function loadActiveDatabase() {
@@ -31,7 +131,8 @@ function loadActiveDatabase() {
         if (raw) {
             const custom = JSON.parse(raw);
             if (custom && custom.leagues && typeof custom.leagues === 'object') {
-                activeDatabase = custom;
+                activeDatabase = upgradeStoredDatabase(custom);
+                saveCustomDatabase(); // persist the one-time upgrade
             }
         }
     } catch (e) {
@@ -42,7 +143,7 @@ function loadActiveDatabase() {
 
 function saveCustomDatabase() {
     if (!activeDatabase) return;
-    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(activeDatabase));
+    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(Object.assign({}, activeDatabase, { schemaVersion: DB_SCHEMA_VERSION })));
 }
 
 function resetCustomDatabase() {
@@ -218,43 +319,61 @@ function buildDirectKnockoutTree(teamsList) {
     return fixtures;
 }
 
-// Rewritten High-Fidelity Realistic Match Simulation Engine
-function runFixtureSimulation(homeTeam, awayTeam) {
-    let tA = parseTacticalStrength(homeTeam);
-    let tB = parseTacticalStrength(awayTeam);
+function teamAverageRating(team) {
+    const pl = (team && team.players) || [];
+    if (!pl.length) return 50;
+    return pl.reduce((s, p) => s + (p.rating || 0), 0) / pl.length;
+}
 
-    // 1. Calculate tactical supremacy performance gap
-    let attackAdvantageA = tA.att - tB.def; // Positive means your attack slices their defense
-    let attackAdvantageB = tB.att - tA.def;
+// Expected-goals (xG) match model. Each team's expected goals come from the
+// overall rating gap to its opponent, and the actual goals are drawn from a
+// Poisson distribution around that xG. This produces realistic football
+// scorelines and probabilities: favorites convert their superiority into wins
+// most of the time, evenly-matched sides trade close games with a realistic
+// share of draws, and underdogs still get a rare shock day.
+//
+// Ratings drive the model (not a position-weighted split) so every roster
+// shape — star-stacked national XIs or deep club squads — plays the same
+// football, which keeps club leagues scoring like real ones.
+//
+// Knockout ties pass a gapScale > 1: single-elimination sharpens the quality
+// gap (no safety net of a return leg), so mid-tier nations can't luck their
+// way past elite sides in cups — while close clashes stay close.
+function expectedGoalsFor(ratingA, ratingB, home, gapScale) {
+    // Ratings live on a ~60-99 scale. Positive edges convert steeply (a +1
+    // edge is ~0.16 xG); negative edges decay more gently with a floor so the
+    // weaker side still creates the odd chance instead of vanishing.
+    // The chaos slider scales the effective gap (1.0 = default curve).
+    const gap = (ratingA - ratingB) * (gapScale || 1) * simChaosGapFactor();
+    let xg = gap >= 0 ? 1.18 + 0.16 * gap : Math.max(0.26, 1.18 + 0.10 * gap);
+    if (home) xg *= 1.07; // slight home advantage
+    return Math.min(3.8, xg);
+}
+function samplePoissonGoals(lambda) {
+    if (lambda <= 0) return 0;
+    const L = Math.exp(-lambda);
+    let k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return Math.min(7, k - 1);
+}
+// Knockout shootouts are not coin flips — the stronger side converts more.
+// Returns P(teamA wins the shootout).
+function shootoutWinnerProbability(teamA, teamB) {
+    const diff = teamAverageRating(teamA) - teamAverageRating(teamB);
+    const p = 0.5 + 0.22 * Math.tanh(diff / 7);
+    return Math.max(0.3, Math.min(0.7, p));
+}
 
-    // 2. Tightly controlled, compressed random baseline factor (Maximum 1 goal from pure chaos)
-    let randomBaseA = Math.random() < 0.35 ? 1 : 0;
-    let randomBaseB = Math.random() < 0.25 ? 1 : 0; 
+// Rewritten Realistic Match Simulation Engine
+// gapScale: knockout ties pass >1 to sharpen the quality gap.
+function runFixtureSimulation(homeTeam, awayTeam, gapScale) {
+    // Overall squad ratings drive the matchup (robust for any roster shape).
+    const ovrA = teamAverageRating(homeTeam);
+    const ovrB = teamAverageRating(awayTeam);
 
-    // 3. Performance Based Dynamic Bonus Goals (High ratings safely generate goals here)
-    let dynamicGoalsA = 0;
-    let dynamicGoalsB = 0;
-
-    // Home Team Attack execution loops
-    if (attackAdvantageA > 0) {
-        // Elite teams completely punishing weak defenses
-        dynamicGoalsA += Math.floor(attackAdvantageA / 6); 
-        if (Math.random() * 15 < (attackAdvantageA % 6)) dynamicGoalsA++;
-    } else {
-        // Severe attacking deficit creates a steep slope to score
-        if (Math.random() < (1 / (Math.abs(attackAdvantageA) + 1))) dynamicGoalsA++;
-    }
-
-    // Away Team Attack execution loops
-    if (attackAdvantageB > 0) {
-        dynamicGoalsB += Math.floor(attackAdvantageB / 7); 
-        if (Math.random() * 18 < (attackAdvantageB % 7)) dynamicGoalsB++;
-    } else {
-        if (Math.random() < (1 / (Math.abs(attackAdvantageB) + 1))) dynamicGoalsB++;
-    }
-
-    let goalsA = randomBaseA + dynamicGoalsA;
-    let goalsB = randomBaseB + dynamicGoalsB;
+    // Sample goals from each side's expected goals against the other.
+    let goalsA = samplePoissonGoals(expectedGoalsFor(ovrA, ovrB, true, gapScale));
+    let goalsB = samplePoissonGoals(expectedGoalsFor(ovrB, ovrA, false, gapScale));
 
     // Clamp goals to realistic football metrics
     goalsA = Math.min(7, goalsA);
@@ -339,9 +458,13 @@ let poolTeamsMap = [];
 let activeConfigEditingIdx = 0;
 
 function loadActiveMenu() {
+    if (typeof stopAutoSim === 'function') stopAutoSim();
     document.getElementById('welcome-screen').style.display = 'flex';
     document.getElementById('config-screen').style.display = 'none';
     document.getElementById('hub-screen').style.display = 'none';
+    document.getElementById('placeholder-screen').style.display = 'none';
+    const modesScreen = document.getElementById('modes-screen');
+    if (modesScreen) modesScreen.style.display = 'none';
     document.getElementById('endgame-modal').style.display = 'none';
     
     const savesList = document.getElementById('saves-list');
@@ -391,6 +514,44 @@ function loadActiveMenu() {
     if (!foundSaves) savesList.innerHTML = '<p style="color:#aaa4c4;grid-column:1/3;">No past save states found.</p>';
 }
 
+// --- MODE PICKER ---
+let selectedModeId = 'realistic';
+
+function renderModePicker() {
+    const grid = document.getElementById('mode-picker-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    GAME_MODES.forEach(mode => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'mode-card' + (selectedModeId === mode.id ? ' selected' : '');
+        card.innerHTML = `
+            <span class="mode-card-icon">${mode.icon}</span>
+            <span class="mode-card-text"><strong>${mode.name}</strong><small>${mode.desc}</small></span>
+        `;
+        card.onclick = () => { selectedModeId = mode.id; renderModePicker(); };
+        grid.appendChild(card);
+    });
+    const formatRow = document.getElementById('competition-format-row');
+    if (formatRow) formatRow.style.display = selectedModeId === 'realistic' ? '' : 'none';
+    const createBtn = document.getElementById('create-save-btn');
+    if (createBtn) createBtn.innerText = selectedModeId === 'realistic' ? 'Create League Blueprint' : '▶ Start This Mode';
+}
+
+function showPlaceholderScreen(modeId) {
+    const def = GAME_MODES.find(m => m.id === modeId) || GAME_MODES[0];
+    document.getElementById('placeholder-icon').innerText = def.icon;
+    document.getElementById('placeholder-title').innerText = def.name;
+    document.getElementById('placeholder-desc').innerText = def.desc;
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('placeholder-screen').style.display = 'flex';
+}
+
+document.getElementById('placeholder-save-exit-btn').onclick = () => {
+    autoSaveCurrentProgress();
+    loadActiveMenu();
+};
+
 document.getElementById('create-save-btn').onclick = () => {
     if (!activeDatabase) {
         return alert('Could not start a save: the team database (database.js) failed to load. It may contain a syntax error. Check the browser console for details.');
@@ -399,9 +560,22 @@ document.getElementById('create-save-btn').onclick = () => {
     let name = document.getElementById('new-save-name').value.trim();
     if (!name) return alert('Please input a valid Save Name.');
 
+    const formatRadio = document.querySelector('input[name="competition-format"]:checked');
     saveState.saveName = name;
-    saveState.mode = document.querySelector('input[name="game-mode"]:checked').value;
+    saveState.mode = selectedModeId;
+    saveState.competitionType = isRealistic() && formatRadio ? formatRadio.value : 'league';
     saveState.isCompleted = false;
+
+    // Mode routing: Realistic Career keeps the classic club/team picker; every
+    // other mode opens its own setup flow (implemented in modes-*.js).
+    if (!isRealistic()) {
+        if (typeof openModeSetupFlow === 'function') {
+            openModeSetupFlow(saveState.mode);
+            return;
+        }
+        showPlaceholderScreen(saveState.mode);
+        return;
+    }
     
     poolTeamsMap = [];
     activeConfigEditingIdx = 0;
@@ -418,6 +592,7 @@ document.getElementById('create-save-btn').onclick = () => {
             cloned.points = 0; cloned.gf = 0; cloned.ga = 0; cloned.gd = 0; cloned.isEliminated = false;
             
             poolTeamsMap.push({
+                leagueKey: leagueKey,
                 leagueName: currentLeague.name,
                 teamData: cloned,
                 isSelected: false
@@ -430,144 +605,321 @@ document.getElementById('create-save-btn').onclick = () => {
     
     saveState.userTeamId = poolTeamsMap[0].teamData.id;
 
+    const fmtLine = document.getElementById('config-format-line');
+    if (fmtLine) {
+        if (isKnockoutFormat()) {
+            fmtLine.innerText = 'Knockout Tournament · single elimination · pick a power-of-two field (2, 4, 8, 16, 32 or 64 clubs)';
+        } else {
+            fmtLine.innerText = 'League Mode · double round robin · every club plays each other twice · pick an even number of clubs';
+        }
+    }
+
     document.getElementById('welcome-screen').style.display = 'none';
     document.getElementById('config-screen').style.display = 'flex';
     
     renderDatabasePickerPanel();
 };
 
-function renderDatabasePickerPanel() {
-    const listContainer = document.getElementById('database-team-picker-list');
-    
-    let searchInput = document.getElementById('team-search-bar');
-    if (!searchInput) {
-        listContainer.innerHTML = `
-            <div style="margin-bottom: 15px;">
-                <input type="text" id="team-search-bar" placeholder="🔍 Search teams..." 
-                       style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #231b40; background-color: #130f24; color: #fff; box-sizing: border-box;">
-            </div>
-            <div id="picker-groups-container"></div>
-        `;
-        searchInput = document.getElementById('team-search-bar');
-        searchInput.oninput = () => renderDatabasePickerRows();
-    }
+// --- TEAM PICKER UI STATE ---
+let pickerLeagueFilter = null;   // league key, or null = all leagues
+let pickerExpanded = new Set();  // league keys whose club lists are expanded
+let pickerInitialized = false;
 
-    renderDatabasePickerRows();
+function initialsOf(name) {
+    return String(name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
-function renderDatabasePickerRows() {
+function poolLeagueEntries() {
+    const map = new Map();
+    poolTeamsMap.forEach(p => { if (!map.has(p.leagueKey)) map.set(p.leagueKey, p.leagueName); });
+    return [...map.entries()].map(([key, name]) => ({ key, name }));
+}
+
+function leagueDisplayName(key, name) {
+    const dup = poolLeagueEntries().filter(l => l.name === name).length > 1;
+    return dup ? `${name} · ${key}` : name;
+}
+
+function currentPoolTeam() {
+    return poolTeamsMap[activeConfigEditingIdx] || poolTeamsMap[0] || null;
+}
+
+function squadAvgRating(teamData) {
+    const players = (teamData && teamData.players) || [];
+    if (!players.length) return null;
+    return (players.reduce((s, p) => s + (p.rating || 0), 0) / players.length).toFixed(1);
+}
+
+function renderDatabasePickerPanel() {
+    if (!poolTeamsMap.length) return;
+    if (!pickerInitialized) {
+        pickerLeagueFilter = null;
+        const focus = poolTeamsMap[Math.min(activeConfigEditingIdx, poolTeamsMap.length - 1)];
+        pickerExpanded = new Set(focus ? [focus.leagueKey] : []);
+        pickerInitialized = true;
+    }
+
+    const listContainer = document.getElementById('database-team-picker-list');
+    listContainer.innerHTML = `
+        <div id="league-filter-row" class="league-filter-row"></div>
+        <div class="picker-search-row">
+            <input type="text" id="team-search-bar" placeholder="🔍 Search clubs in this view…">
+            <button id="picker-clear-search" class="mini-btn picker-clear" title="Clear search">✕</button>
+        </div>
+        <div class="picker-tool-row">
+            <button id="bulk-view-all-btn" class="tool-btn">✓ Select all in view</button>
+            <button id="bulk-view-none-btn" class="tool-btn">✕ Clear view</button>
+            <span id="picker-scope-label" class="picker-scope-label"></span>
+        </div>
+        <div id="picker-groups-container" class="picker-scroll"></div>
+    `;
+
+    document.getElementById('team-search-bar').oninput = () => renderDatabasePickerRows(false);
+    document.getElementById('picker-clear-search').onclick = () => {
+        document.getElementById('team-search-bar').value = '';
+        renderDatabasePickerRows(false);
+    };
+    document.getElementById('bulk-view-all-btn').onclick = () => bulkTogglePickerTeams(true);
+    document.getElementById('bulk-view-none-btn').onclick = () => bulkTogglePickerTeams(false);
+    renderDatabasePickerRows(true);
+}
+
+function bulkTogglePickerTeams(state) {
+    const query = (document.getElementById('team-search-bar').value || '').trim().toLowerCase();
+    poolTeamsMap.forEach(p => {
+        if (pickerLeagueFilter && p.leagueKey !== pickerLeagueFilter) return;
+        if (query && !p.teamData.name.toLowerCase().includes(query)) return;
+        p.isSelected = state;
+    });
+    renderDatabasePickerRows(true);
+}
+
+function renderLeagueFilterChips() {
+    const row = document.getElementById('league-filter-row');
+    if (!row) return;
+    row.innerHTML = '';
+    const leagues = poolLeagueEntries();
+    let totalAll = 0, selAll = 0;
+    const selPer = {};
+    leagues.forEach(l => {
+        const items = poolTeamsMap.filter(p => p.leagueKey === l.key);
+        selPer[l.key] = items.filter(p => p.isSelected).length;
+        totalAll += items.length;
+        selAll += selPer[l.key];
+    });
+    const addChip = (label, sel, total, active, onClick) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'league-chip' + (active ? ' active' : '');
+        b.innerHTML = `<span class="league-chip-name">${esc(label)}</span><span class="league-chip-count">${sel}/${total}</span>`;
+        b.onclick = onClick;
+        row.appendChild(b);
+    };
+    addChip('All Leagues', selAll, totalAll, !pickerLeagueFilter, () => { pickerLeagueFilter = null; renderDatabasePickerRows(true); });
+    leagues.forEach(l => {
+        const items = poolTeamsMap.filter(p => p.leagueKey === l.key);
+        addChip(leagueDisplayName(l.key, l.name), items.filter(p => p.isSelected).length, items.length, pickerLeagueFilter === l.key, () => {
+            pickerLeagueFilter = pickerLeagueFilter === l.key ? null : l.key;
+            if (pickerLeagueFilter) pickerExpanded.add(pickerLeagueFilter);
+            renderDatabasePickerRows(true);
+        });
+    });
+}
+
+function renderDatabasePickerRows(rebuildChips) {
     const groupsContainer = document.getElementById('picker-groups-container');
     if (!groupsContainer) return;
-    groupsContainer.innerHTML = '';
+    if (rebuildChips !== false) renderLeagueFilterChips();
 
-    const query = (document.getElementById('team-search-bar')?.value || "").toLowerCase();
-    let structuralLeagues = [...new Set(poolTeamsMap.map(p => p.leagueName))];
+    const query = (document.getElementById('team-search-bar')?.value || '').trim().toLowerCase();
+    const activeKey = pickerLeagueFilter;
+    const leagues = poolLeagueEntries();
     let totalSelected = 0;
-
     poolTeamsMap.forEach(p => { if (p.isSelected) totalSelected++; });
 
-    structuralLeagues.forEach(lName => {
-        let matchingPoolItems = poolTeamsMap.filter(p => p.leagueName === lName);
-        let filteredItems = matchingPoolItems.filter(p => p.teamData.name.toLowerCase().includes(query));
+    groupsContainer.innerHTML = '';
 
-        if (filteredItems.length === 0) return;
+    leagues.forEach(league => {
+        if (activeKey && league.key !== activeKey) return;
+        const poolItems = poolTeamsMap.filter(p => p.leagueKey === league.key);
+        const filtered = poolItems.filter(p => !query || p.teamData.name.toLowerCase().includes(query));
+        if (poolItems.length === 0 || filtered.length === 0) return;
 
-        let groupDiv = document.createElement('div');
-        groupDiv.className = 'picker-league-group';
-        
-        let allChecked = matchingPoolItems.every(p => p.isSelected);
+        const selectedInLeague = poolItems.filter(p => p.isSelected).length;
+        const allChecked = selectedInLeague === poolItems.length;
+        // While searching, force-open every league that has matches so results stay visible.
+        const collapsed = !pickerExpanded.has(league.key) && !query;
 
-        let headerDiv = document.createElement('div');
-        headerDiv.className = 'picker-league-title';
-        headerDiv.style.display = 'flex';
-        headerDiv.style.justifyContent = 'space-between';
-        headerDiv.style.alignItems = 'center';
-        headerDiv.innerHTML = `
-            <span>${lName}</span>
-            <label style="font-size: 0.85rem; font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #a370f7;">
-                <input type="checkbox" class="league-select-all" ${allChecked ? 'checked' : ''}> Select All
+        const group = document.createElement('div');
+        group.className = 'picker-league-group';
+
+        const head = document.createElement('div');
+        head.className = 'picker-league-head' + (collapsed ? ' collapsed' : '');
+        head.innerHTML = `
+            <span class="picker-chevron">${collapsed ? '▸' : '▾'}</span>
+            <span class="picker-league-name">${esc(leagueDisplayName(league.key, league.name))}</span>
+            <label class="league-select-all-wrap" title="Select / deselect every club in this league">
+                <input type="checkbox" class="league-select-all" ${allChecked ? 'checked' : ''}>
+                <span>All</span>
             </label>
+            <span class="picker-league-count">${selectedInLeague}/${poolItems.length}</span>
         `;
-
-        headerDiv.querySelector('.league-select-all').onchange = (e) => {
-            let targetState = e.target.checked;
-            matchingPoolItems.forEach(poolItem => {
-                poolItem.isSelected = targetState;
-            });
-            renderDatabasePickerPanel();
+        head.onclick = (e) => {
+            if (e.target.closest('.league-select-all-wrap')) return;
+            if (pickerExpanded.has(league.key)) pickerExpanded.delete(league.key);
+            else pickerExpanded.add(league.key);
+            renderDatabasePickerRows(false);
         };
+        head.querySelector('.league-select-all').onchange = (e) => {
+            const state = e.target.checked;
+            poolItems.forEach(p => { p.isSelected = state; });
+            pickerExpanded.add(league.key);
+            renderDatabasePickerRows(true);
+        };
+        group.appendChild(head);
 
-        groupDiv.appendChild(headerDiv);
-
-        filteredItems.forEach(poolItem => {
-            let globalIdx = poolTeamsMap.indexOf(poolItem);
-            let isCurrentEdit = (globalIdx === activeConfigEditingIdx);
-            
-            let row = document.createElement('div');
-            row.className = `team-picker-row ${poolItem.isSelected ? 'selected-active' : ''} ${isCurrentEdit ? 'active-edit' : ''}`;
-            
-            row.innerHTML = `
-                <input type="checkbox" ${poolItem.isSelected ? 'checked' : ''}>
-                <span class="team-picker-label">${poolItem.teamData.name}</span>
-            `;
-
-            row.onclick = (e) => {
-                if (e.target.type === 'checkbox') return;
-                activeConfigEditingIdx = globalIdx;
-                renderDatabasePickerPanel();
-            };
-
-            row.querySelector('input').onchange = (e) => {
-                poolItem.isSelected = e.target.checked;
-                renderDatabasePickerPanel();
-            };
-
-            groupDiv.appendChild(row);
-        });
-
-        groupsContainer.appendChild(groupDiv);
+        if (!collapsed) {
+            filtered.forEach(poolItem => {
+                const globalIdx = poolTeamsMap.indexOf(poolItem);
+                const isFocus = globalIdx === activeConfigEditingIdx;
+                const row = document.createElement('div');
+                row.className = `team-picker-row ${poolItem.isSelected ? 'selected-active' : ''} ${isFocus ? 'active-edit' : ''}`;
+                const avg = squadAvgRating(poolItem.teamData);
+                row.innerHTML = `
+                    <input type="checkbox" ${poolItem.isSelected ? 'checked' : ''}>
+                    <span class="team-picker-name">${esc(poolItem.teamData.name)}</span>
+                    <span class="team-picker-meta">${avg ? 'OVR ' + esc(avg) : ''}</span>
+                    ${isFocus ? '<span class="picker-focus-tag">viewing</span>' : ''}
+                `;
+                row.onclick = (e) => {
+                    if (e.target.type === 'checkbox') return;
+                    activeConfigEditingIdx = globalIdx;
+                    renderDatabasePickerRows(false);
+                };
+                row.querySelector('input').onchange = (e) => {
+                    poolItem.isSelected = e.target.checked;
+                    renderDatabasePickerRows(true);
+                };
+                group.appendChild(row);
+            });
+        }
+        groupsContainer.appendChild(group);
     });
 
-    document.getElementById('selected-count-badge').innerText = totalSelected;
+    if (groupsContainer.children.length === 0) {
+        groupsContainer.innerHTML = '<p class="picker-empty">No clubs found — try another search or league.</p>';
+    }
+
+    updatePickerSummary(totalSelected);
+    renderClubFocusPane();
+}
+
+function updatePickerSummary(totalSelected) {
+    const badge = document.getElementById('selected-count-badge');
+    const label = document.getElementById('selected-count-label');
+    if (badge) badge.innerText = totalSelected;
+    if (label) label.innerText = `${totalSelected === 1 ? 'club' : 'clubs'} selected`;
+
+    const scope = document.getElementById('picker-scope-label');
+    if (scope) {
+        if (pickerLeagueFilter) {
+            const l = poolLeagueEntries().find(x => x.key === pickerLeagueFilter);
+            scope.innerText = l ? leagueDisplayName(l.key, l.name) : 'One league';
+            scope.title = scope.innerText;
+        } else {
+            scope.innerText = `${poolLeagueEntries().length} leagues`;
+        }
+    }
 
     const warning = document.getElementById('power-of-two-warning');
-    if (saveState.mode === "tournament" && ![2,4,8,16,32,64].includes(totalSelected)) {
-        warning.style.display = 'block';
+    if (!warning) return;
+    const pow = [2, 4, 8, 16, 32, 64];
+    if (isKnockoutFormat()) {
+        if (!pow.includes(totalSelected)) {
+            warning.style.display = '';
+            warning.textContent = `⚠️ Knockout needs exactly ${pow.join(', ')} clubs — currently ${totalSelected}.`;
+        } else {
+            warning.style.display = 'none';
+        }
+    } else if (isLeagueFormat() && totalSelected % 2 !== 0) {
+        warning.style.display = '';
+        warning.textContent = `⚠️ League Mode needs an even number of clubs — currently ${totalSelected}.`;
     } else {
         warning.style.display = 'none';
     }
+}
 
-    let activeItem = poolTeamsMap[activeConfigEditingIdx];
-    if (!activeItem) return;
-    document.getElementById('editing-team-title').innerText = activeItem.teamData.name + (activeItem.isSelected ? "" : " (Not Selected)");
+function renderClubFocusPane() {
+    const activeItem = currentPoolTeam();
+    const rosterBody = document.getElementById('editor-roster-body');
+    if (!activeItem) {
+        if (rosterBody) rosterBody.innerHTML = '';
+        return;
+    }
+    const t = activeItem.teamData;
 
-    let claimBtn = document.getElementById('claim-team-btn');
-    if (activeItem.teamData.id === saveState.userTeamId) {
-        claimBtn.className = "action-btn active-control";
-        claimBtn.innerText = "Currently Managing This Club";
-    } else {
-        claimBtn.className = "action-btn";
-        claimBtn.innerText = "Manage This Club";
-        claimBtn.onclick = () => {
-            if(!activeItem.isSelected) {
-                alert("You must include this club in the competition before selecting it as your managed team.");
-                return;
-            }
-            saveState.userTeamId = activeItem.teamData.id;
-            renderDatabasePickerPanel();
-        };
+    const titleEl = document.getElementById('editing-team-title');
+    if (titleEl) titleEl.innerText = t.name;
+    const leagueEl = document.getElementById('editing-team-league');
+    if (leagueEl) leagueEl.innerText = leagueDisplayName(activeItem.leagueKey, activeItem.leagueName);
+    const avatarEl = document.getElementById('focus-club-avatar');
+    if (avatarEl) avatarEl.innerText = initialsOf(t.name);
+
+    const avgEl = document.getElementById('club-avg-rating');
+    if (avgEl) avgEl.innerText = squadAvgRating(t) || '—';
+    const strength = parseTacticalStrength(t);
+    const attEl = document.getElementById('club-att-ui');
+    if (attEl) attEl.innerText = Math.round(strength.att);
+    const defEl = document.getElementById('club-def-ui');
+    if (defEl) defEl.innerText = Math.round(strength.def);
+    const budEl = document.getElementById('club-budget-ui');
+    if (budEl) budEl.innerText = fmtBudget(t.budget);
+
+    const chip = document.getElementById('club-status-chip');
+    if (chip) {
+        if (t.id === saveState.userTeamId) {
+            chip.className = 'status-chip yours';
+            chip.innerText = '⭐ Your Club';
+        } else if (activeItem.isSelected) {
+            chip.className = 'status-chip included';
+            chip.innerText = 'Included in competition';
+        } else {
+            chip.className = 'status-chip excluded';
+            chip.innerText = 'Not selected';
+        }
     }
 
-    const tbody = document.getElementById('editor-roster-body');
-    tbody.innerHTML = '';
+    const claimBtn = document.getElementById('claim-team-btn');
+    if (claimBtn) {
+        if (t.id === saveState.userTeamId) {
+            claimBtn.className = 'action-btn active-control';
+            claimBtn.innerText = '✅ You Manage This Club';
+            claimBtn.onclick = null;
+        } else {
+            claimBtn.className = 'action-btn';
+            claimBtn.innerText = `Manage ${t.name}`;
+            claimBtn.onclick = () => {
+                if (!activeItem.isSelected) {
+                    alert('Include this club in the competition first (tick it in Step 1), then it can be your managed club.');
+                    return;
+                }
+                saveState.userTeamId = t.id;
+                renderDatabasePickerRows(true);
+            };
+        }
+    }
 
-    activeItem.teamData.players.forEach((p, pIdx) => {
-        let tr = document.createElement('tr');
-        const initials = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+    if (!rosterBody) return;
+    rosterBody.innerHTML = '';
+    t.players.forEach((p, pIdx) => {
+        const tr = document.createElement('tr');
+        const initials = initialsOf(p.name);
+        const imgHtml = p.img ? `<img src="${esc(p.img)}" onerror="this.style.display='none'">` : '';
         tr.innerHTML = `
+            <td class="row-num">${pIdx + 1}</td>
             <td>
                 <div class="player-profile">
-                    <div class="player-avatar"><span>${esc(initials)}</span></div>
+                    <div class="player-avatar">${imgHtml}<span>${esc(initials)}</span></div>
                     <strong>${esc(p.name)}</strong>
                 </div>
             </td>
@@ -576,7 +928,7 @@ function renderDatabasePickerRows() {
             <td><button class="swap-row-btn">Swap</button></td>
         `;
         tr.querySelector('.swap-row-btn').onclick = () => openSwapModal(activeItem, pIdx);
-        tbody.appendChild(tr);
+        rosterBody.appendChild(tr);
     });
 }
 
@@ -638,7 +990,7 @@ function renderSwapResults() {
         if (currentRoster.some((rp, i) => i !== replacedIdx && rp.name === p.name)) return false;
         if (swapPosFilter !== 'all' && (POS_GROUPS[p.pos] || '') !== swapPosFilter) return false;
         if (!query) return true;
-        const hay = `${p.name} ${p.pos} ${p.rating} ${entry.teamName} ${entry.leagueName}`.toLowerCase();
+        const hay = `${p.name} ${p.pos} ${p.rating} ${p.nationality || ''} ${entry.teamName} ${entry.leagueName}`.toLowerCase();
         return hay.includes(query);
     });
 
@@ -666,7 +1018,7 @@ function renderSwapResults() {
             <div class="player-avatar">${imgHtml}<span>${esc(initials)}</span></div>
             <div class="swap-card-info">
                 <div class="swap-card-name">${esc(p.name)}</div>
-                <div class="swap-card-sub">${esc(p.pos)} · ${esc(entry.teamName)} <span class="swap-card-league">${esc(entry.leagueName)}</span></div>
+                <div class="swap-card-sub">${esc(p.pos)} · ${esc(entry.teamName)}${p.nationality ? ` · ${esc(p.nationality)}` : ''} <span class="swap-card-league">${esc(entry.leagueName)}</span></div>
             </div>
             <div class="swap-card-rating"><span class="rating-badge">${esc(p.rating)}</span></div>
         `;
@@ -687,10 +1039,10 @@ document.getElementById('launch-sim-btn').onclick = () => {
     if (saveState.teams.length < 2) {
         return alert("Please select at least 2 teams to generate a functional simulator schedule.");
     }
-    if (saveState.mode === "tournament" && ![2,4,8,16,32,64].includes(saveState.teams.length)) {
+    if (isKnockoutFormat() && ![2,4,8,16,32,64].includes(saveState.teams.length)) {
         return alert("Knockout mode requires an even power-of-two team lineup format (2, 4, 8, 16, 32, or 64 teams). Adjust your selections.");
     }
-    if (saveState.mode === "league" && saveState.teams.length % 2 !== 0) {
+    if (isLeagueFormat() && saveState.teams.length % 2 !== 0) {
         return alert("Round Robin League format requires an even number of selected teams. Add or remove one team.");
     }
 
@@ -702,7 +1054,7 @@ document.getElementById('launch-sim-btn').onclick = () => {
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
     
-    if (saveState.mode === "league") {
+    if (isLeagueFormat()) {
         saveState.schedule = buildDoubleRoundRobin(saveState.teams);
         saveState.totalMatchdays = saveState.schedule.length;
     } else {
@@ -713,20 +1065,111 @@ document.getElementById('launch-sim-btn').onclick = () => {
     document.getElementById('config-screen').style.display = 'none';
     document.getElementById('hub-screen').style.display = 'flex';
     refreshHubDashboardUI();
+    switchHubPane('table');
 };
 
-function refreshHubDashboardUI() {
-    let userTeamObj = saveState.teams.find(t => t.id === saveState.userTeamId);
-    document.getElementById('hub-user-team').innerText = userTeamObj.name;
-    document.getElementById('current-matchday-ui').innerText = saveState.currentMatchday;
-    document.getElementById('total-matchdays-ui').innerText = saveState.totalMatchdays;
-    document.getElementById('user-points-ui').innerText = saveState.mode === "league" ? userTeamObj.points : (userTeamObj.isEliminated ? "Eliminated" : "Active");
-
-    if (saveState.mode === "tournament") {
-        document.getElementById('table-title').innerText = `Cup Bracket Tree - Round ${saveState.currentMatchday}`;
-    } else {
-        document.getElementById('table-title').innerText = "Standings Table";
+function findTeamLeagueName(teamId) {
+    if (!activeDatabase) return null;
+    for (let key in activeDatabase.leagues) {
+        const league = activeDatabase.leagues[key];
+        if ((league.teams || []).some(t => t.id === teamId)) return league.name || key;
     }
+    return null;
+}
+
+function ordinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function knockoutRoundName() {
+    const round = saveState.currentMatchday;
+    const teamsNow = saveState.totalMatchdays ? Math.round(saveState.teams.length / Math.pow(2, round - 1)) : saveState.teams.length;
+    const map = { 64: 'Round of 64', 32: 'Round of 32', 16: 'Round of 16', 8: 'Quarter-Final', 4: 'Semi-Final', 2: 'Final' };
+    return map[teamsNow] || `Round ${round}`;
+}
+
+function refreshHubDashboardUI() {
+    // World Cup runs render their own hub (group tables, then bracket) in modes-worldcup.js.
+    if (isWorldCupFormat()) {
+        if (typeof renderWorldCupHubUI === 'function') renderWorldCupHubUI();
+        return;
+    }
+
+    const userTeamObj = saveState.teams.find(t => t.id === saveState.userTeamId) || saveState.teams[0];
+    if (!userTeamObj) return;
+
+    document.getElementById('hub-user-team').innerText = userTeamObj.name;
+    const avatar = document.getElementById('hub-club-avatar');
+    if (avatar) avatar.innerText = initialsOf(userTeamObj.name);
+    const leagueLine = document.getElementById('hub-competition-line');
+    if (leagueLine) {
+        const leagueName = saveState.userLeagueName || findTeamLeagueName(userTeamObj.id);
+        const formationTag = saveState.formation && saveState.mode !== 'realistic' ? ` · ${saveState.formation}` : '';
+        leagueLine.innerText = `${leagueName ? leagueName + ' · ' : ''}${isKnockoutFormat() ? 'Knockout' : 'League Mode'} · ${saveState.teams.length} clubs${formationTag}`;
+    }
+
+    const posLabel = document.getElementById('hub-pos-label');
+    const posValue = document.getElementById('hub-position-ui');
+    const ptsLabel = document.getElementById('hub-pts-label');
+    const ptsValue = document.getElementById('user-points-ui');
+    const gdLabel = document.getElementById('hub-gd-label');
+    const gdValue = document.getElementById('hub-gd-ui');
+
+    if (isKnockoutFormat()) {
+        if (posLabel) posLabel.innerText = 'Round';
+        if (posValue) posValue.innerText = knockoutRoundName();
+        if (ptsLabel) ptsLabel.innerText = 'Status';
+        if (ptsValue) ptsValue.innerText = userTeamObj.isEliminated ? 'Eliminated' : 'Active';
+        if (gdLabel) gdLabel.innerText = 'Clubs Left';
+        if (gdValue) gdValue.innerText = saveState.teams.filter(t => !t.isEliminated).length;
+    } else {
+        const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
+        const position = sorted.findIndex(t => t.id === userTeamObj.id) + 1;
+        if (posLabel) posLabel.innerText = 'Position';
+        if (posValue) posValue.innerText = ordinal(position);
+        if (ptsLabel) ptsLabel.innerText = 'Points';
+        if (ptsValue) ptsValue.innerText = userTeamObj.points;
+        if (gdLabel) gdLabel.innerText = 'Goal Diff';
+        const gd = userTeamObj.gd;
+        if (gdValue) gdValue.innerText = (gd > 0 ? '+' : '') + gd;
+    }
+
+    const total = saveState.totalMatchdays || 1;
+    const played = saveState.isCompleted ? total : Math.min(saveState.currentMatchday - 1, total);
+    const pct = Math.max(0, Math.round((played / total) * 100));
+    const fill = document.getElementById('hub-progress-fill');
+    if (fill) fill.style.width = pct + '%';
+    const pctEl = document.getElementById('hub-progress-pct');
+    if (pctEl) pctEl.innerText = pct + '%';
+    const curMd = saveState.currentMatchday;
+    const totMd = saveState.totalMatchdays;
+    const subEl = document.getElementById('hub-progress-sub');
+    if (subEl) {
+        subEl.innerHTML = isKnockoutFormat()
+            ? `Round <span id="current-matchday-ui">${curMd}</span> of <span id="total-matchdays-ui">${totMd}</span> · ${knockoutRoundName()}`
+            : `Matchday <span id="current-matchday-ui">${curMd}</span> of <span id="total-matchdays-ui">${totMd}</span>`;
+    }
+
+    const tableTitle = document.getElementById('table-title');
+    const tableSub = document.getElementById('table-sub-ui');
+    const feedRound = document.getElementById('feed-round-ui');
+    const thead = document.getElementById('table-head-ui');
+    if (isKnockoutFormat()) {
+        if (tableTitle) tableTitle.innerText = `${knockoutRoundName()} — Cup Bracket`;
+        if (tableSub) tableSub.innerText = `Single elimination · ${saveState.teams.filter(t => !t.isEliminated).length} clubs remain`;
+        if (feedRound) feedRound.innerText = `Round ${saveState.currentMatchday} of ${saveState.totalMatchdays}`;
+        if (thead) thead.innerHTML = '<tr><th>Match</th><th>Home</th><th></th><th>Away</th></tr>';
+    } else {
+        if (tableTitle) tableTitle.innerText = 'Standings Table';
+        if (tableSub) tableSub.innerText = 'Double round robin · click a club to view its squad';
+        if (feedRound) feedRound.innerText = `Matchday ${saveState.currentMatchday} of ${saveState.totalMatchdays}`;
+        if (thead) thead.innerHTML = '<tr><th>Pos</th><th>Club</th><th>GD</th><th>Pts</th></tr>';
+    }
+
+    const exitBtn = document.getElementById('save-exit-btn');
+    if (exitBtn) exitBtn.innerText = isRealistic() ? '💾 Save & Exit to Menu' : '🚪 End Run · not saved';
 
     renderActiveStandings();
     renderLeaderboardCharts();
@@ -734,33 +1177,40 @@ function refreshHubDashboardUI() {
 
 function renderActiveStandings() {
     const tbody = document.getElementById('league-table-body');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (saveState.mode === "league") {
-        let sorted = [...saveState.teams].sort((a,b) => b.points - a.points || b.gd - a.gd);
+    if (isLeagueFormat()) {
+        const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
         sorted.forEach((t, i) => {
-            let tr = document.createElement('tr');
-            if (t.id === saveState.userTeamId) {
-                tr.style.backgroundColor = 'rgba(124, 77, 255, 0.15)';
-            }
-            tr.innerHTML = `<td>${i+1}</td><td class="clickable-row-team"><strong>${t.name}</strong> ${t.id === saveState.userTeamId ? '⭐' : ''}</td><td>${t.gd}</td><td><strong>${t.points}</strong></td>`;
+            const tr = document.createElement('tr');
+            if (t.id === saveState.userTeamId) tr.className = 'user-row';
+            tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td class="clickable-row-team"><strong>${esc(t.name)}</strong> ${t.id === saveState.userTeamId ? '<span class="you-star">⭐</span>' : ''}</td>
+                <td>${t.gd > 0 ? '+' : ''}${t.gd}</td>
+                <td><strong>${t.points}</strong></td>`;
             tr.querySelector('.clickable-row-team').onclick = () => launchProfileModal(t);
             tbody.appendChild(tr);
         });
     } else {
-        let currentFixtures = saveState.schedule[saveState.currentMatchday - 1];
-        if(!currentFixtures) {
+        const currentFixtures = saveState.schedule[saveState.currentMatchday - 1];
+        if (!currentFixtures) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tournament Completed!</td></tr>';
             return;
         }
         currentFixtures.forEach((f, idx) => {
-            let homeObj = saveState.teams.find(t => t.id === f.home);
-            let awayObj = saveState.teams.find(t => t.id === f.away);
-            let tr = document.createElement('tr');
-            if (homeObj.id === saveState.userTeamId || awayObj.id === saveState.userTeamId) {
-                tr.style.backgroundColor = 'rgba(124, 77, 255, 0.15)';
-            }
-            tr.innerHTML = `<td>M${idx+1}</td><td class="clickable-row-team"><strong>${homeObj.name}</strong></td><td>vs</td><td class="clickable-row-team"><strong>${awayObj.name}</strong></td>`;
+            const homeObj = saveState.teams.find(t => t.id === f.home);
+            const awayObj = saveState.teams.find(t => t.id === f.away);
+            if (!homeObj || !awayObj) return;
+            const tr = document.createElement('tr');
+            if (homeObj.id === saveState.userTeamId || awayObj.id === saveState.userTeamId) tr.className = 'user-row';
+            const star = (id) => id === saveState.userTeamId ? ' <span class="you-star">⭐</span>' : '';
+            tr.innerHTML = `
+                <td>${idx + 1}</td>
+                <td class="clickable-row-team"><strong>${esc(homeObj.name)}</strong>${star(homeObj.id)}</td>
+                <td class="vs-cell">vs</td>
+                <td class="clickable-row-team"><strong>${esc(awayObj.name)}</strong>${star(awayObj.id)}</td>`;
             tr.querySelectorAll('.clickable-row-team')[0].onclick = () => launchProfileModal(homeObj);
             tr.querySelectorAll('.clickable-row-team')[1].onclick = () => launchProfileModal(awayObj);
             tbody.appendChild(tr);
@@ -786,9 +1236,16 @@ function renderLeaderboardCharts() {
 }
 
 // --- CORE SIMULATION PROCESSING ENGINE ---
-document.getElementById('advance-matchday-btn').onclick = () => {
+// Simulates exactly one matchday (or one tournament round) and refreshes the hub.
+function advanceOneMatchday() {
     if (saveState.isCompleted) {
         triggerEndgameModalDisplay();
+        return;
+    }
+
+    // World Cup runs simulate group + knockout rounds with their own engine.
+    if (isWorldCupFormat()) {
+        if (typeof performWorldCupAdvance === 'function') performWorldCupAdvance();
         return;
     }
 
@@ -808,11 +1265,12 @@ document.getElementById('advance-matchday-btn').onclick = () => {
     let basicMatchesHtml = "";
     let winners = [];
 
+    const knockoutScale = isKnockoutFormat() ? 1.5 : 1;
     currentRoundMatches.forEach(match => {
         let homeTeam = saveState.teams.find(t => t.id === match.home);
         let awayTeam = saveState.teams.find(t => t.id === match.away);
 
-        let sim = runFixtureSimulation(homeTeam, awayTeam);
+        let sim = runFixtureSimulation(homeTeam, awayTeam, knockoutScale);
         let isUserMatch = (homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId);
         
         let matchRowHtml = "";
@@ -827,9 +1285,9 @@ document.getElementById('advance-matchday-btn').onclick = () => {
         if (sim.details.scorersA.length > 0) matchRowHtml += `<br><span style="font-size:0.85rem; color:#aaa4c4;">&nbsp;&nbsp; Goals [Home]: ${sim.details.scorersA.join(', ')}</span>`;
         if (sim.details.scorersB.length > 0) matchRowHtml += `<br><span style="font-size:0.85rem; color:#aaa4c4;">&nbsp;&nbsp; Goals [Away]: ${sim.details.scorersB.join(', ')}</span>`;
 
-        if (saveState.mode === "tournament") {
+        if (isKnockoutFormat()) {
             if (sim.details.goalsA === sim.details.goalsB) {
-                if (Math.random() > 0.5) {
+                if (Math.random() < shootoutWinnerProbability(homeTeam, awayTeam)) {
                     matchRowHtml += `<br>&nbsp;&nbsp; 🏆 ${homeTeam.name} wins on Penalties!`;
                     winners.push(homeTeam); awayTeam.isEliminated = true;
                 } else {
@@ -851,12 +1309,14 @@ document.getElementById('advance-matchday-btn').onclick = () => {
             userMatchHtml += matchRowHtml;
         } else {
             basicMatchesHtml += matchRowHtml;
-        }
-    });
+        }        });        feedBox.innerHTML += userMatchHtml + basicMatchesHtml;
+    scrollFeedToBottom();
 
-    feedBox.innerHTML += userMatchHtml + basicMatchesHtml;
+    // Reveal results on a manual Step. During auto-sim, leave the player's
+    // current tab alone so they can watch the table/bracket and stats live.
+    if (!isAutoSimRunning()) switchHubPane('feed');
 
-    if (saveState.mode === "league") {
+    if (isLeagueFormat()) {
         if (saveState.currentMatchday >= saveState.totalMatchdays) {
             saveState.isCompleted = true;
             refreshHubDashboardUI();
@@ -885,20 +1345,130 @@ document.getElementById('advance-matchday-btn').onclick = () => {
 
     refreshHubDashboardUI();
     autoSaveCurrentProgress();
+    scrollFeedToBottom();
+}
+
+function scrollFeedToBottom() {
+    const feed = document.getElementById('ticker-feed-box');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+}
+
+// --- CONTINUOUS SIMULATION ---
+// The hub's main button starts the season running; it keeps simulating
+// matchdays on a short timer until the season ends or the player stops it.
+let simAutoTimer = null;
+
+// Lets other modules know whether the season is running unattended, so the
+// sim doesn't yank the view back to the feed while the player is browsing.
+function isAutoSimRunning() {
+    return !!simAutoTimer;
+}
+
+function stopAutoSim() {
+    if (simAutoTimer) {
+        clearInterval(simAutoTimer);
+        simAutoTimer = null;
+    }
+    const btn = document.getElementById('advance-matchday-btn');
+    if (btn) {
+        btn.innerText = '▶ Simulate Season';
+        btn.classList.remove('sim-running');
+    }
+    const stepBtn = document.getElementById('step-matchday-btn');
+    if (stepBtn) stepBtn.disabled = false;
+    const status = document.getElementById('sim-status-ui');
+    if (status) status.style.display = 'none';
+}
+
+function startAutoSim() {
+    if (simAutoTimer) return;
+    if (saveState.isCompleted) {
+        triggerEndgameModalDisplay();
+        return;
+    }
+    const btn = document.getElementById('advance-matchday-btn');
+    if (btn) {
+        btn.innerText = '⏸ Stop Simulation';
+        btn.classList.add('sim-running');
+    }
+    const stepBtn = document.getElementById('step-matchday-btn');
+    if (stepBtn) stepBtn.disabled = true;
+    const status = document.getElementById('sim-status-ui');
+    if (status) {
+        status.style.display = '';
+        status.innerText = '⚙️ Simulating — press Stop Simulation to pause anytime.';
+    }
+
+    // Register the timer first so the very first (immediate) matchday counts
+    // as an auto-sim tick and doesn't yank the view off the player's tab.
+    simAutoTimer = setInterval(() => {
+        advanceOneMatchday();
+        if (saveState.isCompleted) stopAutoSim();
+    }, 650);
+    advanceOneMatchday();
+    if (saveState.isCompleted) stopAutoSim();
+}
+
+document.getElementById('advance-matchday-btn').onclick = () => {
+    if (simAutoTimer) stopAutoSim();
+    else startAutoSim();
+};
+
+// Step button: simulate exactly one matchday and stay paused.
+document.getElementById('step-matchday-btn').onclick = () => {
+    if (simAutoTimer) return;
+    if (saveState.isCompleted) {
+        triggerEndgameModalDisplay();
+        return;
+    }
+    advanceOneMatchday();
 };
 
 function triggerEndgameModalDisplay() {
-    let championName = "Unknown";
-    
-    if (saveState.mode === "league") {
-        let sorted = [...saveState.teams].sort((a,b) => b.points - a.points || b.gd - a.gd);
-        championName = sorted[0].name;
+    let championTeam = null;
+    let championName = 'Unknown';
+
+    if (isLeagueFormat() || (!isWorldCupFormat() && !isKnockoutFormat())) {
+        const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
+        championTeam = sorted[0];
+        championName = championTeam ? championTeam.name : 'Unknown';
     } else {
-        let activeRemaining = saveState.teams.filter(t => !t.isEliminated);
-        championName = activeRemaining.length > 0 ? activeRemaining[0].name : "Tournament Finalist";
+        const activeRemaining = saveState.teams.filter(t => !t.isEliminated);
+        championTeam = activeRemaining.length > 0 ? activeRemaining[0] : null;
+        championName = championTeam ? championTeam.name : 'Tournament Finalist';
     }
 
     document.getElementById('endgame-winner-name').innerText = championName;
+
+    const replayBtn = document.getElementById('endgame-replay-btn');
+    if (replayBtn) replayBtn.style.display = isWorldCupFormat() ? 'none' : '';
+
+    // Challenge verdict (Daily Challenge goals).
+    const verdictEl = document.getElementById('endgame-verdict');
+    if (verdictEl) {
+        const goal = saveState.challengeGoal;
+        if (goal && saveState.mode !== 'realistic' && isLeagueFormat()) {
+            const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
+            const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+            let ok = false;
+            let detail = '';
+            if (goal.type === 'win') {
+                ok = !!championTeam && !!userTeam && championTeam.id === userTeam.id;
+                detail = ok ? 'won the league outright' : `finished behind champion ${championTeam ? championTeam.name : ''}`;
+            } else if (goal.type === 'top4') {
+                const userPos = userTeam ? sorted.findIndex(t => t.id === userTeam.id) + 1 : -1;
+                ok = userPos >= 1 && userPos <= 4;
+                detail = ok ? `finished ${ordinal(userPos)}` : (userPos > 0 ? `finished ${ordinal(userPos)} — needed a top-4 spot` : 'did not qualify');
+            }
+            const goalLabel = goal.label || 'the challenge goal';
+            verdictEl.style.display = '';
+            verdictEl.className = 'endgame-verdict ' + (ok ? 'verdict-good' : 'verdict-bad');
+            verdictEl.innerHTML = `<strong>${ok ? '✔ CHALLENGE COMPLETE' : '✖ CHALLENGE FAILED'}</strong><span>Goal: ${esc(goalLabel)} — ${userTeam ? esc(userTeam.name) : 'Your team'} ${detail}.</span>`;
+        } else {
+            verdictEl.style.display = 'none';
+        }
+    }
+
     document.getElementById('endgame-modal').style.display = 'flex';
 }
 
@@ -919,7 +1489,7 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
 
-    if (saveState.mode === "league") {
+    if (isLeagueFormat()) {
         saveState.schedule = buildDoubleRoundRobin(saveState.teams);
         saveState.totalMatchdays = saveState.schedule.length;
     } else {
@@ -931,20 +1501,28 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     feedBox.innerHTML = "Competition restarted! Roster configurations preserved. Advance matchday to play.";
 
     refreshHubDashboardUI();
+    switchHubPane('table');
     autoSaveCurrentProgress();
 };
 
 function launchProfileModal(team) {
-    document.getElementById('modal-team-name').innerText = team.name;
-    let t = parseTacticalStrength(team);
-    document.getElementById('modal-team-tactics').innerText = `Calculated Ratings -> ATT Strength: ${Math.round(t.att)} | DEF Strength: ${Math.round(t.def)}`;
+    const isUser = team.id === saveState.userTeamId;
+    const avg = squadAvgRating(team) || '—';
+    const strength = parseTacticalStrength(team);
+    const leagueName = findTeamLeagueName(team.id);
+    document.getElementById('modal-team-name').innerText = team.name + (isUser ? ' ⭐' : '');
+    document.getElementById('modal-team-tactics').innerHTML = `
+        ${leagueName ? esc(leagueName) + ' · ' : ''}OVR ${avg} · ATT ${Math.round(strength.att)} · DEF ${Math.round(strength.def)}
+        ${isUser ? ' · Your club' : ''}
+    `;
 
     const tbody = document.getElementById('modal-squad-table');
-    tbody.innerHTML = team.players.map(p => `
-        <tr><td><strong>${p.name}</strong></td><td>${p.pos}</td><td><span class="rating-badge">${p.rating}</span></td></tr>
-    `).join('');
+    tbody.innerHTML = team.players.map(p => {
+        const nat = p.nationality ? ` <span class="nat-tag">${esc(p.nationality)}</span>` : '';
+        return `<tr><td><strong>${esc(p.name)}</strong>${nat}</td><td>${esc(p.pos)}</td><td><span class="rating-badge">${esc(p.rating)}</span></td></tr>`;
+    }).join('');
 
-    document.getElementById('team-modal').style.display = 'block';
+    document.getElementById('team-modal').style.display = 'flex';
 }
 
 document.querySelector('#team-modal .modal-close-trigger').onclick = () => document.getElementById('team-modal').style.display = 'none';
@@ -1105,14 +1683,14 @@ function renderDBPlayerList() {
     const players = team.players || [];
     let count = 0;
     players.forEach((p, idx) => {
-        if (query && !`${p.name} ${p.pos} ${p.rating}`.toLowerCase().includes(query)) return;
+        if (query && !`${p.name} ${p.pos} ${p.rating} ${p.nationality || ''}`.toLowerCase().includes(query)) return;
         count++;
         const row = document.createElement('div');
         row.className = 'db-row';
         row.innerHTML = `
             <div class="db-row-main">
                 <strong>${esc(p.name)}</strong>
-                <div class="db-row-sub">${esc(p.pos)} · OVR ${esc(p.rating)}</div>
+                <div class="db-row-sub">${esc(p.pos)} · OVR ${esc(p.rating)}${p.nationality ? ` · <span class="nat-tag">${esc(p.nationality)}</span>` : ''}</div>
             </div>
             <div class="db-row-actions">
                 <button class="mini-btn" data-act="edit" title="Edit player">✏️</button>
@@ -1164,9 +1742,90 @@ function openDBForm(kind, leagueKey, teamIdx, playerIdx) {
             <div class="form-field"><label>Player name</label><input id="f-name" type="text" value="${esc(existing ? existing.name : '')}" placeholder="e.g. K. Mbappé"></div>
             <div class="form-field"><label>Position</label><select id="f-pos">${posOptions}</select></div>
             <div class="form-field"><label>Rating (OVR)</label><input id="f-rating" type="number" min="1" max="99" value="${existing ? esc(existing.rating) : 80}"></div>
-            <div class="form-field"><label>Image path (optional)</label><input id="f-img" type="text" value="${esc(existing && existing.img ? existing.img : '')}" placeholder="assets/player.png"></div>`;
+            <div class="form-field"><label>Nationality (optional)</label><input id="f-nat" type="text" value="${esc(existing && existing.nationality ? existing.nationality : '')}" placeholder="e.g. France"></div>
+            <div class="form-field"><label>Image path (optional)</label><input id="f-img" type="text" value="${esc(existing && existing.img ? existing.img : '')}" placeholder="assets/player.png"></div>
+            <div class="form-field">
+                <label>Transfer history (optional)</label>
+                <div id="f-th-list"></div>
+                <button type="button" id="f-th-add" class="db-add-row-btn th-add-btn">+ Add Transfer</button>
+            </div>
+            <div class="form-field">
+                <label>Former teammates</label>
+                <div id="f-teammates-box" class="teammates-box">Former teammates are derived from overlapping transfer history — none found yet.</div>
+            </div>`;
+        const history = (existing && Array.isArray(existing.transferHistory)) ? existing.transferHistory : [];
+        history.forEach(h => addTransferHistoryRow(h.club, h.season));
+        document.getElementById('f-th-add').onclick = () => { addTransferHistoryRow('', ''); refreshTeammatesPreview(); };
+        document.getElementById('f-name').addEventListener('input', refreshTeammatesPreview);
+        refreshTeammatesPreview();
     }
     document.getElementById('db-edit-modal').style.display = 'flex';
+}
+
+// --- Transfer history row helpers (player form) ---
+function addTransferHistoryRow(club, season) {
+    const wrap = document.getElementById('f-th-list');
+    if (!wrap) return;
+    const row = document.createElement('div');
+    row.className = 'th-row';
+    row.innerHTML = `
+        <input type="text" class="th-club" placeholder="Club (e.g. Ajax)" value="${esc(club || '')}">
+        <input type="text" class="th-season" placeholder="Season (e.g. 2024/25)" value="${esc(season || '')}">
+        <button type="button" class="th-del" title="Remove transfer">&times;</button>`;
+    row.querySelector('.th-del').onclick = () => { row.remove(); refreshTeammatesPreview(); };
+    row.querySelector('.th-club').addEventListener('input', refreshTeammatesPreview);
+    row.querySelector('.th-season').addEventListener('input', refreshTeammatesPreview);
+    wrap.appendChild(row);
+}
+
+function readTransferHistoryRows() {
+    const out = [];
+    document.querySelectorAll('#f-th-list .th-row').forEach(r => {
+        const club = (r.querySelector('.th-club').value || '').trim();
+        const season = (r.querySelector('.th-season').value || '').trim();
+        if (club) out.push({ club, season });
+    });
+    return out;
+}
+
+// Former teammates are DERIVED, not hand-stored: two players count as former
+// teammates when their transfer histories share a (club, season) stint.
+function getFormerTeammates(player, database) {
+    const out = [];
+    if (!player || !database || !Array.isArray(player.transferHistory)) return out;
+    const keyOf = (h) => String((h.club || '').trim().toLowerCase()) + '||' + String((h.season || '').trim().toLowerCase());
+    const mine = player.transferHistory.filter(h => h && h.club && String(h.club).trim()).map(keyOf);
+    if (mine.length === 0) return out;
+    const seen = new Set();
+    for (let lk in database.leagues) {
+        const league = database.leagues[lk];
+        (league.teams || []).forEach(t => {
+            (t.players || []).forEach(q => {
+                if (!q || !Array.isArray(q.transferHistory)) return;
+                if (q.name === player.name) return; // self
+                const shared = q.transferHistory.some(h => h && mine.includes(keyOf(h)));
+                const key = q.name + '|' + lk;
+                if (shared && !seen.has(key)) {
+                    seen.add(key);
+                    out.push({ name: q.name, teamName: t.name, leagueName: league.name || lk });
+                }
+            });
+        });
+    }
+    return out;
+}
+
+function refreshTeammatesPreview() {
+    const box = document.getElementById('f-teammates-box');
+    if (!box) return;
+    const name = (document.getElementById('f-name').value || '').trim();
+    const history = readTransferHistoryRows();
+    const mates = getFormerTeammates({ name, transferHistory: history }, activeDatabase);
+    if (mates.length === 0) {
+        box.innerHTML = 'No matches yet — add the same <strong>club + season</strong> to two players\' transfer history and they will appear here automatically.';
+    } else {
+        box.innerHTML = '<strong>Former teammates found:</strong> ' + mates.map(m => `<span class="mate-chip">${esc(m.name)} <small>(${esc(m.teamName)})</small></span>`).join(' ');
+    }
 }
 
 function closeDBForm() {
@@ -1211,10 +1870,14 @@ function saveDBForm() {
         const pos = document.getElementById('f-pos').value;
         const rating = parseInt(document.getElementById('f-rating').value, 10);
         const img = document.getElementById('f-img').value.trim();
+        const nationality = document.getElementById('f-nat').value.trim();
+        const history = readTransferHistoryRows();
         const team = activeDatabase.leagues[ctx.leagueKey].teams[ctx.teamIdx];
         const players = team.players || (team.players = []);
         const player = { name, pos, rating: isNaN(rating) ? 80 : Math.max(1, Math.min(99, rating)) };
         if (img) player.img = img;
+        if (nationality) player.nationality = nationality;
+        if (history.length) player.transferHistory = history;
         if (ctx.playerIdx != null && players[ctx.playerIdx]) {
             players[ctx.playerIdx] = Object.assign(player, { stats: players[ctx.playerIdx].stats });
         } else {
@@ -1262,7 +1925,7 @@ document.getElementById('db-import-file').addEventListener('change', (e) => {
         try {
             const data = JSON.parse(reader.result);
             if (!data || !data.leagues || typeof data.leagues !== 'object') throw new Error('file is missing a "leagues" object');
-            activeDatabase = data;
+            activeDatabase = upgradeStoredDatabase(data);
             saveCustomDatabase();
             dbEditorState = { leagueKey: Object.keys(activeDatabase.leagues)[0] || null, teamIdx: null };
             renderDBEditor();
@@ -1289,11 +1952,20 @@ function switchTab(tabId) {
 }
 
 function autoSaveCurrentProgress() {
+    // All non-realistic modes (Draft/Draft Challenge/Omnipotent/National) are one-session runs and are
+    // never written to the save list.
+    if (!isRealistic()) return;
     let key = `elfut_save_${saveState.saveName}`;
     localStorage.setItem(key, JSON.stringify(saveState));
 }
 
 document.getElementById('save-exit-btn').onclick = () => {
+    stopAutoSim();
+    // Every non-realistic mode is a one-session "play now" run: leaving ends the run.
+    if (!isRealistic()) {
+        if (confirm('End this run? One-session game modes are not saved.')) loadActiveMenu();
+        return;
+    }
     autoSaveCurrentProgress();
     loadActiveMenu();
 };
@@ -1301,17 +1973,109 @@ document.getElementById('save-exit-btn').onclick = () => {
 function resumeTargetSave(storageKey) {
     let data = localStorage.getItem(storageKey);
     if (!data) return;
-    saveState = JSON.parse(data);
+    saveState = migrateSaveState(JSON.parse(data));
     document.getElementById('welcome-screen').style.display = 'none';
+
+    // Non-realistic modes are one-session "play now" runs, never written to the
+    // save list, so nothing should exist under them — but guard old saves.
+    if (!isRealistic()) {
+        alert('This is a one-session game mode and cannot be resumed. Start a fresh run from the menu.');
+        loadActiveMenu();
+        return;
+    }
+
     document.getElementById('hub-screen').style.display = 'flex';
     refreshHubDashboardUI();
+    switchHubPane('table');
     
     if (saveState.isCompleted) {
         triggerEndgameModalDisplay();
     }
 }
 
+// --- HUB TABBED PANES + CONFIG/HUB NAVIGATION ---
+function switchHubPane(name) {
+    const panes = { table: 'hub-pane-table', feed: 'hub-pane-feed', stats: 'hub-pane-stats' };
+    if (!panes[name]) return;
+    document.querySelectorAll('.hub-tabpane').forEach(p => p.classList.toggle('active', p.id === panes[name]));
+    document.querySelectorAll('.hub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pane === name));
+    if (name === 'feed') {
+        const feedBox = document.getElementById('ticker-feed-box');
+        if (feedBox) feedBox.scrollTop = feedBox.scrollHeight;
+    }
+}
+
+document.querySelectorAll('.hub-tab-btn').forEach(b => {
+    b.onclick = () => switchHubPane(b.dataset.pane);
+});
+
+function viewOwnSquad() {
+    const u = saveState.teams.find(t => t.id === saveState.userTeamId) || saveState.teams[0];
+    if (u) launchProfileModal(u);
+}
+
+document.getElementById('view-squad-btn').onclick = viewOwnSquad;
+document.getElementById('sidebar-club-card').onclick = viewOwnSquad;
+document.getElementById('config-back-btn').onclick = () => loadActiveMenu();
+
+// --- MATCH ENGINE CHAOS SETTINGS ---
+// A welcome-screen slider scales how much rating gaps decide matches, without
+// touching the calibrated default curve (slider 0 = the verified engine).
+const SIM_CHAOS_KEY = 'elfut_sim_chaos';
+const SIM_CHAOS_DEFAULT = 0;
+
+function simChaosValue() {
+    const raw = parseInt(localStorage.getItem(SIM_CHAOS_KEY), 10);
+    return Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : SIM_CHAOS_DEFAULT;
+}
+
+// 0% -> gap factor 1.0 (curve untouched). 100% -> 0.2 (gaps almost vanish,
+// so results become near coin-flips and shocks are everywhere). Non-linear so
+// low slider values stay close to the verified balance.
+function simChaosGapFactor(v) {
+    const val = v == null ? simChaosValue() : v;
+    return 1 - 0.8 * Math.pow(Math.max(0, Math.min(100, val)) / 100, 1.3);
+}
+
+function simChaosModeName(v) {
+    if (v <= 12) return 'Realistic';
+    if (v <= 40) return 'Balanced';
+    if (v <= 70) return 'Chaotic';
+    return 'Arcade';
+}
+
+function simChaosHint(v) {
+    if (v <= 12) return 'Ratings decide every match — the tuned, realistic engine. Favorites win, underdogs shock rarely.';
+    if (v <= 40) return 'Mostly realistic with a touch more luck — the odd cup giant-killing becomes more common.';
+    if (v <= 70) return 'Quality still matters but form and fortune loom large. Expect surprise title runs and upsets.';
+    return 'Anything can happen — minnows can take the World Cup. Pure entertainment mode.';
+}
+
+function renderChaosSetting() {
+    const slider = document.getElementById('chaos-slider');
+    if (!slider) return;
+    const v = simChaosValue();
+    slider.value = v;
+    const nameEl = document.getElementById('chaos-mode-name');
+    if (nameEl) nameEl.innerText = simChaosModeName(v);
+    const hintEl = document.getElementById('chaos-hint');
+    if (hintEl) hintEl.innerText = simChaosHint(v);
+    const fill = document.getElementById('chaos-slider-fill');
+    if (fill) fill.style.width = v + '%';
+}
+
+(function initChaosSetting() {
+    const slider = document.getElementById('chaos-slider');
+    if (!slider) return;
+    slider.oninput = () => {
+        localStorage.setItem(SIM_CHAOS_KEY, String(slider.value));
+        renderChaosSetting();
+    };
+    renderChaosSetting();
+})();
+
 window.onload = () => {
     loadActiveDatabase();
     loadActiveMenu();
+    renderModePicker();
 };
