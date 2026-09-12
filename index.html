@@ -183,6 +183,22 @@
                 <button id="step-matchday-btn" class="step-btn" title="Simulate one matchday only">⏭ Step</button>
             </div>
             <div id="sim-status-ui" class="sim-status" style="display:none;"></div>
+            <button id="chaos-popover-btn" class="btn-secondary sidebar-btn chaos-popover-btn" title="Match Engine Chaos Settings">🎲 Chaos: <span id="hub-chaos-label">Realistic</span></button>
+            <div id="chaos-popover" class="chaos-popover" style="display:none;">
+                <div class="chaos-popover-head">
+                    <h3>⚙️ Match Engine Chaos</h3>
+                    <button id="chaos-popover-close" class="chaos-popover-close">&times;</button>
+                </div>
+                <div class="chaos-popover-body">
+                    <div class="chaos-slider-row">
+                        <span class="chaos-scale-label">🎯 Realistic</span>
+                        <input type="range" id="hub-chaos-slider" class="chaos-slider" min="0" max="100" step="1" value="0">
+                        <span class="chaos-scale-label">🎲 Arcade</span>
+                    </div>
+                    <p id="hub-chaos-hint" class="sim-settings-hint"></p>
+                    <button id="chaos-reset-btn" class="mini-btn" style="width:auto;margin-top:8px;">Reset to Realistic</button>
+                </div>
+            </div>
             <button id="save-exit-btn" class="exit-btn sidebar-btn">💾 Save &amp; Exit to Menu</button>
         </div>
 

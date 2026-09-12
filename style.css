@@ -373,6 +373,75 @@ tr:last-child td {
     line-height: 1.4;
 }
 
+/* --- CHAOS POPOVER (HUB) --- */
+.chaos-popover-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.chaos-popover-btn span {
+    color: #cfc6f2;
+    font-size: 0.75rem;
+}
+.chaos-popover {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    width: 280px;
+    background: #141122;
+    border: 1px solid #2a2444;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    z-index: 200;
+}
+.chaos-popover-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.chaos-popover-head h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #a370f7;
+}
+.chaos-popover-close {
+    background: none;
+    border: none;
+    color: #aaa4c4;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+}
+.chaos-popover-close:hover {
+    color: #ffffff;
+}
+.chaos-popover-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.chaos-popover-body .chaos-slider {
+    accent-color: #7c4dff;
+}
+#chaos-reset-btn {
+    width: auto;
+    margin: 8px 0 0;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    background: #231b40;
+}
+#chaos-reset-btn:hover {
+    background: #7c4dff;
+    transform: none;
+}
+
 /* --- FORM INPUTS --- */
 input[type="text"], input[type="number"], select, textarea {
     width: 100%;
@@ -655,6 +724,7 @@ input:focus, select:focus, textarea:focus {
     border-radius: 12px;
     padding: 20px;
     box-sizing: border-box;
+    min-height: 0;
 }
 .panel h2 { color: #a370f7; margin-top: 0; font-size: 1.2rem; }
 
@@ -1429,8 +1499,8 @@ input:focus, select:focus, textarea:focus {
 .advance-btn { margin-top: 8px; }
 
 /* --- HUB: MAIN AREA + TABBED PANES --- */
-.hub-screen-main { display: flex; flex-direction: column; gap: 16px; }
-.main-content { display: flex; flex-direction: column; gap: 16px; }
+.hub-screen-main { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.main-content { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 .hub-tabbar { display: flex; gap: 8px; flex-wrap: wrap; }
 .hub-tab-btn {
     width: auto;
@@ -1449,8 +1519,8 @@ input:focus, select:focus, textarea:focus {
     border-color: #7c4dff;
     color: #ffffff;
 }
-.hub-tabpane { display: none; }
-.hub-tabpane.active { display: block; }
+.hub-tabpane { display: none; flex: 1 1 auto; min-height: 0; }
+.hub-tabpane.active { display: flex; flex-direction: column; min-height: 0; }
 
 .panel-head {
     display: flex;
@@ -1463,7 +1533,7 @@ input:focus, select:focus, textarea:focus {
 .panel-head h2, .panel-head h3 { margin: 0; color: #a370f7; }
 .panel-head h3 { font-size: 1.1rem; }
 .panel-sub { color: #8f88b0; font-size: 0.75rem; }
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow: auto; min-height: 0; flex: 1 1 auto; }
 
 .clickable-row-team { cursor: pointer; }
 .clickable-row-team:hover strong { color: #ffffff; text-decoration: underline; }
@@ -1471,21 +1541,15 @@ tr.user-row td { background: rgba(124, 77, 255, 0.13); }
 .you-star { margin-left: 5px; }
 .vs-cell { text-align: center; color: #8f88b0; }
 .row-num { color: #8f88b0; width: 34px; }
-.feed-panel .feed-scroll { max-height: 64vh; }
+.feed-panel .feed-scroll { flex: 1 1 auto; min-height: 0; max-height: none; }
 
 /* --- HUB/CONFIG RESPONSIVE --- */
 @media (max-width: 900px) {
-    #hub-screen { flex-direction: column; }
-    .team-selector-pane, .roster-modifier-pane { max-height: none; overflow: visible; }
-    .picker-scroll { max-height: 42vh; }
-    .club-card-stats { grid-template-columns: repeat(2, 1fr); }
-}
-/* --- RESPONSIVE (final word) --- */
-@media (max-width: 900px) {
-    .editor-layout { grid-template-columns: 1fr; }
+    #hub-screen { flex-direction: column; min-height: 0; }
     .team-selector-pane, .roster-modifier-pane { max-height: none; overflow: visible; }
     .picker-scroll { max-height: 45vh; }
     .club-card-stats { grid-template-columns: repeat(2, 1fr); }
+    .editor-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
     .hub-stat-grid { grid-template-columns: 1fr; }

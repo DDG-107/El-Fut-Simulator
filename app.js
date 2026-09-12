@@ -214,12 +214,151 @@ function generateRandomPlayer(position, targetRating) {
     };
 }
 
+// Team strength tiers — real-world club strength mapping for auto-generated rosters.
+// Teams NOT in the database get ratings reflective of their real-world level so
+// Norwich City isn't rated above Man City. Keyed by lower-cased team name.
+const TEAM_STRENGTH_TIERS = {
+    // --- Elite (OVR ~85-87) ---
+    'manchester city':            { ovr: 87, budget: 200000000 },
+    'real madrid':            { ovr: 87, budget: 150000000 },
+    'bayern munich':            { ovr: 86, budget: 120000000 },
+    'liverpool':            { ovr: 86, budget: 140000000 },
+    'manchester united':            { ovr: 84, budget: 110000000 },
+    'arsenal':            { ovr: 85, budget: 130000000 },
+    'chelsea':            { ovr: 84, budget: 120000000 },
+    'barcelona':            { ovr: 86, budget: 100000000 },
+    'atletico de madrid':            { ovr: 83, budget: 80000000 },
+    // 'atletico madrid' alias kept for DB teams still named 'Atletico Madrid'
+    'atletico madrid':            { ovr: 83, budget: 80000000 },
+    'psg':            { ovr: 85, budget: 110000000 },
+    // --- Europe, elite (OVR ~83-85) ---
+    'inter milan':            { ovr: 85, budget: 120000000 },
+    'ac milan':            { ovr: 83, budget: 90000000 },
+    'juventus':            { ovr: 83, budget: 95000000 },
+    'borussia dortmund':            { ovr: 84, budget: 110000000 },
+    'rb leipzig':            { ovr: 82, budget: 100000000 },
+    'napoli':            { ovr: 82, budget: 85000000 },
+    'worcester city':            { ovr: 85, budget: 50000000 },
+    // --- Europe, top half (OVR ~80-83) ---
+    'newcastle united':            { ovr: 82, budget: 95000000 },
+    'tottenham':            { ovr: 81, budget: 90000000 },
+    'aston villa':            { ovr: 81, budget: 85000000 },
+    'real sociedad':            { ovr: 80, budget: 60000000 },
+    'athletic bilbao':            { ovr: 80, budget: 50000000 },
+    'villarreal':            { ovr: 80, budget: 70000000 },
+    'ajax':            { ovr: 81, budget: 70000000 },
+    'psv':            { ovr: 81, budget: 65000000 },
+    'frakkfurt':            { ovr: 80, budget: 65000000 },
+    'palermo':            { ovr: 79, budget: 45000000 },
+    'sunderland':            { ovr: 80, budget: 50000000 },
+    'bournemouth':            { ovr: 79, budget: 75000000 },
+    'fulham':            { ovr: 79, budget: 70000000 },
+    'norwich city':            { ovr: 76, budget: 40000000 },
+    // --- Europe, mid / lower (OVR ~74-76) ---
+    'kv kortrijk':            { ovr: 74, budget: 12000000 },
+    // --- Unibet Cup / Friendlies ---
+    'club america':            { ovr: 80, budget: 35000000 },
+    'cf monterrey':            { ovr: 79, budget: 30000000 },
+    'tigres uanl':            { ovr: 79, budget: 30000000 },
+    'cd guadalajara':            { ovr: 78, budget: 35000000 },
+    'cruz azul':            { ovr: 78, budget: 30000000 },
+    'pumas unam':            { ovr: 77, budget: 25000000 },
+    'club león':            { ovr: 76, budget: 22000000 },
+    'santos laguna':            { ovr: 75, budget: 20000000 },
+    'atlas fc':            { ovr: 75, budget: 18000000 },
+    'quérétaro fc':            { ovr: 74, budget: 15000000 },
+    'club puebla':            { ovr: 74, budget: 14000000 },
+    'ce santa fé':            { ovr: 75, budget: 11000000 },
+    'once caldas':            { ovr: 74, budget: 10000000 },
+    'américa mineiro':            { ovr: 77, budget: 20000000 },
+    // --- South America ---
+    'flamengo':            { ovr: 81, budget: 80000000 },
+    'palmeiras':            { ovr: 81, budget: 80000000 },
+    'corinthians':            { ovr: 80, budget: 75000000 },
+    'santos':            { ovr: 79, budget: 50000000 },
+    'fluminense':            { ovr: 80, budget: 65000000 },
+    // --- Asia ---
+    'seongnam':            { ovr: 76, budget: 30000000 },
+    // --- Europe, second wave (OVR ~75-78) ---
+    'wolves':            { ovr: 78, budget: 60000000 },
+    'west bromwich alliance':            { ovr: 76, budget: 45000000 },
+    'burnley':            { ovr: 76, budget: 25000000 },
+    'wigan athletic':            { ovr: 75, budget: 30000000 },
+    'stoke city':            { ovr: 75, budget: 35000000 },
+    'sheffield wednesday':            { ovr: 75, budget: 35000000 },
+    'cardiff city':            { ovr: 75, budget: 35000000 },
+    'hull city':            { ovr: 74, budget: 30000000 },
+    'middlesbrough':            { ovr: 75, budget: 40000000 },
+    'blackburn rovers':            { ovr: 74, budget: 35000000 },
+    'watford':            { ovr: 75, budget: 40000000 },
+    'leeds united':            { ovr: 77, budget: 45000000 },
+    'nottingham forest':            { ovr: 77, budget: 40000000 },
+    'crystal palace':            { ovr: 78, budget: 30000000 },
+    'everton':            { ovr: 78, budget: 35000000 },
+    'west ham':            { ovr: 77, budget: 60000000 },
+    'brighton':            { ovr: 78, budget: 55000000 },
+    'swansea city':            { ovr: 75, budget: 35000000 },
+    'huddersfield town':            { ovr: 74, budget: 25000000 },
+    'reading':            { ovr: 75, budget: 40000000 },
+    'brentford':            { ovr: 78, budget: 65000000 },
+    'milton keynes dons':            { ovr: 75, budget: 35000000 },
+    'derby county':            { ovr: 75, budget: 40000000 },
+    'port vale':            { ovr: 74, budget: 25000000 },
+    'bolton wanderers':            { ovr: 74, budget: 30000000 },
+    'ipswich town':            { ovr: 76, budget: 45000000 },
+    // --- Mid-table Europe (OVR ~76-80) ---
+    'bayer leverkusen':            { ovr: 81, budget: 80000000 },
+    'vfl wolfsburg':            { ovr: 79, budget: 65000000 },
+    'eintracht frankfurt':            { ovr: 79, budget: 65000000 },
+    'borussia mönchengladbach':            { ovr: 78, budget: 60000000 },
+    'hoffenheim':            { ovr: 77, budget: 55000000 },
+    'freiburg':            { ovr: 77, budget: 50000000 },
+    'mainz':            { ovr: 76, budget: 45000000 },
+    'sevilla':            { ovr: 79, budget: 55000000 },
+    'real betis':            { ovr: 78, budget: 60000000 },
+    'valencia':            { ovr: 78, budget: 45000000 },
+    'celtic':            { ovr: 80, budget: 55000000 },
+    'rangers':            { ovr: 80, budget: 55000000 },
+    'maccabi tel aviv':            { ovr: 77, budget: 45000000 },
+    'benfica':            { ovr: 81, budget: 80000000 },
+    'porto':            { ovr: 81, budget: 80000000 },
+    'sporting cp':            { ovr: 79, budget: 65000000 },
+    'olympique de marseille':            { ovr: 77, budget: 50000000 },
+    'olympique lyonnais':            { ovr: 77, budget: 50000000 },
+    'monaco':            { ovr: 78, budget: 55000000 },
+    'montpellier hsc':            { ovr: 76, budget: 40000000 },
+    'rc lens':            { ovr: 77, budget: 45000000 },
+    'lille':            { ovr: 77, budget: 50000000 },
+    'aj auxerre':            { ovr: 76, budget: 35000000 },
+    'stade rennes':            { ovr: 77, budget: 45000000 },
+    'stade de reims':            { ovr: 76, budget: 40000000 },
+    'as saint-etienne':            { ovr: 75, budget: 30000000 },
+    // --- Relegation / lower (OVR ~72-76) ---
+    'leicester city':            { ovr: 77, budget: 40000000 },
+    'wolverhampton wanderers':            { ovr: 76, budget: 20000000 },
+    'sheffield united':            { ovr: 75, budget: 20000000 },
+    'blackpool':            { ovr: 74, budget: 20000000 },
+    'bolton':            { ovr: 73, budget: 18000000 },
+    'wigan':            { ovr: 73, budget: 15000000 },
+    'rotherham':            { ovr: 73, budget: 15000000 },
+    'oxford united':            { ovr: 72, budget: 12000000 },
+};
+
 // Fixed Roster Normalization to prevent multiple GKs from overpowering defenses
 function normalizeRoster(team, baselineOvr = 80) {
     if (!team.players) team.players = [];
     team.players.forEach(p => {
         if (!p.stats) p.stats = { goals: 0, assists: 0, cleanSheets: 0 };
     });
+
+    // Resolve a realistic baseline from the team-strength tiers when available.
+    const key = String(team.name || '').toLowerCase();
+    let tier = null;
+    for (const k in TEAM_STRENGTH_TIERS) {
+        if (key.includes(k)) { tier = TEAM_STRENGTH_TIERS[k]; break; }
+    }
+    const ovr = tier ? tier.ovr : baselineOvr;
+    if (tier && tier.budget && !team.budget) team.budget = tier.budget;
 
     const outfieldPositions = ["CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
@@ -233,7 +372,7 @@ function normalizeRoster(team, baselineOvr = 80) {
             assignedPos = outfieldPositions[team.players.length % outfieldPositions.length];
         }
         
-        team.players.push(generateRandomPlayer(assignedPos, baselineOvr));
+        team.players.push(generateRandomPlayer(assignedPos, ovr));
     }
     if (team.players.length > 11) {
         team.players = team.players.slice(0, 11);
@@ -2063,15 +2202,156 @@ function renderChaosSetting() {
     const fill = document.getElementById('chaos-slider-fill');
     if (fill) fill.style.width = v + '%';
 }
-
 (function initChaosSetting() {
     const slider = document.getElementById('chaos-slider');
-    if (!slider) return;
-    slider.oninput = () => {
-        localStorage.setItem(SIM_CHAOS_KEY, String(slider.value));
-        renderChaosSetting();
-    };
+    if (slider) {
+        slider.oninput = () => {
+            localStorage.setItem(SIM_CHAOS_KEY, String(slider.value));
+            renderChaosSetting();
+            syncHubChaosUI();
+        };
+    }
     renderChaosSetting();
+})();
+
+// --- HUB CHAOS POPOVER ---
+// The match engine reads chaos from a single localStorage key
+// (elfut_sim_chaos). The welcome-screen slider and the hub popover both live
+// off that same value, so changing either one updates the engine immediately.
+let hubChaosOpen = false;
+
+function hubChaosPopover() {
+    return document.getElementById('chaos-popover');
+}
+
+function hubChaosBtn() {
+    return document.getElementById('chaos-popover-btn');
+}
+
+function syncHubChaosUI() {
+    const slider = document.getElementById('hub-chaos-slider');
+    const label = document.getElementById('hub-chaos-label');
+    const hint = document.getElementById('hub-chaos-hint');
+    if (!slider) return;
+    const v = simChaosValue();
+    slider.value = v;
+    if (label) label.innerText = simChaosModeName(v);
+    if (hint) hint.innerText = simChaosHint(v);
+}
+
+function openHubChaos() {
+    if (hubChaosOpen) return;
+    hubChaosOpen = true;
+    const popover = hubChaosPopover();
+    if (popover) popover.style.display = '';
+    syncHubChaosUI();
+}
+
+function closeHubChaos() {
+    hubChaosOpen = false;
+    const popover = hubChaosPopover();
+    if (popover) popover.style.display = 'none';
+}
+
+function initHubChaosPopover() {
+    const btn = hubChaosBtn();
+    const popover = hubChaosPopover();
+    const slider = document.getElementById('hub-chaos-slider');
+    const resetBtn = document.getElementById('chaos-reset-btn');
+    const closeBtn = document.getElementById('chaos-popover-close');
+
+    if (!btn || !popover) return;
+
+    btn.onclick = (e) => {
+        e.stopPropagation();
+        openHubChaos();
+    };
+
+    closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeHubChaos();
+    };
+
+    if (slider) {
+        slider.oninput = () => {
+            localStorage.setItem(SIM_CHAOS_KEY, String(slider.value));
+            syncHubChaosUI();
+            renderChaosSetting();
+        };
+    }
+
+    if (resetBtn) {
+        resetBtn.onclick = (e) => {
+            e.stopPropagation();
+            localStorage.setItem(SIM_CHAOS_KEY, String(SIM_CHAOS_DEFAULT));
+            syncHubChaosUI();
+            renderChaosSetting();
+        };
+    }
+
+    // Close when the user clicks outside the popover or presses Escape.
+    document.addEventListener('click', (e) => {
+        if (!hubChaosOpen) return;
+        if (popover.contains(e.target) || btn.contains(e.target)) return;
+        closeHubChaos();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && hubChaosOpen) {
+            closeHubChaos();
+            e.preventDefault();
+        }
+    });
+
+    // Keep the popover anchored when the window resizes; if anchoring ever
+    // drifts off-screen we'll clamp it back inside the sidebar.
+    window.addEventListener('resize', () => {
+        if (hubChaosOpen) positionHubChaosPopover();
+    });
+
+    // Cursor may have moved over the button between the initial render and the
+    // first open; refresh the label so it matches the stored chaos value.
+    syncHubChaosUI();
+}
+
+function positionHubChaosPopover() {
+    const popover = hubChaosPopover();
+    const btn = hubChaosBtn();
+    if (!popover || !btn || !hubChaosOpen) return;
+    const br = btn.getBoundingClientRect();
+    const pr = popover.getBoundingClientRect();
+    const vw = window.innerWidth;
+    // Default: popover sits directly below the button, left-aligned.
+    let left = 0;
+    let top = br.height + 8;
+    // If it would overflow the right edge, shift it left so it stays on-screen.
+    if (br.left + pr.width > vw - 8) {
+        left = -(pr.width - br.width);
+    }
+    popover.style.left = left + 'px';
+    popover.style.top = top + 'px';
+}
+
+function initHubChaosPopoverIfNeeded() {
+    if (typeof initHubChaosPopover._done === 'undefined') {
+        initHubChaosPopover();
+        initHubChaosPopover._done = true;
+    }
+}
+
+(function refreshHubChaosOnHubShow() {
+    const had = typeof refreshHubChaosOnHubShow._wired === 'undefined';
+    const obs = new MutationObserver(() => {
+        const hub = document.getElementById('hub-screen');
+        const shown = hub && hub.style.display !== 'none';
+        if (shown) initHubChaosPopoverIfNeeded();
+    });
+    // Watch the hub container for display changes.
+    const hub = document.getElementById('hub-screen');
+    if (hub) {
+        obs.observe(hub, { attributes: true, attributeFilter: ['style'] });
+    }
+    refreshHubChaosOnHubShow._wired = true;
 })();
 
 window.onload = () => {
