@@ -1199,10 +1199,12 @@ document.getElementById('launch-sim-btn').onclick = () => {
     } else {
         saveState.schedule = buildDirectKnockoutTree(saveState.teams);
         saveState.totalMatchdays = Math.log2(saveState.teams.length);
-    }
-
-    document.getElementById('config-screen').style.display = 'none';
-    document.getElementById('hub-screen').style.display = 'flex';
+    }document.getElementById('config-screen').style.display = 'none';
+        const hub = document.getElementById('hub-screen');
+        hub.style.display = 'flex';
+        hub.style.position = 'fixed';
+        hub.style.inset = '0';
+        hub.style.zIndex = '50';
     refreshHubDashboardUI();
     switchHubPane('table');
 };
