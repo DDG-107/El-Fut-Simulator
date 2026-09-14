@@ -1102,6 +1102,18 @@ function launchUclDraftSeason() {
     if (idx !== -1) saveState.teams.splice(idx, 1, userTeam);
     else saveState.teams.push(userTeam);
     saveState.userTeamId = userTeam.id;
+    UCL.yourClubId = userTeam.id;
+
+    // The schedule was built around the displaced club's id — remap every
+    // fixture that references it onto the drafted club's new id, otherwise
+    // each of its fixtures is silently skipped (opponent lookup fails) and
+    // the drafted team never plays a game.
+    saveState.schedule = saveState.schedule.map(md =>
+        md.map(m => ({
+            home: m.home === displaced.id ? userTeam.id : m.home,
+            away: m.away === displaced.id ? userTeam.id : m.away
+        }))
+    );
     // The run was started from the Single Season Draft — keep its mode identity
     // while competitionType stays 'ucl' to drive the tournament engine.
     saveState.mode = 'draft';

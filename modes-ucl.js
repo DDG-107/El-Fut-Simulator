@@ -418,7 +418,7 @@ function performUclAdvance() {
         let userHtml = '', basicHtml = '';
         matches.forEach(match => {
             const home = uclTeamById(match.home), away = uclTeamById(match.away);
-            if (!home || !away) return;
+            if (!home || !away) { feedBox.innerHTML += `<div class="standard-match-log">⚠ Skipped unresolvable fixture: ${esc(match.home)} vs ${esc(match.away)}</div>`; return; }
             const sim = runFixtureSimulation(home, away, 1);
             const html = uclMatchHtml(sim, home, away);
             if (home.id === saveState.userTeamId || away.id === saveState.userTeamId) userHtml += html;
@@ -453,7 +453,7 @@ function performUclAdvance() {
             let userHtml = '', basicHtml = '';
             saveState.uclPlayoffPairs.forEach((pair, idx) => {
                 const away = uclTeamById(pair.a), home = uclTeamById(pair.b); // seed (a) travels first
-                if (!home || !away) return;
+                if (!home || !away) { feedBox.innerHTML += `<div class="standard-match-log">⚠ Skipped unresolvable tie: ${esc(pair.a)} vs ${esc(pair.b)}</div>`; return; }
                 const sim = runFixtureSimulation(home, away, 1.35);
                 saveState.uclTieAgg[idx] = { a: sim.details.goalsB, b: sim.details.goalsA };
                 const html = uclMatchHtml(sim, home, away, true);
@@ -468,7 +468,7 @@ function performUclAdvance() {
             const winners = [];
             saveState.uclPlayoffPairs.forEach((pair, idx) => {
                 const home = uclTeamById(pair.a), away = uclTeamById(pair.b); // seed hosts the decider
-                if (!home || !away) return;
+                if (!home || !away) { feedBox.innerHTML += `<div class="standard-match-log">⚠ Skipped unresolvable tie: ${esc(pair.a)} vs ${esc(pair.b)}</div>`; return; }
                 const sim = runFixtureSimulation(home, away, 1.35);
                 const agg = saveState.uclTieAgg[idx] || { a: 0, b: 0 };
                 agg.a += sim.details.goalsA;
@@ -514,7 +514,7 @@ function performUclAdvance() {
     ties.forEach(tie => {
         if (!tie.a || !tie.b) return;
         const home = uclTeamById(tie.a), away = uclTeamById(tie.b);
-        if (!home || !away) return;
+        if (!home || !away) { feedBox.innerHTML += `<div class="standard-match-log">⚠ Skipped unresolvable tie: ${esc(tie.a)} vs ${esc(tie.b)}</div>`; return; }
         const sim = runFixtureSimulation(home, away, 1.5);
         let winnerId;
         if (sim.details.goalsA > sim.details.goalsB) winnerId = tie.a;
