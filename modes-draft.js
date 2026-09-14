@@ -785,7 +785,8 @@ function launchSquadModeSeason() {
     if (idx !== -1) teams.splice(idx, 1, userTeam);
     else teams.push(userTeam);
 
-    saveState.saveName = clubName + ' run';
+    if (typeof assignAutoSaveName === 'function') assignAutoSaveName(clubName, SB.mode);
+    else saveState.saveName = clubName + ' run';
     saveState.mode = SB.mode;
     saveState.formation = SB.formation;
     saveState.competitionType = 'league';

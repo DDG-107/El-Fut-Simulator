@@ -48,6 +48,38 @@ function toggleTheme() {
     });
 })();
 
+// --- AUTOMATIC SAVE NAMING ---
+// Players never type a save name. Realistic careers are named from what they
+// actually are: "<Club> — <Game Mode> — <date stamp>". One-session modes never
+// reach the save list, but they still get a display name for consistency.
+// Collisions (same club, same mode, same day) get a numbered suffix so an
+// older career is never overwritten.
+function formatDateStamp(d) {
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, ' ');
+}
+
+function buildAutoSaveName(clubName, modeId, date) {
+    const mode = GAME_MODES.find(m => m.id === (modeId || saveState.mode)) || { name: 'Career' };
+    const club = clubName || saveState.userTeamId || 'Career';
+    return `${club} — ${mode.name} — ${formatDateStamp(date || new Date())}`;
+}
+
+function saveNameExists(name) {
+    return !!localStorage.getItem(`elfut_save_${name}`);
+}
+
+function uniqueAutoSaveName(base) {
+    if (!saveNameExists(base)) return base;
+    for (let n = 2; ; n++) {
+        const candidate = `${base} (${n})`;
+        if (!saveNameExists(candidate)) return candidate;
+    }
+}
+
+function assignAutoSaveName(clubName, modeId) {
+    saveState.saveName = uniqueAutoSaveName(buildAutoSaveName(clubName, modeId));
+}
+
 // --- GAME MODES ---
 // 'mode' on the save object selects which ruleset governs this career.
 // 'realistic' is the persistent full-club save; every other mode is a
@@ -737,11 +769,8 @@ document.getElementById('create-save-btn').onclick = () => {
         return alert('Could not start a save: the team database (database.js) failed to load. It may contain a syntax error. Check the browser console for details.');
     }
 
-    let name = document.getElementById('new-save-name').value.trim();
-    if (!name) return alert('Please input a valid Save Name.');
-
     const formatRadio = document.querySelector('input[name="competition-format"]:checked');
-    saveState.saveName = name;
+    saveState.saveName = '';
     saveState.mode = selectedModeId;
     saveState.competitionType = isRealistic() && formatRadio ? formatRadio.value : 'league';
     saveState.isCompleted = false;
@@ -1233,14 +1262,18 @@ document.getElementById('launch-sim-btn').onclick = () => {
 
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
-    
+
+    // The save is only now real — name it from its final club, mode and date.
+    assignAutoSaveName((saveState.teams.find(t => t.id === saveState.userTeamId) || {}).name, saveState.mode);
+
     if (isLeagueFormat()) {
         saveState.schedule = buildDoubleRoundRobin(saveState.teams);
         saveState.totalMatchdays = saveState.schedule.length;
     } else {
         saveState.schedule = buildDirectKnockoutTree(saveState.teams);
         saveState.totalMatchdays = Math.log2(saveState.teams.length);
-    }document.getElementById('config-screen').style.display = 'none';
+    }
+    document.getElementById('config-screen').style.display = 'none';
         const hub = document.getElementById('hub-screen');
         hub.style.display = 'flex';
         hub.style.position = 'fixed';

@@ -266,7 +266,9 @@ function startWorldCup() {
     saveState.wcBracketSize = bracketSize;
     saveState.totalMatchdays = 3 + Math.log2(bracketSize);
 
-    saveState.saveName = 'World Cup run';
+    const nationTeam = teams.find(t => t.id === WC.yourNationId);
+    if (typeof assignAutoSaveName === 'function') assignAutoSaveName(nationTeam ? nationTeam.name : 'National Team', 'national');
+    else saveState.saveName = 'World Cup run';
     saveState.mode = 'national';
     saveState.competitionType = 'worldcup';
     saveState.userTeamId = WC.yourNationId;
