@@ -12,6 +12,42 @@ let saveState = {
     schedule: []
 };
 
+// --- THEME ---
+// Dark is the default look; light is a full token swap on :root[data-theme="light"].
+// The choice persists in localStorage and is applied before first paint of the
+// menu, so reloads never flash the wrong theme.
+const THEME_STORAGE_KEY = 'elfut_theme';
+
+function applyTheme(theme) {
+    const t = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+        btn.innerText = t === 'dark' ? '🌙 Dark' : '☀️ Light';
+        btn.setAttribute('aria-pressed', String(t === 'light'));
+    });
+}
+
+function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+function toggleTheme() {
+    const next = currentTheme() === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (e) { /* storage unavailable */ }
+}
+
+(function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (e) { /* storage unavailable */ }
+    applyTheme(saved || 'dark');
+    // Delegated listener: theme buttons exist on several screens (menu, hub,
+    // database manager) and never need individual rebinding.
+    document.addEventListener('click', (e) => {
+        if (e.target.closest && e.target.closest('.theme-toggle-btn')) toggleTheme();
+    });
+})();
+
 // --- GAME MODES ---
 // 'mode' on the save object selects which ruleset governs this career.
 // 'realistic' is the persistent full-club save; every other mode is a

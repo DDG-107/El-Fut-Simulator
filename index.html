@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>El Fut Simulator</title>
+    <script>/* apply saved theme before first paint to avoid a flash */try{document.documentElement.setAttribute('data-theme',localStorage.getItem('elfut_theme')==='light'?'light':'dark')}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2316191f'/%3E%3Ccircle cx='8' cy='8' r='4.5' fill='none' stroke='%2322c06a' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='1.2' fill='%2322c06a'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +15,9 @@
 
     <div id="welcome-screen" class="screen-container">
         <div class="menu-box">
+            <div class="menu-topbar">
+                <button type="button" class="theme-toggle-btn" aria-label="Toggle color theme">🌙 Dark</button>
+            </div>
             <h1>El Fut Simulator</h1>
             <div class="save-section">
                 <h3>Load Saved Career</h3>
@@ -203,6 +207,7 @@
                     <button id="chaos-reset-btn" class="mini-btn" style="width:auto;margin-top:8px;">Reset to Realistic</button>
                 </div>
             </div>
+            <button type="button" class="theme-toggle-btn sidebar-btn" aria-label="Toggle color theme">🌙 Dark</button>
             <button id="save-exit-btn" class="exit-btn sidebar-btn">Save &amp; Exit to Menu</button>
         </div>
 
@@ -296,6 +301,7 @@
             <div class="db-header-row">
                 <h2>Database Manager</h2>
                 <div class="db-actions">
+                    <button type="button" class="theme-toggle-btn" aria-label="Toggle color theme">🌙 Dark</button>
                     <button id="db-export-btn">Export JSON</button>
                     <button id="db-import-btn">Import JSON</button>
                     <button id="db-reset-btn" class="btn-secondary">Reset to Default</button>
