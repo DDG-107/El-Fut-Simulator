@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>El Fut Simulator</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2316191f'/%3E%3Ccircle cx='8' cy='8' r='4.5' fill='none' stroke='%2322c06a' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='1.2' fill='%2322c06a'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,24 +29,24 @@
                     <p class="subtitle">Each mode has its own rules. Realistic Career is a full club save; the other modes are one-session runs that start from the menu each time.</p>
                     <div id="mode-picker-grid" class="mode-picker-grid"></div>
                     <div class="mode-options" id="competition-format-row">
-                        <label><strong>Competition Format:</strong></label>
-                        <label><input type="radio" name="competition-format" value="league" checked> League Mode (Double Round Robin)</label>
-                        <label><input type="radio" name="competition-format" value="tournament"> Knockout Tournament</label>
+                        <label class="switch-field"><strong>Competition Format:</strong></label>
+                        <label class="switch-field"><input type="radio" name="competition-format" value="league" checked> League Mode (Double Round Robin)</label>
+                        <label class="switch-field"><input type="radio" name="competition-format" value="tournament"> Knockout Tournament</label>
                     </div>
                 </div>
                 
                 <button id="create-save-btn">Create League Blueprint</button>
-                <button id="db-manager-btn" class="db-manager-btn">🗂️ Edit Database (Teams & Players)</button>
+                <button id="db-manager-btn" class="db-manager-btn">🗂️ Edit Database</button>
 
                 <div class="sim-settings-box">
                     <div class="sim-settings-head">
-                        <h3>⚙️ Match Engine Chaos</h3>
+                        <h3>Match Engine Chaos</h3>
                         <span id="chaos-mode-name" class="chaos-mode-tag">Realistic</span>
                     </div>
                     <div class="chaos-slider-row">
-                        <span class="chaos-scale-label">🎯 Realistic</span>
+                        <span class="chaos-scale-label">Realistic</span>
                         <input type="range" id="chaos-slider" class="chaos-slider" min="0" max="100" step="1" value="0">
-                        <span class="chaos-scale-label">🎲 Arcade</span>
+                        <span class="chaos-scale-label">Arcade</span>
                     </div>
                     <p id="chaos-hint" class="sim-settings-hint">Ratings decide every match — the tuned, realistic engine. Favorites win, underdogs shock rarely.</p>
                 </div>
@@ -111,7 +115,7 @@
                             <tbody id="editor-roster-body"></tbody>
                         </table>
                     </div>
-                    <p class="pane-hint bottom-hint">⚡ Swap pulls any player from the whole database into this lineup. Players marked <em>(Gen)</em> are auto-generated.</p>
+                    <p class="pane-hint bottom-hint">Swap pulls any player from the whole database into this lineup. Players marked <em>(Gen)</em> are auto-generated.</p>
                 </div>
             </div>
 
@@ -120,7 +124,7 @@
                     <span class="config-count"><strong id="selected-count-badge">0</strong> <span id="selected-count-label">clubs selected</span></span>
                     <span id="power-of-two-warning" class="config-warning" style="display:none;"></span>
                 </div>
-                <button id="launch-sim-btn" class="launch-btn">🏁 Launch Season &amp; Open Hub</button>
+                <button id="launch-sim-btn" class="launch-btn">Launch Season &amp; Open Hub</button>
             </div>
         </div>
     </div>
@@ -134,7 +138,7 @@
                 </div>
                 <span class="modal-close-trigger swap-close-trigger">&times;</span>
             </div>
-            <input type="text" id="swap-search" class="swap-search" placeholder="🔍 Search players by name, position, team or rating...">
+            <input type="text" id="swap-search" class="swap-search" placeholder="Search players by name, position, team or rating...">
             <div class="swap-filters" id="swap-filters">
                 <button class="chip active" data-pos="all">All</button>
                 <button class="chip" data-pos="GK">GK</button>
@@ -177,36 +181,36 @@
                 <div class="progress-sub" id="hub-progress-sub">Matchday <span id="current-matchday-ui">1</span> of <span id="total-matchdays-ui">0</span></div>
             </div>
 
-            <button id="view-squad-btn" class="btn-secondary sidebar-btn">👥 View Squad</button>
+            <button id="view-squad-btn" class="btn-secondary sidebar-btn">View Squad</button>
             <div class="sim-controls">
-                <button id="advance-matchday-btn" class="advance-btn">▶ Simulate Season</button>
-                <button id="step-matchday-btn" class="step-btn" title="Simulate one matchday only">⏭ Step</button>
+                <button id="advance-matchday-btn" class="advance-btn">Simulate Season</button>
+                <button id="step-matchday-btn" class="step-btn" title="Simulate one matchday only">Step</button>
             </div>
             <div id="sim-status-ui" class="sim-status" style="display:none;"></div>
-            <button id="chaos-popover-btn" class="btn-secondary sidebar-btn chaos-popover-btn" title="Match Engine Chaos Settings">🎲 Chaos: <span id="hub-chaos-label">Realistic</span></button>
+            <button id="chaos-popover-btn" class="btn-secondary sidebar-btn chaos-popover-btn" title="Match Engine Chaos Settings">Chaos: <span id="hub-chaos-label">Realistic</span></button>
             <div id="chaos-popover" class="chaos-popover" style="display:none;">
                 <div class="chaos-popover-head">
-                    <h3>⚙️ Match Engine Chaos</h3>
+                    <h3>Match Engine Chaos</h3>
                     <button id="chaos-popover-close" class="chaos-popover-close">&times;</button>
                 </div>
                 <div class="chaos-popover-body">
                     <div class="chaos-slider-row">
-                        <span class="chaos-scale-label">🎯 Realistic</span>
+                        <span class="chaos-scale-label">Realistic</span>
                         <input type="range" id="hub-chaos-slider" class="chaos-slider" min="0" max="100" step="1" value="0">
-                        <span class="chaos-scale-label">🎲 Arcade</span>
+                        <span class="chaos-scale-label">Arcade</span>
                     </div>
                     <p id="hub-chaos-hint" class="sim-settings-hint"></p>
                     <button id="chaos-reset-btn" class="mini-btn" style="width:auto;margin-top:8px;">Reset to Realistic</button>
                 </div>
             </div>
-            <button id="save-exit-btn" class="exit-btn sidebar-btn">💾 Save &amp; Exit to Menu</button>
+            <button id="save-exit-btn" class="exit-btn sidebar-btn">Save &amp; Exit to Menu</button>
         </div>
 
         <div class="main-content">
             <div class="hub-tabbar">
-                <button class="hub-tab-btn active" data-pane="table">🏆 Table / Bracket</button>
-                <button class="hub-tab-btn" data-pane="feed">📰 Match Feed</button>
-                <button class="hub-tab-btn" data-pane="stats">⭐ Top Players</button>
+                <button class="hub-tab-btn active" data-pane="table">Table / Bracket</button>
+                <button class="hub-tab-btn" data-pane="feed">Match Feed</button>
+                <button class="hub-tab-btn" data-pane="stats">Top Players</button>
             </div>
 
             <div class="hub-tabpane active" id="hub-pane-table">
@@ -272,7 +276,7 @@
 
     <div id="endgame-modal" class="modal-overlay">
         <div class="modal-window endgame-window">
-            <h2>🏆 Season Ended! 🏆</h2>
+            <h2>Season Ended</h2>
             <div class="winner-announcement">
                 Winner: <span id="endgame-winner-name">None</span>
             </div>
@@ -290,10 +294,10 @@
     <div id="db-screen" class="screen-container" style="display:none;">
         <div class="menu-box db-editor-box">
             <div class="db-header-row">
-                <h2>🗂️ Database Manager</h2>
+                <h2>Database Manager</h2>
                 <div class="db-actions">
-                    <button id="db-export-btn">⬇️ Export JSON</button>
-                    <button id="db-import-btn">⬆️ Import JSON</button>
+                    <button id="db-export-btn">Export JSON</button>
+                    <button id="db-import-btn">Import JSON</button>
                     <button id="db-reset-btn" class="btn-secondary">Reset to Default</button>
                     <button id="db-back-btn" class="btn-secondary">← Back to Menu</button>
                 </div>
@@ -303,21 +307,21 @@
                 <div class="db-pane">
                     <h3>Leagues</h3>
                     <p class="pane-title-sub">Select a league to view its teams</p>
-                    <input type="text" id="db-league-search" class="db-pane-search" placeholder="🔍 Search leagues...">
+                    <input type="text" id="db-league-search" class="db-pane-search" placeholder="Search leagues...">
                     <button class="db-add-row-btn" id="db-add-league-btn">+ Add League</button>
                     <div id="db-league-list" class="db-list"></div>
                 </div>
                 <div class="db-pane">
                     <h3>Teams</h3>
                     <p class="pane-title-sub" id="db-team-pane-title">Select a league first</p>
-                    <input type="text" id="db-team-search" class="db-pane-search" placeholder="🔍 Search teams...">
+                    <input type="text" id="db-team-search" class="db-pane-search" placeholder="Search teams...">
                     <button class="db-add-row-btn" id="db-add-team-btn">+ Add Team</button>
                     <div id="db-team-list" class="db-list"></div>
                 </div>
                 <div class="db-pane">
                     <h3>Players</h3>
                     <p class="pane-title-sub" id="db-player-pane-title">Select a team first</p>
-                    <input type="text" id="db-player-search" class="db-pane-search" placeholder="🔍 Search players...">
+                    <input type="text" id="db-player-search" class="db-pane-search" placeholder="Search players...">
                     <button class="db-add-row-btn" id="db-add-player-btn">+ Add Player</button>
                     <div id="db-player-list" class="db-list"></div>
                 </div>

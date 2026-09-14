@@ -124,7 +124,7 @@ function renderWCSetup() {
                 <span class="config-count" id="wc-count-ui">Field: <strong>0</strong> nations</span>
                 <span id="wc-warning-ui" class="config-warning" style="display:none;"></span>
             </div>
-            <button id="wc-start" class="launch-btn">🏆 Start World Cup</button>
+            <button id="wc-start" class="launch-btn">Start World Cup</button>
         </div>`;
 
     // Your-nation pick resets participant selection (you must stay in the field).
@@ -245,7 +245,7 @@ function startWorldCup() {
         if (ids.indexOf(t.id) === -1) return;
         const c = cloneDeep(t);
         normalizeRoster(c, 80);
-        c.points = 0; c.gf = 0; c.ga = 0; c.gd = 0; c.isEliminated = false;
+        c.points = 0; c.p = 0; c.w = 0; c.d = 0; c.l = 0; c.gf = 0; c.ga = 0; c.gd = 0; c.isEliminated = false;
         teams.push(c);
     });
 
@@ -520,20 +520,20 @@ function performWorldCupAdvance() {
         const isUser = homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId;
 
         let html = isUser
-            ? `<div class="user-match-log" style="background: linear-gradient(90deg, rgba(124,77,255,0.25) 0%, rgba(0,0,0,0) 100%); padding: 10px 14px; border-left: 4px solid #7c4dff; margin: 8px 0; border-radius: 6px;"><strong>⭐ ${sim.text}</strong>`
-            : `<div class="standard-match-log" style="padding: 6px 12px; margin: 4px 0; border-bottom: 1px solid #1c1635;">${sim.text}`;
+            ? `<div class="user-match-log"><strong>${sim.text}</strong>`
+            : `<div class="standard-match-log">${sim.text}`;
 
-        if (sim.details.scorersA.length) html += `<br><span style="font-size:0.85rem; color:#aaa4c4;">&nbsp;&nbsp; Goals [Home]: ${sim.details.scorersA.join(', ')}</span>`;
-        if (sim.details.scorersB.length) html += `<br><span style="font-size:0.85rem; color:#aaa4c4;">&nbsp;&nbsp; Goals [Away]: ${sim.details.scorersB.join(', ')}</span>`;
+        if (sim.details.scorersA.length) html += `<br><span class="feed-goals">Goals [Home]: ${sim.details.scorersA.join(', ')}</span>`;
+        if (sim.details.scorersB.length) html += `<br><span class="feed-goals">Goals [Away]: ${sim.details.scorersB.join(', ')}</span>`;
 
         if (md > 3) {
             if (sim.details.goalsA === sim.details.goalsB) {
                 if (Math.random() < shootoutWinnerProbability(homeTeam, awayTeam)) {
-                    html += `<br>&nbsp;&nbsp; 🏆 ${homeTeam.name} win on Penalties!`;
+                    html += `<br>${homeTeam.name} win on Penalties.`;
                     winners.push(homeTeam);
                     awayTeam.isEliminated = true;
                 } else {
-                    html += `<br>&nbsp;&nbsp; 🏆 ${awayTeam.name} win on Penalties!`;
+                    html += `<br>${awayTeam.name} win on Penalties.`;
                     winners.push(awayTeam);
                     homeTeam.isEliminated = true;
                 }

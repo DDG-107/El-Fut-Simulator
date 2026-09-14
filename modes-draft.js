@@ -364,17 +364,17 @@ function renderSBStep1() {
     }
 
     const metaChips = [];
-    if (ch && ch.cap) metaChips.push(`💪 Cap: total OVR ≤ ${ch.cap}`);
-    if (ch && ch.minSum) metaChips.push(`💪 Floor: total OVR ≥ ${ch.minSum}`);
+    if (ch && ch.cap) metaChips.push(`Cap: total OVR ≤ ${ch.cap}`);
+    if (ch && ch.minSum) metaChips.push(`Floor: total OVR ≥ ${ch.minSum}`);
     if (ch && ch.maxRating) metaChips.push(`🚫 No player above ${ch.maxRating}`);
     if (ch && ch.pool === 'bottom-half') metaChips.push('🌱 Bottom-half clubs only');
     if (ch && ch.pool === 'top-half') metaChips.push('💎 Top-half clubs only');
     if (ch && ch.pool === 'three-random') metaChips.push('✈️ Three random leagues');
     if (ch && ch.poolLeagues && ch.poolLeagueNames) metaChips.push('🗺️ ' + ch.poolLeagueNames.join(', '));
     if (ch && ch.pool === 'clubs' && ch.clubNames) metaChips.push('⚔️ Deal pool: ' + ch.clubNames.join(' vs '));
-    if (ch && ch.pool === 'one-club' && ch.clubName) metaChips.push('🏟️ Sole supplier: ' + ch.clubName);
+    if (ch && ch.pool === 'one-club' && ch.clubName) metaChips.push('Sole supplier: ' + ch.clubName);
     if (ch && ch.minLeagues) metaChips.push(`🗂️ ${ch.minLeagues} leagues in the XI`);
-    if (ch && ch.goal) metaChips.push(`🎯 Goal: ${ch.goal.label}`);
+    if (ch && ch.goal) metaChips.push(`Goal: ${ch.goal.label}`);
 
     const challengeHtml = ch ? `
         <div class="challenge-card">
@@ -395,7 +395,7 @@ function renderSBStep1() {
     if (SB.mode === 'draft') {
         poolHtml = `<div class="notice-box">🃏 <strong>Pick one of five.</strong> For every open position the game deals you <strong>5 real players</strong> drawn at random from clubs across any league. Keep one, then the next position is dealt. No generated players, no browsing.</div>`;
     } else if (SB.mode === 'draftChallenge') {
-        poolHtml = `<div class="notice-box">🎯 <strong>Same draft, with rules.</strong> Each position still deals <strong>5 real players</strong> — but the deal pool obeys the guideline above, and you cannot start the season until the whole XI passes every rule. Re-deal hands to find a compliant squad.</div>`;
+        poolHtml = `<div class="notice-box"><strong>Same draft, with rules.</strong> Each position still deals <strong>5 real players</strong> — but the deal pool obeys the guideline above, and you cannot start the season until the whole XI passes every rule. Re-deal hands to find a compliant squad.</div>`;
     } else {
         poolHtml = `<div class="notice-box">🧺 Draft pool: <strong>every player in the database</strong>${ch ? ' (restrictions from the challenge above apply)' : ''}. Pick any player for any slot.</div>`;
     }
@@ -721,7 +721,7 @@ function renderSBStep3() {
                 <div class="review-line"><span>Takes the place of</span><strong>${displaced ? esc(displaced.name) : '—'}</strong></div>
                 <div class="review-line"><span>Team OVR</span><strong>${sum} (avg ${avg})</strong></div>
                 <div class="review-line"><span>Matchdays</span><strong>full double round robin</strong></div>
-                ${SB.challenge ? `<div class="notice-box">🎯 <strong>Goal:</strong> ${esc(SB.challenge.goal ? SB.challenge.goal.label : 'Win the league')}</div>` : ''}
+                ${SB.challenge ? `<div class="notice-box"><strong>Goal:</strong> ${esc(SB.challenge.goal ? SB.challenge.goal.label : 'Win the league')}</div>` : ''}
                 <div class="req-list" style="margin-top:10px;">
                     ${reqs.map(r => `<div class="req-item ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✔' : '✖'} ${esc(r.label)}</div>`).join('')}
                 </div>
@@ -748,7 +748,7 @@ function renderSBStep3() {
         </div>
         <div class="config-footer">
             <div class="config-footer-left"><button id="sb-back3" class="btn-secondary">← Back to picks</button></div>
-            <button id="sb-launch" class="launch-btn">🏁 Start Season &amp; Open Hub</button>
+            <button id="sb-launch" class="launch-btn">Start Season &amp; Open Hub</button>
         </div>`;
     document.getElementById('sb-back3').onclick = () => { renderSBScreen(2); };
     document.getElementById('sb-launch').onclick = () => {
@@ -764,7 +764,7 @@ function launchSquadModeSeason() {
     (tgt.teams || []).forEach(t => {
         const c = cloneDeep(t);
         normalizeRoster(c, 80);
-        c.points = 0; c.gf = 0; c.ga = 0; c.gd = 0; c.isEliminated = false;
+        c.points = 0; c.p = 0; c.w = 0; c.d = 0; c.l = 0; c.gf = 0; c.ga = 0; c.gd = 0; c.isEliminated = false;
         teams.push(c);
     });
     const idx = teams.findIndex(t => t.id === SB.replaceId);
