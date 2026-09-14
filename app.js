@@ -792,6 +792,10 @@ document.getElementById('create-save-btn').onclick = () => {
     activeConfigEditingIdx = 0;
 
     for (let leagueKey in activeDatabase.leagues) {
+        // Tournament-only leagues (World Cup / Champions League) are not
+        // selectable in the realistic-career competition builder — their clubs
+        // belong to their dedicated modes.
+        if (/world|cup|ucl/i.test(leagueKey)) continue;
         let currentLeague = activeDatabase.leagues[leagueKey];
         currentLeague.teams.forEach(t => {
             let cloned = JSON.parse(JSON.stringify(t));
@@ -1144,7 +1148,8 @@ function renderClubFocusPane() {
 }
 
 // --- SWAP PLAYER MODAL ---
-let swapContext = null;      // { teamItem, playerIdx } of the slot being edited
+let swapContext = null;      // { teamItem, playerIdx, onDone } of the slot being edited
+let profileModalTeam = null; // live team object behind the open squad profile modal
 let swapPosFilter = 'all';   // 'all' | 'GK' | 'DEF' | 'MID' | 'FWD'
 
 const POS_GROUPS = {
@@ -1167,8 +1172,8 @@ function getAllDatabasePlayers() {
     return out;
 }
 
-function openSwapModal(teamItem, playerIdx) {
-    swapContext = { teamItem, playerIdx };
+function openSwapModal(teamItem, playerIdx, onDone) {
+    swapContext = { teamItem, playerIdx, onDone: typeof onDone === 'function' ? onDone : null };
     const replaced = teamItem.teamData.players[playerIdx];
     document.getElementById('swap-slot-label').innerText = `Replacing: ${replaced.name} (${replaced.pos})`;
     document.getElementById('swap-search').value = '';
@@ -1237,8 +1242,10 @@ function renderSwapResults() {
             const chosen = cloneDeep(p);
             chosen.stats = { goals: 0, assists: 0, cleanSheets: 0 };
             swapContext.teamItem.teamData.players[swapContext.playerIdx] = chosen;
+            const done = swapContext.onDone;
             closeSwapModal();
-            renderDatabasePickerPanel();
+            if (done) done();
+            else renderDatabasePickerPanel();
         };
         listEl.appendChild(card);
     });
@@ -1662,7 +1669,13 @@ function triggerEndgameModalDisplay() {
     let championTeam = null;
     let championName = 'Unknown';
 
-    if (isLeagueFormat() || (!isWorldCupFormat() && !isKnockoutFormat())) {
+    // Champions League: the bracket winner is the champion — the league-phase
+    // table only seeds the knockout rounds, so sorting by points is wrong here.
+    if (isUclFormat()) {
+        const champId = saveState.uclBracket && saveState.uclBracket.champion;
+        championTeam = saveState.teams.find(t => t.id === champId) || null;
+        championName = championTeam ? championTeam.name : 'Tournament Finalist';
+    } else if (isLeagueFormat() || (!isWorldCupFormat() && !isKnockoutFormat())) {
         const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
         championTeam = sorted[0];
         championName = championTeam ? championTeam.name : 'Unknown';
@@ -1739,7 +1752,9 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     autoSaveCurrentProgress();
 };
 
-function launchProfileModal(team) {
+function launchProfileModal(team, opts) {
+    const editable = !!(opts && opts.editable);
+    profileModalTeam = team;
     const isUser = team.id === saveState.userTeamId;
     const avg = squadAvgRating(team) || '—';
     const strength = parseTacticalStrength(team);
@@ -1750,16 +1765,32 @@ function launchProfileModal(team) {
         ${isUser ? ' · Your club' : ''}
     `;
 
+    const editHint = document.getElementById('modal-edit-hint');
+    if (editHint) editHint.style.display = editable ? '' : 'none';
     const tbody = document.getElementById('modal-squad-table');
-    tbody.innerHTML = team.players.map(p => {
+    tbody.innerHTML = team.players.map((p, pIdx) => {
         const nat = p.nationality ? ` <span class="nat-tag">${esc(p.nationality)}</span>` : '';
-        return `<tr><td><strong>${esc(p.name)}</strong>${nat}</td><td>${esc(p.pos)}</td><td><span class="rating-badge">${esc(p.rating)}</span></td></tr>`;
+        const swapBtn = editable ? `<button class="swap-row-btn" data-idx="${pIdx}">Swap</button>` : '';
+        return `<tr><td><strong>${esc(p.name)}</strong>${nat}</td><td>${esc(p.pos)}</td><td><span class="rating-badge">${esc(p.rating)}</span></td><td>${swapBtn}</td></tr>`;
     }).join('');
+    if (editable) tbody.querySelectorAll('.swap-row-btn').forEach(btn => {
+        btn.onclick = () => openSwapModal({ teamData: team }, parseInt(btn.dataset.idx, 10), () => renderEditableProfile());
+    });
 
     document.getElementById('team-modal').style.display = 'flex';
 }
 
-document.querySelector('#team-modal .modal-close-trigger').onclick = () => document.getElementById('team-modal').style.display = 'none';
+// Re-render the open squad profile after an in-modal swap.
+function renderEditableProfile() {
+    if (profileModalTeam && document.getElementById('team-modal').style.display !== 'none') {
+        launchProfileModal(profileModalTeam, { editable: true });
+    }
+}
+
+document.querySelector('#team-modal .modal-close-trigger').onclick = () => {
+    document.getElementById('team-modal').style.display = 'none';
+    profileModalTeam = null;
+};
 
 // --- SWAP MODAL EVENT WIRING ---
 document.getElementById('swap-search').oninput = renderSwapResults;
@@ -2245,7 +2276,9 @@ document.querySelectorAll('.hub-tab-btn').forEach(b => {
 
 function viewOwnSquad() {
     const u = saveState.teams.find(t => t.id === saveState.userTeamId) || saveState.teams[0];
-    if (u) launchProfileModal(u);
+    if (!u) return;
+    // Tournament squads are editable from the hub (team-sheet editing).
+    launchProfileModal(u, { editable: !isRealistic() });
 }
 
 document.getElementById('view-squad-btn').onclick = viewOwnSquad;

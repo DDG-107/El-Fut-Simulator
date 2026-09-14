@@ -24,6 +24,8 @@ The complete experience. Pick the competing clubs from any leagues in the databa
 ### 📋 Single Season Draft
 A one-session run. Choose a formation, name a club, and take over an existing club's slot in a league. Every position deals **five real players** drawn from clubs across the entire database — keep one per slot to build your starting XI, or hit auto-pick and let the game choose the best XI.
 
+A **draft pot** selector offers a Champions League edition: every dealt player comes from one of the 36 qualified UCL clubs' squads, and the finished XI replaces a club of your choice and plays the full authentic Champions League format — league phase, playoffs and knockouts.
+
 ### 🥊 Draft Challenge
 The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, and *One-Club Wonder*. Re-deal any position until the squad passes every rule.
 
@@ -35,6 +37,8 @@ Pick any nation from the 48 qualified teams and play the 2026 World Cup: group s
 
 ### 🏆 UEFA Champions League
 Lead one of the 36 qualified clubs through the authentic 2026/27 Champions League: the Swiss-model league phase using the real draw (eight matchdays, two opponents from each pot, four home and four away), then the knockout phase — top 8 skip straight to the Round of 16 while teams 9–24 contest two-legged playoffs, with single-leg ties and penalties from there to the final.
+
+As in the draft modes, your squad is a team sheet you can edit: open **View Squad** from the hub and swap any player for anyone in the database between matchdays.
 
 One-session modes (draft, World Cup, Champions League) end when you leave them — they are never written to the save list.
 

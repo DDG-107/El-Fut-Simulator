@@ -228,9 +228,13 @@ function sbModeMeta() {
 }
 
 // Leagues big enough (>= 8 clubs, even count) to host a round-robin season.
+// The UCL league is excluded — its 36 clubs run through the dedicated
+// Champions League format (draft sub-mode or UCL mode), not a 70-matchday
+// round robin.
 function sbTargetLeagues() {
     const out = [];
     for (const key in activeDatabase.leagues) {
+        if (key === 'UCL 26/27') continue;
         const league = activeDatabase.leagues[key];
         const teams = league.teams || [];
         if (teams.length >= 8 && teams.length % 2 === 0) out.push({ key, name: league.name || key, teams });
@@ -287,6 +291,7 @@ function openModeSetupFlow(mode) {
 function openSquadModeSetup(mode) {
     SB.mode = mode;
     SB.challenge = null;
+    SB.uclDraft = false;
     SB.formation = '4-3-3';
     SB.pool = [];
     SB.targetLeagueKey = null;
@@ -351,23 +356,28 @@ function formationChipsHtml() {
 
 // --- STEP 1: competition, formation, pool & identity ---
 function renderSBStep1() {
+    // UCL draft: deal only from the 36 Champions League clubs' squads and
+    // launch the finished XI into the authentic UCL format in place of a club.
+    const uclDraft = SB.mode === 'draft' && SB.uclDraft;
     const ch = SB.challenge;
-    const randomDraft = SB.mode === 'draft' || SB.mode === 'draftChallenge';
-    const targets = sbTargetLeagues();
+    const randomDraft = (SB.mode === 'draft' || SB.mode === 'draftChallenge') && !uclDraft;
+    const targets = uclDraft ? [] : sbTargetLeagues();
 
-    // Defaults
-    if (!SB.targetLeagueKey || !activeDatabase.leagues[SB.targetLeagueKey]) {
-        SB.targetLeagueKey = targets[0] ? targets[0].key : null;
-    }
+    const metaChips = [];
 
     // Challenges with a fixed formation (One-Club Wonder drafts an exact squad)
-    if (ch && ch.formation && SB.formation !== ch.formation) {
+    if (!uclDraft && ch && ch.formation && SB.formation !== ch.formation) {
         SB.formation = ch.formation;
         SB.xi = new Array(curSlots().length).fill(null);
         SB.activeSlot = 0;
     }
 
-    const metaChips = [];
+    // Defaults
+    if (!uclDraft && (!SB.targetLeagueKey || !activeDatabase.leagues[SB.targetLeagueKey])) {
+        SB.targetLeagueKey = targets[0] ? targets[0].key : null;
+    }
+
+    if (uclDraft) metaChips.push('🏆 Dealt from the 36 UCL club squads');
     if (ch && ch.cap) metaChips.push(`Cap: total OVR ≤ ${ch.cap}`);
     if (ch && ch.minSum) metaChips.push(`Floor: total OVR ≥ ${ch.minSum}`);
     if (ch && ch.maxRating) metaChips.push(`🚫 No player above ${ch.maxRating}`);
@@ -396,7 +406,9 @@ function renderSBStep1() {
         <p class="pane-hint">${randomDraft ? 'Each pick in the draft fills the next open position of this shape.' : 'Each lineup slot follows this shape — the formation is shown on your squad screen.'}</p>`;
 
     let poolHtml = '';
-    if (SB.mode === 'draft') {
+    if (uclDraft) {
+        poolHtml = `<div class="notice-box">🏆 <strong>Champions League draft.</strong> Same pick-one-of-five rule — every dealt player comes from one of the <strong>36 qualified UCL clubs</strong>. The finished XI replaces one of those clubs and plays the authentic league phase, playoffs and knockouts.</div>`;
+    } else if (SB.mode === 'draft') {
         poolHtml = `<div class="notice-box">🃏 <strong>Pick one of five.</strong> For every open position the game deals you <strong>5 real players</strong> drawn at random from clubs across any league. Keep one, then the next position is dealt. No generated players, no browsing.</div>`;
     } else if (SB.mode === 'draftChallenge') {
         poolHtml = `<div class="notice-box"><strong>Same draft, with rules.</strong> Each position still deals <strong>5 real players</strong> — but the deal pool obeys the guideline above, and you cannot start the season until the whole XI passes every rule. Re-deal hands to find a compliant squad.</div>`;
@@ -404,9 +416,28 @@ function renderSBStep1() {
         poolHtml = `<div class="notice-box">🧺 Draft pool: <strong>every player in the database</strong>${ch ? ' (restrictions from the challenge above apply)' : ''}. Pick any player for any slot.</div>`;
     }
 
-    // Target league / club takeover
+    // Draft pot picker: the classic all-database pool, or the UCL sub-draft.
+    const potPickerHtml = SB.mode === 'draft' ? `
+        <div class="pane-head"><span class="pane-eyebrow">DRAFT POT</span><h3>Where are the deals drawn from?</h3></div>
+        <select id="sb-draft-pot">
+            <option value="all" ${!SB.uclDraft ? 'selected' : ''}>Every league in the database</option>
+            <option value="ucl" ${SB.uclDraft ? 'selected' : ''}>🏆 UEFA Champions League — the 36 qualified clubs</option>
+        </select>` : '';
+
+    // Target league / club takeover — or the UCL draft's club replacement.
     let identityHtml = '';
-    const targetDisplay = !!SB.targetLeagueKey;
+    let targetDisplay = false;
+    if (uclDraft) {
+        const uclTeams = uclAllTeams();
+        if (!SB.replaceId || !uclTeams.some(t => t.id === SB.replaceId)) SB.replaceId = uclTeams[uclTeams.length - 1].id;
+        const clubOptions = uclTeams.map(t => `<option value="${esc(t.id)}" ${t.id === SB.replaceId ? 'selected' : ''}>${esc(t.name)} · OVR ${uclTeamAvg(t).toFixed(1)}</option>`).join('');
+        identityHtml = `
+            <div class="pane-head"><span class="pane-eyebrow">TAKEOVER</span><h3>Whose place does your XI take?</h3></div>
+            <select id="sb-ucl-replace">${clubOptions}</select>
+            <div class="pane-head" style="margin-top:14px;"><span class="pane-eyebrow">CLUB IDENTITY</span><h3>Name your club</h3></div>
+            <input type="text" id="sb-club-name" placeholder="e.g. Europa Eleven" value="${esc(SB.clubName)}">`;
+    } else {
+    targetDisplay = !!SB.targetLeagueKey;
     if (targetDisplay) {
         const targetOptions = targets.map(t => `<option value="${esc(t.key)}" ${t.key === SB.targetLeagueKey ? 'selected' : ''}>${esc(t.name)} (${(t.teams || []).length} clubs)</option>`).join('');
         identityHtml = `
@@ -416,17 +447,18 @@ function renderSBStep1() {
             <div class="pane-head" style="margin-top:14px;"><span class="pane-eyebrow">CLUB IDENTITY</span><h3>Name your club</h3></div>
             <input type="text" id="sb-club-name" placeholder="e.g. Riverside Rovers" value="${esc(SB.clubName)}">`;
     }
+    }
 
     document.getElementById('sb-body').innerHTML = `
         ${challengeHtml}
         <div class="formation-card">${formationHtml}</div>
         <div class="editor-layout sb-step1-layout">
-            <div class="team-selector-pane">${poolHtml || '<div class="notice-box">No source leagues available.</div>'}</div>
+            <div class="team-selector-pane">${potPickerHtml}${poolHtml || '<div class="notice-box">No source leagues available.</div>'}</div>
             <div class="roster-modifier-pane">${identityHtml || '<div class="notice-box">No eligible competition leagues — a league needs 8+ clubs and an even count.</div>'}</div>
         </div>
         <div class="config-footer">
-            <div class="config-footer-left"><span class="pane-hint" style="margin:0;">Step 1 of 3 — ${randomDraft ? 'shape + rules, then the randomized draft' : 'pick your field, then build the XI'}.</span></div>
-            <button id="sb-continue1" class="launch-btn">Continue → ${randomDraft ? 'Start the Draft' : 'Build Your XI'}</button>
+            <div class="config-footer-left"><span class="pane-hint" style="margin:0;">Step 1 of 3 — ${uclDraft ? 'pick the draft pot and the club you replace, then the randomized draft' : randomDraft ? 'shape + rules, then the randomized draft' : 'pick your field, then build the XI'}.</span></div>
+            <button id="sb-continue1" class="launch-btn">Continue → ${uclDraft || randomDraft ? 'Start the Draft' : 'Build Your XI'}</button>
         </div>`;
 
     // Formation chips (hidden when a challenge locks the shape)
@@ -442,6 +474,18 @@ function renderSBStep1() {
             };
         });
     }
+
+    if (uclDraft) {
+        const sel = document.getElementById('sb-ucl-replace');
+        if (sel) sel.onchange = (e) => { SB.replaceId = e.target.value; };
+    }
+
+    const potSel = document.getElementById('sb-draft-pot');
+    if (potSel) potSel.onchange = (e) => {
+        SB.uclDraft = e.target.value === 'ucl';
+        SB.replaceId = null;
+        renderSBStep1();
+    };
 
     if (targetDisplay) {
         const sel = document.getElementById('sb-target-league');
@@ -471,7 +515,9 @@ function renderSBStep1() {
     if (nameInput) nameInput.oninput = () => { SB.clubName = nameInput.value.trim(); };
 
     document.getElementById('sb-continue1').onclick = () => {
-        if (targetDisplay) {
+        if (uclDraft) {
+            if (!SB.replaceId) return alert('Choose which club your XI replaces.');
+        } else if (targetDisplay) {
             if (!SB.targetLeagueKey) return alert('Choose a competition league.');
             if (!SB.replaceId) return alert('Choose which club your squad takes over.');
         }
@@ -707,12 +753,17 @@ function sbAutoFill() {
 
 // --- STEP 3: review & launch ---
 function renderSBStep3() {
+    const uclDraft = SB.mode === 'draft' && SB.uclDraft;
     const players = SB.xi.map((x, i) => ({ slot: curSlots()[i], p: x.player.p }));
     const sum = players.reduce((s, r) => s + (r.p.rating || 0), 0);
     const avg = (sum / players.length).toFixed(1);
     const targetLeague = activeDatabase.leagues[SB.targetLeagueKey];
-    const displaced = targetLeague && (targetLeague.teams || []).find(t => t.id === SB.replaceId);
+    const displaced = uclDraft
+        ? uclAllTeams().find(t => t.id === SB.replaceId)
+        : targetLeague && (targetLeague.teams || []).find(t => t.id === SB.replaceId);
     const reqs = sbRequirements();
+    const compName = uclDraft ? 'UEFA Champions League (36 clubs)' : (targetLeague ? targetLeague.name : '—');
+    const matchdayLine = uclDraft ? '8 league nights, then playoffs & knockouts' : 'full double round robin';
 
     document.getElementById('sb-subtitle').innerText = 'Final check — then the season starts.';
     document.getElementById('sb-body').innerHTML = `
@@ -721,10 +772,10 @@ function renderSBStep3() {
                 <div class="pane-head"><span class="pane-eyebrow">THE SETUP</span><h3>Your Season</h3></div>
                 <div class="review-line"><span>Club</span><strong>${esc(SB.clubName)}</strong></div>
                 <div class="review-line"><span>Formation</span><strong>${esc(SB.formation)}</strong></div>
-                <div class="review-line"><span>Competition</span><strong>${targetLeague ? esc(targetLeague.name) : '—'}</strong></div>
+                <div class="review-line"><span>Competition</span><strong>${esc(compName)}</strong></div>
                 <div class="review-line"><span>Takes the place of</span><strong>${displaced ? esc(displaced.name) : '—'}</strong></div>
                 <div class="review-line"><span>Team OVR</span><strong>${sum} (avg ${avg})</strong></div>
-                <div class="review-line"><span>Matchdays</span><strong>full double round robin</strong></div>
+                <div class="review-line"><span>Matchdays</span><strong>${matchdayLine}</strong></div>
                 ${SB.challenge ? `<div class="notice-box"><strong>Goal:</strong> ${esc(SB.challenge.goal ? SB.challenge.goal.label : 'Win the league')}</div>` : ''}
                 <div class="req-list" style="margin-top:10px;">
                     ${reqs.map(r => `<div class="req-item ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✔' : '✖'} ${esc(r.label)}</div>`).join('')}
@@ -752,11 +803,12 @@ function renderSBStep3() {
         </div>
         <div class="config-footer">
             <div class="config-footer-left"><button id="sb-back3" class="btn-secondary">← Back to picks</button></div>
-            <button id="sb-launch" class="launch-btn">Start Season &amp; Open Hub</button>
+            <button id="sb-launch" class="launch-btn">${uclDraft ? 'Enter the Champions League &amp; Open Hub' : 'Start Season &amp; Open Hub'}</button>
         </div>`;
     document.getElementById('sb-back3').onclick = () => { renderSBScreen(2); };
     document.getElementById('sb-launch').onclick = () => {
         if (!reqs.every(r => r.ok)) return alert('Your squad does not meet the setup requirements yet.');
+        if (uclDraft) return launchUclDraftSeason();
         launchSquadModeSeason();
     };
 }
@@ -838,16 +890,18 @@ function sbHalfTeamIds() {
 function sbBuildDraftPool() {
     const out = [];
     const ch = SB.mode === 'draftChallenge' ? SB.challenge : null;
+    const uclOnly = SB.mode === 'draft' && SB.uclDraft;
     const halfIds = ch && (ch.pool === 'bottom-half' || ch.pool === 'top-half') ? sbHalfTeamIds() : null;
     const allowedKeys = ch && ch.poolLeagues && ch.poolLeagues.length ? new Set(ch.poolLeagues) : null;
     const clubIds = ch && (ch.pool === 'clubs' || ch.pool === 'one-club')
         ? new Set(sbClubIdsByName(ch.pool === 'one-club' ? [ch.clubName] : ch.clubNames))
         : null;
     for (const lk in activeDatabase.leagues) {
+        if (uclOnly && lk !== 'UCL 26/27') continue;
         if (allowedKeys && !allowedKeys.has(lk)) continue;
         const league = activeDatabase.leagues[lk];
         const label = (league.name || lk) + ' ' + lk;
-        if (/world|cup|past|misc/i.test(label)) continue;
+        if (/world|cup|past|misc/i.test(label) && !uclOnly) continue;
         (league.teams || []).forEach(t => {
             if (halfIds && !halfIds.has(t.id)) return;
             if (clubIds && !clubIds.has(t.id)) return;
@@ -896,6 +950,8 @@ function renderDraftPickUI() {
     SB.shortlistSlot = -1;
     document.getElementById('sb-subtitle').innerText = SB.challenge
         ? `${sbModeMeta().name} — ${esc(SB.challenge.title)}. Dealt 5 real players per position, obeying the guideline; the squad must pass every rule before the season starts.`
+        : SB.uclDraft
+        ? `${sbModeMeta().name} — Champions League edition. For every position you are dealt 5 real players from the 36 qualified UCL clubs. Keep one.`
         : `${sbModeMeta().name} — for every position you are dealt 5 real players from any league. Keep one.`;
 
     document.getElementById('sb-body').innerHTML = `
@@ -997,4 +1053,64 @@ function sbRefreshDraftUI() {
         SB.shortlist = sbDealShortlist();
         sbRefreshDraftUI();
     };
+}
+
+// ---------------------------------------------------------------------------
+// UCL DRAFT — the Single Season Draft played inside the Champions League.
+// The dealt pool is restricted to the 36 qualified clubs' squads and the
+// finished XI replaces one of them in the authentic UCL format.
+// ---------------------------------------------------------------------------
+
+// Entry point used by the Single Season Draft setup card.
+function openUclDraftSetup() {
+    const teams = (typeof uclAllTeams === 'function') ? uclAllTeams() : [];
+    if (teams.length < 36) {
+        return alert('The Champions League draft needs the built-in "UCL 26/27" database. Try resetting the custom database in the Database Manager.');
+    }
+    openSquadModeSetup('draft');
+    SB.uclDraft = true;
+    SB.replaceId = teams[teams.length - 1].id;
+    renderSBScreen(1);
+}
+
+// Launch: build the 36-club UCL field, swap the chosen club for the drafted XI,
+// then start the same authentic league phase → playoffs → knockouts flow.
+function launchUclDraftSeason() {
+    if (typeof startUcl !== 'function') return alert('UCL mode engine not loaded.');
+    const displaced = uclAllTeams().find(t => t.id === SB.replaceId);
+    if (!displaced) return alert('Choose which club your XI replaces first.');
+    const clubName = SB.clubName || 'UCL Draft XI';
+
+    // startUcl clones the 36-club field and sets up saveState; we then swap in
+    // the drafted XI before the first matchday is simulated.
+    UCL.yourClubId = displaced.id;
+    startUcl();
+
+    const xiPlayers = SB.xi.map(x => {
+        const c = cloneDeep(x.player.p);
+        c.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+        return c;
+    });
+    const idx = saveState.teams.findIndex(t => t.id === displaced.id);
+    const userTeam = {
+        id: 'custom-' + slugify(clubName),
+        name: clubName,
+        budget: 200e6,
+        players: xiPlayers,
+        points: 0, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, isEliminated: false
+    };
+    if (idx !== -1) saveState.teams.splice(idx, 1, userTeam);
+    else saveState.teams.push(userTeam);
+    saveState.userTeamId = userTeam.id;
+    // The run was started from the Single Season Draft — keep its mode identity
+    // while competitionType stays 'ucl' to drive the tournament engine.
+    saveState.mode = 'draft';
+    saveState.formation = SB.formation;
+
+    if (typeof assignAutoSaveName === 'function') assignAutoSaveName(clubName, SB.mode);
+
+    const feedBox = document.getElementById('ticker-feed-box');
+    if (feedBox) feedBox.innerHTML = `Your drafted XI <strong>${esc(clubName)}</strong> takes ${esc(displaced.name)}'s place in the UEFA Champions League. Eight league-phase nights lie ahead — good luck, Gaffer.`;
+    refreshHubDashboardUI();
+    switchHubPane('table');
 }
