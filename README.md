@@ -33,7 +33,10 @@ Unlimited budget and total control over your club. Same league structure, no fin
 ### 🌍 National Team / World Cup
 Pick any nation from the 48 qualified teams and play the 2026 World Cup: group stages that mirror the real format, then knockout rounds with penalty shootouts. Choose the full 48-nation field or a smaller custom one.
 
-One-session modes (draft, World Cup) end when you leave them — they are never written to the save list.
+### 🏆 UEFA Champions League
+Lead one of the 36 qualified clubs through the authentic 2026/27 Champions League: the Swiss-model league phase using the real draw (eight matchdays, two opponents from each pot, four home and four away), then the knockout phase — top 8 skip straight to the Round of 16 while teams 9–24 contest two-legged playoffs, with single-leg ties and penalties from there to the final.
+
+One-session modes (draft, World Cup, Champions League) end when you leave them — they are never written to the save list.
 
 ## Match Engine
 
@@ -59,7 +62,7 @@ Chelsea FC — Realistic Career — 14 Sept 2026
 
 ## Custom Database
 
-The built-in database (`database.js`) ships with 13 competitions — the Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Liga Portugal, the Belgian Pro League, Liga MX, MLS, Brasil Série A, the Saudi Pro League, and the 48-nation World Cup 2026 field — with real squads.
+The built-in database (`database.js`) ships with 13 competitions — the Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Liga Portugal, the Belgian Pro League, Liga MX, MLS, Brasil Série A, the Saudi Pro League, the 48-nation World Cup 2026 field, and the 36-club UEFA Champions League 26/27 field — with real squads.
 
 The in-app **Database Manager** (from the main menu) lets you edit any of it without touching code:
 
@@ -83,5 +86,6 @@ The UI is a dark slate theme with a violet accent by default, plus a full **ligh
 | `database.js` | Built-in teams and players |
 | `modes-draft.js` | Draft, Draft Challenge, and Omnipotent setup flows |
 | `modes-worldcup.js` | World Cup setup, groups, and bracket |
+| `modes-ucl.js` | Champions League setup, authentic league-phase draw, and knockout bracket |
 
 Player photo paths in `database.js` (e.g. `assets/…png`) are optional — the UI hides missing images and falls back to initials.

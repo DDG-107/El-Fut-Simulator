@@ -273,6 +273,10 @@ function openModeSetupFlow(mode) {
         if (typeof openWorldCupSetup === 'function') return openWorldCupSetup();
         return alert('National Team mode is not available.');
     }
+    if (mode === 'ucl') {
+        if (typeof openUclSetup === 'function') return openUclSetup();
+        return alert('UEFA Champions League mode is not available.');
+    }
     if (['draft', 'draftChallenge', 'omnipotent'].indexOf(mode) === -1) {
         if (mode === 'realistic') return;
         return alert('This mode is not available yet.');

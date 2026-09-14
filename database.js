@@ -2319,6 +2319,46 @@ const gameDatabase = {
                 ]},
             ]
         },
+        "UCL 26/27": {
+            name: "UEFA Champions League 26/27", teams: [
+                {id: "ucl-psg", name: "Paris Saint-Germain", budget: 250000000, players: null, squadFrom: "psg"},
+                {id: "ucl-bay", name: "Bayern Munich", budget: 250000000, players: null, squadFrom: "bay"},
+                {id: "ucl-rmd", name: "Real Madrid", budget: 250000000, players: null, squadFrom: "rmd"},
+                {id: "ucl-liv", name: "Liverpool FC", budget: 220000000, players: null, squadFrom: "liv"},
+                {id: "ucl-int", name: "Inter Milan", budget: 200000000, players: null, squadFrom: "int"},
+                {id: "ucl-mci", name: "Manchester City", budget: 250000000, players: null, squadFrom: "mci"},
+                {id: "ucl-ars", name: "Arsenal", budget: 220000000, players: null, squadFrom: "ars"},
+                {id: "ucl-bar", name: "FC Barcelona", budget: 220000000, players: null, squadFrom: "bar"},
+                {id: "ucl-atm", name: "Atlético Madrid", budget: 180000000, players: null, squadFrom: "atm"},
+                {id: "ucl-bvb", name: "Borussia Dortmund", budget: 150000000, players: null, squadFrom: "bvb"},
+                {id: "ucl-rom", name: "Roma", budget: 130000000, players: null, squadFrom: "rom"},
+                {id: "ucl-spt", name: "Sporting CP", budget: 120000000, players: null, squadFrom: "spt"},
+                {id: "ucl-avl", name: "Aston Villa", budget: 140000000, players: null, squadFrom: "vil"},
+                {id: "ucl-por", name: "FC Porto", budget: 110000000, players: null, squadFrom: "por"},
+                {id: "ucl-mun", name: "Manchester United", budget: 200000000, players: null, squadFrom: "mun"},
+                {id: "ucl-clu", name: "Club Brugge", budget: 90000000, players: null, squadFrom: "clu"},
+                {id: "ucl-bet", name: "Real Betis", budget: 100000000, players: null, squadFrom: "bet"},
+                {id: "ucl-psv", name: "PSV Eindhoven", budget: 90000000, players: null, squadFrom: "psv"},
+                {id: "ucl-fey", name: "Feyenoord", budget: 90000000, players: null, squadFrom: "fey"},
+                {id: "ucl-lil", name: "Lille", budget: 90000000, players: null, squadFrom: "lil"},
+                {id: "ucl-bod", name: "Bodø/Glimt", budget: 40000000, players: null, squadFrom: "bod"},
+                {id: "ucl-nap", name: "SSC Napoli", budget: 130000000, players: null, squadFrom: "nap"},
+                {id: "ucl-rbl", name: "RB Leipzig", budget: 130000000, players: null, squadFrom: "rbl"},
+                {id: "ucl-vll", name: "Villarreal CF", budget: 110000000, players: null, squadFrom: "vll"},
+                {id: "ucl-fen", name: "Fenerbahçe", budget: 110000000, players: null, squadFrom: "fen"},
+                {id: "ucl-shk", name: "Shakhtar Donetsk", budget: 70000000, players: null, squadFrom: "shk"},
+                {id: "ucl-gal", name: "Galatasaray", budget: 120000000, players: null, squadFrom: "gal"},
+                {id: "ucl-slp", name: "Slavia Prague", budget: 50000000, players: null, squadFrom: "slp"},
+                {id: "ucl-slo", name: "Slovan Bratislava", budget: 25000000, players: null, squadFrom: "slo"},
+                {id: "ucl-vfb", name: "VfB Stuttgart", budget: 100000000, squadFrom: "vfb"},
+                {id: "ucl-aek", name: "AEK Athens", budget: 50000000, players: null, squadFrom: "aek"},
+                {id: "ucl-las", name: "LASK", budget: 35000000, players: null, squadFrom: "las"},
+                {id: "ucl-com", name: "Como 1907", budget: 90000000, players: null, squadFrom: "com"},
+                {id: "ucl-len", name: "Lens", budget: 70000000, players: null, squadFrom: "len"},
+                {id: "ucl-vik", name: "Viking", budget: 25000000, players: null, squadFrom: "vik"},
+                {id: "ucl-sab", name: "Sabah", budget: 20000000, players: null, squadFrom: "sab"},
+            ]
+        },
         "PT": {
             name: "Past Teams", teams: [
                 {id: "atx22", name: "Austin FC 2022", budget: 100000000, players: [
@@ -2485,3 +2525,259 @@ const gameDatabase = {
         }
     }
 };
+
+// --- UEFA Champions League 26/27 mode data -----------------------------------
+// Authentic squads for the 2026/27 UCL clubs that are not part of the built-in
+// league season (smaller European sides). Every other UCL club shares its
+// domestic-league squad via the squadFrom marker above.
+const UCL_NEW_SQUADS = {
+    por: [
+        { name: "Diogo Costa", pos: "GK", rating: 86 },
+        { name: "Alberto Costa", pos: "RB", rating: 75 },
+        { name: "Zé Pedro", pos: "CB", rating: 74 },
+        { name: "Nehuén Pérez", pos: "CB", rating: 79 },
+        { name: "Jan Bednarek", pos: "LB", rating: 76 },
+        { name: "Alan Varela", pos: "CDM", rating: 82 },
+        { name: "Victor Froholdt", pos: "CM", rating: 75 },
+        { name: "Rodrigo Mora", pos: "CM", rating: 79 },
+        { name: "Gabri Veiga", pos: "RW", rating: 77 },
+        { name: "Pepê", pos: "LW", rating: 81 },
+        { name: "Samu Omorodion", pos: "ST", rating: 81 },
+    ],
+    spt: [
+        { name: "Rui Silva", pos: "GK", rating: 80 },
+        { name: "I. Fresneda", pos: "RB", rating: 77 },
+        { name: "O. Diomande", pos: "CB", rating: 80 },
+        { name: "G. Inácio", pos: "CB", rating: 81 },
+        { name: "Matheus Reis", pos: "LB", rating: 76 },
+        { name: "M. Hjulmand", pos: "CDM", rating: 82 },
+        { name: "H. Morita", pos: "CM", rating: 78 },
+        { name: "P. Gonçalves", pos: "CAM", rating: 82 },
+        { name: "F. Trincão", pos: "RW", rating: 81 },
+        { name: "G. Quenda", pos: "LW", rating: 78 },
+        { name: "L. Suárez", pos: "ST", rating: 79 },
+    ],
+    clu: [
+        { name: "N. Jackers", pos: "GK", rating: 74 },
+        { name: "J. Seys", pos: "RB", rating: 76 },
+        { name: "B. Mechele", pos: "CB", rating: 75 },
+        { name: "J. Spileers", pos: "CB", rating: 73 },
+        { name: "B. Meijer", pos: "LB", rating: 73 },
+        { name: "R. Onyedika", pos: "CDM", rating: 76 },
+        { name: "H. Vanaken", pos: "CM", rating: 77 },
+        { name: "H. Vetlesen", pos: "CM", rating: 74 },
+        { name: "C. Tzolis", pos: "RW", rating: 77 },
+        { name: "A. Skov Olsen", pos: "LW", rating: 75 },
+        { name: "N. Tresoldi", pos: "ST", rating: 74 },
+    ],
+    psv: [
+        { name: "M. Kovář", pos: "GK", rating: 78 },
+        { name: "S. Dest", pos: "RB", rating: 78 },
+        { name: "R. Flamingo", pos: "CB", rating: 76 },
+        { name: "Y. Gasiorowski", pos: "CB", rating: 74 },
+        { name: "A. Salah-Eddine", pos: "LB", rating: 72 },
+        { name: "J. Schouten", pos: "CDM", rating: 82 },
+        { name: "J. Veerman", pos: "CM", rating: 79 },
+        { name: "G. Til", pos: "CM", rating: 77 },
+        { name: "I. Perišić", pos: "RW", rating: 78 },
+        { name: "I. Babadi", pos: "LW", rating: 74 },
+        { name: "R. Pepi", pos: "ST", rating: 76 },
+    ],
+    fey: [
+        { name: "T. Wellenreuther", pos: "GK", rating: 78 },
+        { name: "G. Read", pos: "RB", rating: 74 },
+        { name: "W. Goes", pos: "CB", rating: 74 },
+        { name: "T. Beelen", pos: "CB", rating: 73 },
+        { name: "G. Smal", pos: "LB", rating: 73 },
+        { name: "Q. Timber", pos: "CDM", rating: 79 },
+        { name: "I. Hwang", pos: "CM", rating: 76 },
+        { name: "L. Valente", pos: "CM", rating: 73 },
+        { name: "A. Hadj Moussa", pos: "RW", rating: 77 },
+        { name: "L. Sauer", pos: "LW", rating: 72 },
+        { name: "S. Steijn", pos: "ST", rating: 76 },
+    ],
+    lil: [
+        { name: "B. Özer", pos: "GK", rating: 76 },
+        { name: "T. Meunier", pos: "RB", rating: 74 },
+        { name: "Alexsandro", pos: "CB", rating: 78 },
+        { name: "A. Mandi", pos: "CB", rating: 76 },
+        { name: "R. Perraud", pos: "LB", rating: 73 },
+        { name: "B. André", pos: "CDM", rating: 77 },
+        { name: "N. Mukau", pos: "CM", rating: 73 },
+        { name: "E. Mbappé", pos: "CM", rating: 72 },
+        { name: "H. Haraldsson", pos: "RW", rating: 74 },
+        { name: "M. Fernández-Pardo", pos: "LW", rating: 74 },
+        { name: "A. Ueda", pos: "ST", rating: 77 },
+    ],
+    bod: [
+        { name: "N. Hansen", pos: "GK", rating: 78 },
+        { name: "K. Hansen", pos: "RB", rating: 74 },
+        { name: "V. Bjørtuft", pos: "CB", rating: 75 },
+        { name: "J. Hedin", pos: "CB", rating: 74 },
+        { name: "F. Bjørkan", pos: "LB", rating: 76 },
+        { name: "P. Berg", pos: "CDM", rating: 77 },
+        { name: "H. Evjen", pos: "CM", rating: 78 },
+        { name: "S. Saltnes", pos: "CM", rating: 76 },
+        { name: "S. Fet", pos: "RW", rating: 75 },
+        { name: "A. Sørli", pos: "LW", rating: 74 },
+        { name: "A. Pellegrino", pos: "ST", rating: 77 },
+    ],
+    fen: [
+        { name: "D. Livaković", pos: "GK", rating: 83 },
+        { name: "M. Müldür", pos: "RB", rating: 77 },
+        { name: "M. Škriniar", pos: "CB", rating: 84 },
+        { name: "A. Djiku", pos: "CB", rating: 78 },
+        { name: "J. Oosterwolde", pos: "LB", rating: 77 },
+        { name: "Fred", pos: "CDM", rating: 80 },
+        { name: "S. Szymański", pos: "CM", rating: 79 },
+        { name: "M. Asensio", pos: "CAM", rating: 83 },
+        { name: "O. Aydın", pos: "RW", rating: 77 },
+        { name: "K. Aktürkoğlu", pos: "LW", rating: 81 },
+        { name: "Y. En-Nesyri", pos: "ST", rating: 82 },
+    ],
+    shk: [
+        { name: "D. Riznyk", pos: "GK", rating: 80 },
+        { name: "Y. Konoplia", pos: "RB", rating: 75 },
+        { name: "M. Matviyenko", pos: "CB", rating: 78 },
+        { name: "V. Bondar", pos: "CB", rating: 75 },
+        { name: "I. Pedro", pos: "LB", rating: 73 },
+        { name: "T. Stepanenko", pos: "CDM", rating: 76 },
+        { name: "G. Sudakov", pos: "CM", rating: 81 },
+        { name: "M. Bondarenko", pos: "CM", rating: 77 },
+        { name: "Alan Patrick", pos: "CAM", rating: 76 },
+        { name: "Kevin", pos: "RW", rating: 75 },
+        { name: "D. Sikan", pos: "ST", rating: 75 },
+    ],
+    gal: [
+        { name: "U. Çakır", pos: "GK", rating: 81 },
+        { name: "E. Jelert", pos: "RB", rating: 74 },
+        { name: "D. Sánchez", pos: "CB", rating: 81 },
+        { name: "A. Bardakcı", pos: "CB", rating: 76 },
+        { name: "K. Ayhan", pos: "LB", rating: 76 },
+        { name: "L. Torreira", pos: "CDM", rating: 81 },
+        { name: "G. Sara", pos: "CM", rating: 80 },
+        { name: "L. Sané", pos: "RW", rating: 81 },
+        { name: "Y. Akgün", pos: "CAM", rating: 78 },
+        { name: "B. A. Yılmaz", pos: "LW", rating: 78 },
+        { name: "V. Osimhen", pos: "ST", rating: 86 },
+    ],
+    slp: [
+        { name: "J. Staněk", pos: "GK", rating: 76 },
+        { name: "T. Holeš", pos: "RB", rating: 74 },
+        { name: "D. Zima", pos: "CB", rating: 74 },
+        { name: "I. Ogbu", pos: "CB", rating: 76 },
+        { name: "D. Jurásek", pos: "LB", rating: 74 },
+        { name: "O. Dorley", pos: "CDM", rating: 74 },
+        { name: "L. Provod", pos: "CM", rating: 76 },
+        { name: "C. Zafeiris", pos: "CM", rating: 77 },
+        { name: "V. Kušej", pos: "RW", rating: 75 },
+        { name: "M. Chytil", pos: "LW", rating: 75 },
+        { name: "T. Chorý", pos: "ST", rating: 77 },
+    ],
+    slo: [
+        { name: "M. Trnovský", pos: "GK", rating: 70 },
+        { name: "L. Pauschek", pos: "RB", rating: 70 },
+        { name: "G. Kashia", pos: "CB", rating: 72 },
+        { name: "K. Bajrić", pos: "CB", rating: 72 },
+        { name: "A. Mustedanagić", pos: "LB", rating: 70 },
+        { name: "J. Kankava", pos: "CDM", rating: 68 },
+        { name: "A. Čavrić", pos: "CM", rating: 69 },
+        { name: "J. Kucka", pos: "CM", rating: 73 },
+        { name: "R. Mak", pos: "RW", rating: 71 },
+        { name: "V. Weiss", pos: "LW", rating: 73 },
+        { name: "D. Strelec", pos: "ST", rating: 74 },
+    ],
+    aek: [
+        { name: "T. Strakosha", pos: "GK", rating: 78 },
+        { name: "Y. Lyratzis", pos: "RB", rating: 72 },
+        { name: "D. Vida", pos: "CB", rating: 76 },
+        { name: "H. Moukoudi", pos: "CB", rating: 75 },
+        { name: "L. Rota", pos: "LB", rating: 72 },
+        { name: "K. Galanopoulos", pos: "CDM", rating: 74 },
+        { name: "O. Pineda", pos: "CM", rating: 75 },
+        { name: "M. Mantalos", pos: "CAM", rating: 75 },
+        { name: "L. García", pos: "RW", rating: 75 },
+        { name: "V. Klonaridis", pos: "LW", rating: 71 },
+        { name: "F. Pierrot", pos: "ST", rating: 75 },
+    ],
+    las: [
+        { name: "C. Lawal", pos: "GK", rating: 71 },
+        { name: "F. Flecker", pos: "RB", rating: 71 },
+        { name: "P. Stojković", pos: "CB", rating: 73 },
+        { name: "J. Talovierov", pos: "CB", rating: 74 },
+        { name: "K. Luckeneder", pos: "LB", rating: 70 },
+        { name: "I. Sangaré", pos: "CDM", rating: 73 },
+        { name: "R. Žulj", pos: "CM", rating: 74 },
+        { name: "M. Ljubic", pos: "CM", rating: 72 },
+        { name: "S. Horvat", pos: "LW", rating: 71 },
+        { name: "A. Campbell", pos: "RW", rating: 72 },
+        { name: "M. Entrup", pos: "ST", rating: 72 },
+    ],
+    len: [
+        { name: "R. Risser", pos: "GK", rating: 74 },
+        { name: "H. Diouf", pos: "RB", rating: 73 },
+        { name: "K. Danso", pos: "CB", rating: 78 },
+        { name: "M. Sarr", pos: "CB", rating: 74 },
+        { name: "D. Machado", pos: "LB", rating: 74 },
+        { name: "A. Thomasson", pos: "CDM", rating: 75 },
+        { name: "H. Ojediran", pos: "CM", rating: 71 },
+        { name: "A. Fulgini", pos: "CM", rating: 73 },
+        { name: "M. Fofana", pos: "LW", rating: 71 },
+        { name: "W. Saïd", pos: "RW", rating: 74 },
+        { name: "F. Sotoca", pos: "ST", rating: 76 },
+    ],
+    vik: [
+        { name: "A. Sandberg", pos: "GK", rating: 70 },
+        { name: "A. Bjørshol", pos: "RB", rating: 69 },
+        { name: "V. Næss", pos: "CB", rating: 70 },
+        { name: "H. Haugen", pos: "CB", rating: 69 },
+        { name: "A. Kvalsvik", pos: "LB", rating: 68 },
+        { name: "O. Østigård", pos: "CDM", rating: 69 },
+        { name: "F. Dahl", pos: "CM", rating: 70 },
+        { name: "M. Hagen", pos: "CM", rating: 70 },
+        { name: "V. Tripić", pos: "LW", rating: 72 },
+        { name: "M. Røksund", pos: "RW", rating: 69 },
+        { name: "E. Austbø", pos: "ST", rating: 70 },
+    ],
+    sab: [
+        { name: "R. Aliyev", pos: "GK", rating: 68 },
+        { name: "E. Mammadli", pos: "RB", rating: 67 },
+        { name: "K. Medina", pos: "CB", rating: 72 },
+        { name: "R. Sadygov", pos: "CB", rating: 69 },
+        { name: "M. Isayev", pos: "LB", rating: 67 },
+        { name: "R. Ahmadov", pos: "CDM", rating: 68 },
+        { name: "E. Maharramli", pos: "CM", rating: 67 },
+        { name: "J. Quintana", pos: "CAM", rating: 70 },
+        { name: "S. Sekidika", pos: "RW", rating: 70 },
+        { name: "M. Aliyev", pos: "LW", rating: 66 },
+        { name: "R. Miranda", pos: "ST", rating: 69 },
+    ],
+};
+
+// Resolve every UCL team's squadFrom marker: copy the source club's squad
+// (cloned, so UCL saves never mutate the domestic squads) or fall back to the
+// dedicated UCL squads above. Runs once at script load, before app.js reads it.
+(function hydrateUclTeams() {
+    const ucl = gameDatabase.leagues["UCL 26/27"];
+    if (!ucl) return;
+    const byId = {}, byName = {};
+    for (const key in gameDatabase.leagues) {
+        (gameDatabase.leagues[key].teams || []).forEach(t => {
+            if (!t || !t.name) return;
+            if (t.id && !byId[t.id]) byId[t.id] = t;
+            if (!byName[t.name]) byName[t.name] = t;
+        });
+    }
+    (ucl.teams || []).forEach(team => {
+        if (!team || !team.squadFrom) return;
+        // Dedicated UCL squads win first (several keys collide with national-
+        // team ids in the World Cup league, e.g. "por" = Portugal).
+        let pool = UCL_NEW_SQUADS[team.squadFrom] || UCL_NEW_SQUADS[team.id];
+        if (!pool) {
+            const src = byId[team.squadFrom] || byName[team.squadFrom];
+            pool = (src && src.players && src.players.length) ? src.players : null;
+        }
+        if (pool && pool.length) team.players = JSON.parse(JSON.stringify(pool));
+        delete team.squadFrom;
+    });
+})();

@@ -89,7 +89,8 @@ const GAME_MODES = [
     { id: 'draft', icon: '📋', name: 'Single Season Draft', desc: 'For every position the game deals you 5 real players from any league — keep the best pick of each.' },
     { id: 'draftChallenge', icon: '🥊', name: 'Single Season Draft Challenge', desc: 'The same five-card draft, but preset guidelines decide the pool and must be met before the season starts.' },
     { id: 'omnipotent', icon: '👑', name: 'Omnipotent Mode', desc: 'Unlimited budget and god-tier control over your club.' },
-    { id: 'national', icon: '🌍', name: 'National Team / World Cup', desc: 'Take a national team to the World Cup.' }
+    { id: 'national', icon: '🌍', name: 'National Team / World Cup', desc: 'Take a national team to the World Cup.' },
+    { id: 'ucl', icon: '🏆', name: 'UEFA Champions League', desc: 'Lead one of the 36 qualified clubs through the authentic 2026/27 league phase, playoffs and knockouts.' }
 ];
 
 function isRealistic() { return saveState.mode === 'realistic'; }
@@ -98,6 +99,7 @@ function isRealistic() { return saveState.mode === 'realistic'; }
 function isLeagueFormat() { return saveState.competitionType === 'league'; }
 function isKnockoutFormat() { return saveState.competitionType === 'tournament'; }
 function isWorldCupFormat() { return saveState.competitionType === 'worldcup'; }
+function isUclFormat() { return saveState.competitionType === 'ucl'; }
 function getModeName() {
     const m = GAME_MODES.find(x => x.id === saveState.mode);
     return m ? m.name : saveState.mode;
@@ -1311,6 +1313,11 @@ function refreshHubDashboardUI() {
         if (typeof renderWorldCupHubUI === 'function') renderWorldCupHubUI();
         return;
     }
+    // Champions League runs render their own hub in modes-ucl.js.
+    if (isUclFormat()) {
+        if (typeof renderUclHubUI === 'function') renderUclHubUI();
+        return;
+    }
 
     const userTeamObj = saveState.teams.find(t => t.id === saveState.userTeamId) || saveState.teams[0];
     if (!userTeamObj) return;
@@ -1468,6 +1475,11 @@ function advanceOneMatchday() {
     // World Cup runs simulate group + knockout rounds with their own engine.
     if (isWorldCupFormat()) {
         if (typeof performWorldCupAdvance === 'function') performWorldCupAdvance();
+        return;
+    }
+    // Champions League runs use the Swiss-model league + bracket engine.
+    if (isUclFormat()) {
+        if (typeof performUclAdvance === 'function') performUclAdvance();
         return;
     }
 
@@ -1663,7 +1675,7 @@ function triggerEndgameModalDisplay() {
     document.getElementById('endgame-winner-name').innerText = championName;
 
     const replayBtn = document.getElementById('endgame-replay-btn');
-    if (replayBtn) replayBtn.style.display = isWorldCupFormat() ? 'none' : '';
+    if (replayBtn) replayBtn.style.display = (isWorldCupFormat() || isUclFormat()) ? 'none' : '';
 
     // Challenge verdict (Daily Challenge goals).
     const verdictEl = document.getElementById('endgame-verdict');
