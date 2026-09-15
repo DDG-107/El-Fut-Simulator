@@ -64,7 +64,8 @@ const DRAFT_CHALLENGE_DEFS = [
         desc: 'Deals come from clubs in the BOTTOM HALF of their league, and the finished squad must stay under a combined 845 OVR. Out-coach the elite without the stars.',
         pool: 'bottom-half',
         cap: 845,
-        goal: { type: 'win', label: 'Win the league' }
+        targetLeagueKey: 'SA 25/26',
+        goal: { type: 'win', label: 'Win Serie A' }
     },
     {
         id: 'elite-poachers', icon: '💎', title: 'Elite Poachers',
@@ -72,42 +73,48 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'top-half',
         maxRating: 85,
         minSum: 900,
-        goal: { type: 'top4', label: 'Finish in the top 4' }
+        targetLeagueKey: 'ENG 1 25/26',
+        goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
     },
     {
         id: 'wanderers', icon: '✈️', title: 'The Wanderers',
         desc: 'The deals come from three random leagues and EVERY one of them must end up represented in your XI. A true continental scavenger hunt.',
         pool: 'three-random',
         minLeagues: 3,
-        goal: { type: 'top4', label: 'Finish in the top 4' }
+        targetLeagueKey: 'FRA 1 25/26',
+        goal: { type: 'top4', label: 'Finish in Ligue 1 top 4' }
     },
     {
         id: 'moneyball', icon: '📈', title: 'Moneyball',
         desc: 'Full freedom of pool — but the combined rating of the XI must stay under the cap. Squeeze maximum value out of every slot.',
         pool: 'any',
         cap: 860,
-        goal: { type: 'win', label: 'Win the league' }
+        targetLeagueKey: 'ESP 1 25/26',
+        goal: { type: 'win', label: 'Win La Liga' }
     },
     {
         id: 'under-the-radar', icon: '🕵️', title: 'Under the Radar',
         desc: 'No player above 83, from any club in the database. Scouting beats stardom — find the XI that overachieves.',
         pool: 'any',
         maxRating: 83,
-        goal: { type: 'top4', label: 'Finish in the top 4' }
+        targetLeagueKey: 'NED 1 25/26',
+        goal: { type: 'top4', label: 'Finish in the Eredivisie top 4' }
     },
     {
         id: 'der-klassiker', icon: '🏟️', title: 'Der Klassiker',
         desc: 'Every deal comes from the two giants of German football — FC Bayern München or Borussia Dortmund. Beat the Bundesliga with a German core.',
         pool: 'clubs',
         clubNames: ['FC Bayern München', 'Borussia Dortmund'],
-        goal: { type: 'win', label: 'Win the league' }
+        targetLeagueKey: 'BL 25/26',
+        goal: { type: 'win', label: 'Win the Bundesliga' }
     },
     {
         id: 'el-clasico', icon: '⚔️', title: 'El Clasico Kings',
         desc: 'The deal pool is exactly the two kings of Spain: Real Madrid and FC Barcelona. Forge a hybrid of the eternal rivals.',
         pool: 'clubs',
         clubNames: ['Real Madrid', 'FC Barcelona'],
-        goal: { type: 'win', label: 'Win the league' }
+        targetLeagueKey: 'ESP 1 25/26',
+        goal: { type: 'win', label: 'Win La Liga' }
     },
     {
         id: 'big-six', icon: '🏰', title: 'The Big Six',
@@ -115,14 +122,45 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'clubs',
         clubNames: ['Arsenal', 'Chelsea FC', 'Liverpool FC', 'Manchester City', 'Manchester United', 'Tottenham Hotspur'],
         minSum: 935,
-        goal: { type: 'top4', label: 'Finish in the top 4' }
+        targetLeagueKey: 'ENG 1 25/26',
+        goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
     },
     {
         id: 'one-club-wonder', icon: '🎽', title: 'One-Club Wonder',
         desc: 'A single famous club is drawn as your only supplier — you must build the entire XI from exactly its squad. Every pick costs you one of theirs.',
         pool: 'one-club',
         formation: '4-3-3',
-        goal: { type: 'top4', label: 'Finish in the top 4' }
+        goal: { type: 'top4', label: 'Finish in the supplier league top 4' }
+    },
+    {
+        id: 'milan-derby', icon: '🔴⚫', title: 'Milan Derby Draft',
+        desc: 'Every deal comes from AC Milan or Inter Milan. Build the city’s best XI and conquer Italy.',
+        pool: 'clubs', clubNames: ['AC Milan', 'Inter Milan'],
+        targetLeagueKey: 'SA 25/26', goal: { type: 'win', label: 'Win Serie A' }
+    },
+    {
+        id: 'le-classique', icon: '🇫🇷', title: 'Le Classique',
+        desc: 'Choose only from Paris Saint-Germain or Olympique de Marseille, then take the rivalry into Ligue 1.',
+        pool: 'clubs', clubNames: ['Paris Saint-Germain', 'Olympique de Marseille'],
+        targetLeagueKey: 'FRA 1 25/26', goal: { type: 'win', label: 'Win Ligue 1' }
+    },
+    {
+        id: 'portuguese-pipeline', icon: '🟢🔴', title: 'Portuguese Pipeline',
+        desc: 'Every recruit comes from Benfica, Porto or Sporting CP. Turn Portugal’s classic three-way rivalry into one champion.',
+        pool: 'clubs', clubNames: ['SL Benfica', 'FC Porto', 'Sporting CP'],
+        targetLeagueKey: 'POR 1 25/26', goal: { type: 'win', label: 'Win the Primeira Liga' }
+    },
+    {
+        id: 'youth-movement', icon: '🧒', title: 'Youth Movement',
+        desc: 'No player above 80 OVR. Develop a squad of prospects and prove they belong in England’s top flight.',
+        pool: 'any', maxRating: 80,
+        targetLeagueKey: 'ENG 1 25/26', goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
+    },
+    {
+        id: 'brazilian-royalty', icon: '🇧🇷', title: 'Brazilian Royalty',
+        desc: 'Your entire draft pool comes from Flamengo, Palmeiras, Corinthians or São Paulo. Rule Brazil with a domestic super-squad.',
+        pool: 'clubs', clubNames: ['Flamengo', 'Palmeiras', 'Corinthians', 'São Paulo FC'],
+        targetLeagueKey: 'BRA 1 2025', goal: { type: 'win', label: 'Win Brasileirão' }
     }
 ];
 
@@ -198,6 +236,7 @@ function pickDraftChallenge() {
     if (def.pool === 'one-club') {
         const idx = dayHash(key + '|club') % SB_ONE_CLUB_POOL.length;
         def.clubName = SB_ONE_CLUB_POOL[idx];
+        def.targetLeagueKey = sbLeagueKeyForClub(def.clubName);
     }
     if (def.id === 'moneyball') def.cap = 860 + (dayHash(key) % 13); // 860..872
     return def;
@@ -240,6 +279,14 @@ function sbTargetLeagues() {
         if (teams.length >= 8 && teams.length % 2 === 0) out.push({ key, name: league.name || key, teams });
     }
     return out;
+}
+
+function sbLeagueKeyForClub(clubName) {
+    for (const key in activeDatabase.leagues) {
+        if (key === 'UCL 26/27' || /^WC\\b/i.test(key)) continue;
+        if ((activeDatabase.leagues[key].teams || []).some(t => t.name === clubName)) return key;
+    }
+    return null;
 }
 
 // Leagues that can act as a draft SOURCE (needs at least 2 teams).
@@ -306,7 +353,10 @@ function openSquadModeSetup(mode) {
     SB.shortlist = [];
     SB.shortlistSlot = -1;
 
-    if (mode === 'draftChallenge') SB.challenge = pickDraftChallenge();
+    if (mode === 'draftChallenge') {
+        SB.challenge = pickDraftChallenge();
+        SB.targetLeagueKey = SB.challenge.targetLeagueKey || null;
+    }
 
     document.getElementById('welcome-screen').style.display = 'none';
     const screen = document.getElementById('modes-screen');
@@ -362,6 +412,7 @@ function renderSBStep1() {
     const ch = SB.challenge;
     const randomDraft = (SB.mode === 'draft' || SB.mode === 'draftChallenge') && !uclDraft;
     const targets = uclDraft ? [] : sbTargetLeagues();
+    const challengeLeague = ch && ch.targetLeagueKey ? activeDatabase.leagues[ch.targetLeagueKey] : null;
 
     const metaChips = [];
 
@@ -373,7 +424,9 @@ function renderSBStep1() {
     }
 
     // Defaults
-    if (!uclDraft && (!SB.targetLeagueKey || !activeDatabase.leagues[SB.targetLeagueKey])) {
+    if (!uclDraft && ch && ch.targetLeagueKey && activeDatabase.leagues[ch.targetLeagueKey]) {
+        SB.targetLeagueKey = ch.targetLeagueKey;
+    } else if (!uclDraft && (!SB.targetLeagueKey || !activeDatabase.leagues[SB.targetLeagueKey])) {
         SB.targetLeagueKey = targets[0] ? targets[0].key : null;
     }
 
@@ -387,6 +440,7 @@ function renderSBStep1() {
     if (ch && ch.poolLeagues && ch.poolLeagueNames) metaChips.push('🗺️ ' + ch.poolLeagueNames.join(', '));
     if (ch && ch.pool === 'clubs' && ch.clubNames) metaChips.push('⚔️ Deal pool: ' + ch.clubNames.join(' vs '));
     if (ch && ch.pool === 'one-club' && ch.clubName) metaChips.push('Sole supplier: ' + ch.clubName);
+    if (challengeLeague) metaChips.push('🔒 Competition: ' + challengeLeague.name);
     if (ch && ch.minLeagues) metaChips.push(`🗂️ ${ch.minLeagues} leagues in the XI`);
     if (ch && ch.goal) metaChips.push(`Goal: ${ch.goal.label}`);
 
@@ -441,8 +495,10 @@ function renderSBStep1() {
     if (targetDisplay) {
         const targetOptions = targets.map(t => `<option value="${esc(t.key)}" ${t.key === SB.targetLeagueKey ? 'selected' : ''}>${esc(t.name)} (${(t.teams || []).length} clubs)</option>`).join('');
         identityHtml = `
-            <div class="pane-head"><span class="pane-eyebrow">COMPETITION LEAGUE</span><h3>Which league will you play in?</h3></div>
-            <select id="sb-target-league">${targetOptions}</select>
+            <div class="pane-head"><span class="pane-eyebrow">COMPETITION LEAGUE</span><h3>${ch && ch.targetLeagueKey ? 'Locked challenge league' : 'Which league will you play in?'}</h3></div>
+            ${ch && ch.targetLeagueKey
+                ? `<div class="notice-box">🔒 This daily challenge must be played in <strong>${esc(challengeLeague ? challengeLeague.name : ch.targetLeagueKey)}</strong>.</div>`
+                : `<select id="sb-target-league">${targetOptions}</select>`}
             <div id="sb-replace-wrap"></div>
             <div class="pane-head" style="margin-top:14px;"><span class="pane-eyebrow">CLUB IDENTITY</span><h3>Name your club</h3></div>
             <input type="text" id="sb-club-name" placeholder="e.g. Riverside Rovers" value="${esc(SB.clubName)}">`;
@@ -489,7 +545,7 @@ function renderSBStep1() {
 
     if (targetDisplay) {
         const sel = document.getElementById('sb-target-league');
-        sel.onchange = () => {
+        if (sel) sel.onchange = () => {
             SB.targetLeagueKey = sel.value;
             const league = activeDatabase.leagues[SB.targetLeagueKey];
             SB.replaceId = sbWeakestClub(league) ? sbWeakestClub(league).id : null;
@@ -814,6 +870,9 @@ function renderSBStep3() {
 }
 
 function launchSquadModeSeason() {
+    if (SB.challenge && SB.challenge.targetLeagueKey && SB.targetLeagueKey !== SB.challenge.targetLeagueKey) {
+        return alert('This daily challenge is locked to its designated league.');
+    }
     const tgt = activeDatabase.leagues[SB.targetLeagueKey];
     if (!tgt) return alert('Target league missing — please restart the run.');
     const teams = [];

@@ -27,7 +27,7 @@ A one-session run. Choose a formation, name a club, and take over an existing cl
 A **draft pot** selector offers a Champions League edition: every dealt player comes from one of the 36 qualified UCL clubs' squads, and the finished XI replaces a club of your choice and plays the full authentic Champions League format — league phase, playoffs and knockouts.
 
 ### 🥊 Draft Challenge
-The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, and *One-Club Wonder*. Re-deal any position until the squad passes every rule.
+The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Every daily challenge now locks its competition league — for example, *Der Klassiker* can only be played in the Bundesliga, *El Clasico Kings* in La Liga, and *Milan Derby Draft* in Serie A — so the target league cannot be changed to bypass the scenario. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Under the Radar*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, *One-Club Wonder*, *Milan Derby Draft*, *Le Classique*, *Portuguese Pipeline*, *Youth Movement*, and *Brazilian Royalty*. Re-deal any position until the squad passes every rule.
 
 ### 👑 Omnipotent Mode
 Unlimited budget and total control over your club. Same league structure, no financial limits.
