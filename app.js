@@ -127,7 +127,7 @@ function migrateSaveState(data) {
 // the built-in data at load time.
 let activeDatabase = null;                    // Working copy used everywhere
 const DB_STORAGE_KEY = 'elfut_db_custom';
-const DB_SCHEMA_VERSION = 10;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps
+const DB_SCHEMA_VERSION = 12;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps; 11 = built-in transferHistory rows backfilled; 12 = transfer histories normalized to calendar-year ranges
 let dbEditorState = { leagueKey: null, teamIdx: null }; // Selection in the DB manager
 
 function cloneDeep(obj) {
@@ -188,6 +188,59 @@ function upgradeStoredDatabase(stored) {
                 (st.players || []).forEach(sp => {
                     const bp = (bt.players || []).find(p => p.name === sp.name);
                     if (bp) sp.rating = bp.rating;
+                });
+            });
+        }
+    }
+    // Schema 11: built-in players gained transferHistory rows (real ex-club
+    // data powering the reunion/homecoming achievements). Backfill those
+    // rows onto stored copies — matched by team id + player name — without
+    // ever touching history the user has already edited or accumulated.
+    if (version < 11) {
+        for (let key in db.leagues) {
+            const bLeague = builtin.leagues ? builtin.leagues[key] : null;
+            if (!bLeague) continue;
+            const bTeams = bLeague.teams || [];
+            (db.leagues[key].teams || []).forEach(customTeam => {
+                const built = bTeams.find(t => t.id === customTeam.id);
+                if (!built) return;
+                (customTeam.players || []).forEach(cp => {
+                    const bp = (built.players || []).find(p => p.name === cp.name);
+                    if (bp && Array.isArray(bp.transferHistory) && !Array.isArray(cp.transferHistory)) {
+                        cp.transferHistory = cloneDeep(bp.transferHistory);
+                    }
+                });
+            });
+        }
+    }
+    // Schema 12: convert legacy season rows to ranges. For built-in top-player
+    // histories, use the current curated range data so old snapshots receive
+    // the same complete history as a fresh database. Custom player histories
+    // are only converted, never replaced.
+    if (version < 12) {
+        const normalize = (row) => {
+            if (!row || !row.club) return null;
+            if (row.startYear != null || row.endYear != null) {
+                const start = Number(row.startYear) || 0;
+                return { club: row.club, startYear: start, endYear: Math.max(start, Number(row.endYear) || start) };
+            }
+            const match = String(row.season || '').match(/(\d{4})\s*[/-]\s*(\d{2,4})/);
+            if (!match) return { club: row.club, startYear: 0, endYear: 9999 };
+            const start = Number(match[1]);
+            const end = Number(match[2].length === 2 ? String(start).slice(0, 2) + match[2] : match[2]);
+            return { club: row.club, startYear: start, endYear: Math.max(start, end) };
+        };
+        for (let key in db.leagues) {
+            const bLeague = builtin.leagues ? builtin.leagues[key] : null;
+            (db.leagues[key].teams || []).forEach(customTeam => {
+                const built = bLeague && (bLeague.teams || []).find(t => t.id === customTeam.id);
+                (customTeam.players || []).forEach(cp => {
+                    const bp = built && (built.players || []).find(p => p.name === cp.name);
+                    if (bp && Array.isArray(bp.transferHistory) && (cp.transferHistory || []).some(h => h && h.season)) {
+                        cp.transferHistory = cloneDeep(bp.transferHistory);
+                    } else if (Array.isArray(cp.transferHistory)) {
+                        cp.transferHistory = cp.transferHistory.map(normalize).filter(Boolean);
+                    }
                 });
             });
         }
@@ -2254,7 +2307,7 @@ function openDBForm(kind, leagueKey, teamIdx, playerIdx) {
             <div class="form-field"><label>Nationality (optional)</label><input id="f-nat" type="text" value="${esc(existing && existing.nationality ? existing.nationality : '')}" placeholder="e.g. France"></div>
             <div class="form-field"><label>Image path (optional)</label><input id="f-img" type="text" value="${esc(existing && existing.img ? existing.img : '')}" placeholder="assets/player.png"></div>
             <div class="form-field">
-                <label>Transfer history (optional)</label>
+                <label>Transfer history (optional — club ranges, e.g. 2023–2026)</label>
                 <div id="f-th-list"></div>
                 <button type="button" id="f-th-add" class="db-add-row-btn th-add-btn">+ Add Transfer</button>
             </div>
@@ -2263,7 +2316,12 @@ function openDBForm(kind, leagueKey, teamIdx, playerIdx) {
                 <div id="f-teammates-box" class="teammates-box">Former teammates are derived from overlapping transfer history — none found yet.</div>
             </div>`;
         const history = (existing && Array.isArray(existing.transferHistory)) ? existing.transferHistory : [];
-        history.forEach(h => addTransferHistoryRow(h.club, h.season));
+        history.forEach(h => {
+            const legacy = String(h.season || '').match(/(\d{4})\s*[/-]\s*(\d{2,4})/);
+            const start = h.startYear != null ? h.startYear : (legacy ? Number(legacy[1]) : '');
+            const end = h.endYear != null ? h.endYear : (legacy ? Number(legacy[2].length === 2 ? String(start).slice(0, 2) + legacy[2] : legacy[2]) : '');
+            addTransferHistoryRow(h.club, start, end);
+        });
         document.getElementById('f-th-add').onclick = () => { addTransferHistoryRow('', ''); refreshTeammatesPreview(); };
         document.getElementById('f-name').addEventListener('input', refreshTeammatesPreview);
         refreshTeammatesPreview();
@@ -2272,18 +2330,20 @@ function openDBForm(kind, leagueKey, teamIdx, playerIdx) {
 }
 
 // --- Transfer history row helpers (player form) ---
-function addTransferHistoryRow(club, season) {
+function addTransferHistoryRow(club, startYear, endYear) {
     const wrap = document.getElementById('f-th-list');
     if (!wrap) return;
     const row = document.createElement('div');
     row.className = 'th-row';
     row.innerHTML = `
         <input type="text" class="th-club" placeholder="Club (e.g. Ajax)" value="${esc(club || '')}">
-        <input type="text" class="th-season" placeholder="Season (e.g. 2024/25)" value="${esc(season || '')}">
+        <input type="number" class="th-start" min="1900" max="2100" placeholder="From (e.g. 2023)" value="${startYear || ''}">
+        <input type="number" class="th-end" min="1900" max="2100" placeholder="To (e.g. 2026)" value="${endYear || ''}">
         <button type="button" class="th-del" title="Remove transfer">&times;</button>`;
     row.querySelector('.th-del').onclick = () => { row.remove(); refreshTeammatesPreview(); };
     row.querySelector('.th-club').addEventListener('input', refreshTeammatesPreview);
-    row.querySelector('.th-season').addEventListener('input', refreshTeammatesPreview);
+    row.querySelector('.th-start').addEventListener('input', refreshTeammatesPreview);
+    row.querySelector('.th-end').addEventListener('input', refreshTeammatesPreview);
     wrap.appendChild(row);
 }
 
@@ -2291,28 +2351,46 @@ function readTransferHistoryRows() {
     const out = [];
     document.querySelectorAll('#f-th-list .th-row').forEach(r => {
         const club = (r.querySelector('.th-club').value || '').trim();
-        const season = (r.querySelector('.th-season').value || '').trim();
-        if (club) out.push({ club, season });
+        const startYear = parseInt(r.querySelector('.th-start').value, 10);
+        const endYear = parseInt(r.querySelector('.th-end').value, 10);
+        if (club) out.push({ club, startYear: isNaN(startYear) ? 0 : startYear, endYear: isNaN(endYear) ? startYear || 0 : endYear });
     });
     return out;
 }
 
 // Former teammates are DERIVED, not hand-stored: two players count as former
-// teammates when their transfer histories share a (club, season) stint.
+// teammates when their club ranges overlap by at least one calendar year.
+function transferHistoryRange(row) {
+    if (!row || !row.club) return null;
+    if (row.startYear != null || row.endYear != null) {
+        const start = Number(row.startYear) || 0;
+        const end = Number(row.endYear) || start;
+        return { club: String(row.club).trim().toLowerCase(), start, end: Math.max(start, end) };
+    }
+    const match = String(row.season || '').match(/(\d{4})\s*[/-]\s*(\d{2,4})/);
+    if (!match) return { club: String(row.club).trim().toLowerCase(), start: 0, end: 9999 };
+    const start = Number(match[1]);
+    const end = Number(match[2].length === 2 ? String(start).slice(0, 2) + match[2] : match[2]);
+    return { club: String(row.club).trim().toLowerCase(), start, end: Math.max(start, end) };
+}
+
+function transferHistoryOverlaps(a, b) {
+    const left = transferHistoryRange(a), right = transferHistoryRange(b);
+    return !!left && !!right && left.club === right.club && left.start <= right.end && right.start <= left.end;
+}
+
 function getFormerTeammates(player, database) {
     const out = [];
     if (!player || !database || !Array.isArray(player.transferHistory)) return out;
-    const keyOf = (h) => String((h.club || '').trim().toLowerCase()) + '||' + String((h.season || '').trim().toLowerCase());
-    const mine = player.transferHistory.filter(h => h && h.club && String(h.club).trim()).map(keyOf);
+    const mine = player.transferHistory.filter(h => h && h.club && String(h.club).trim());
     if (mine.length === 0) return out;
     const seen = new Set();
     for (let lk in database.leagues) {
         const league = database.leagues[lk];
         (league.teams || []).forEach(t => {
             (t.players || []).forEach(q => {
-                if (!q || !Array.isArray(q.transferHistory)) return;
-                if (q.name === player.name) return; // self
-                const shared = q.transferHistory.some(h => h && mine.includes(keyOf(h)));
+                if (!q || !Array.isArray(q.transferHistory) || q.name === player.name) return;
+                const shared = q.transferHistory.some(h => mine.some(m => transferHistoryOverlaps(m, h)));
                 const key = q.name + '|' + lk;
                 if (shared && !seen.has(key)) {
                     seen.add(key);
@@ -2331,7 +2409,7 @@ function refreshTeammatesPreview() {
     const history = readTransferHistoryRows();
     const mates = getFormerTeammates({ name, transferHistory: history }, activeDatabase);
     if (mates.length === 0) {
-        box.innerHTML = 'No matches yet — add the same <strong>club + season</strong> to two players\' transfer history and they will appear here automatically.';
+        box.innerHTML = 'No matches yet — add overlapping <strong>club ranges</strong> to two players\' transfer history and they will appear here automatically.';
     } else {
         box.innerHTML = '<strong>Former teammates found:</strong> ' + mates.map(m => `<span class="mate-chip">${esc(m.name)} <small>(${esc(m.teamName)})</small></span>`).join(' ');
     }

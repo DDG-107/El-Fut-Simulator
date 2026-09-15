@@ -134,8 +134,8 @@ function achPlayerClubName(playerName) {
     return null;
 }
 
-// True when the two players have shared at least one (club, season) stop in
-// their transfer histories — the same derivation the database editor uses.
+// True when the two players have overlapping calendar-year ranges at a club.
+// Legacy season rows are still understood while old saves migrate.
 function achWereTeammates(aName, bName) {
     if (typeof activeDatabase === 'undefined' || !activeDatabase || !activeDatabase.leagues) return false;
     const histOf = (name) => {
@@ -147,11 +147,24 @@ function achWereTeammates(aName, bName) {
         }
         return [];
     };
-    const keyOf = (h) => String((h.club || '').trim().toLowerCase()) + '||' + String((h.season || '').trim().toLowerCase());
+    const rangeOf = (h) => {
+        if (!h || !h.club) return null;
+        if (h.startYear != null || h.endYear != null) {
+            const start = Number(h.startYear) || 0;
+            return { club: String(h.club).trim().toLowerCase(), start, end: Math.max(start, Number(h.endYear) || start) };
+        }
+        const match = String(h.season || '').match(/(\d{4})\s*[/-]\s*(\d{2,4})/);
+        if (!match) return { club: String(h.club).trim().toLowerCase(), start: 0, end: 9999 };
+        const start = Number(match[1]);
+        const end = Number(match[2].length === 2 ? String(start).slice(0, 2) + match[2] : match[2]);
+        return { club: String(h.club).trim().toLowerCase(), start, end: Math.max(start, end) };
+    };
     const a = histOf(aName), b = histOf(bName);
     if (!a.length || !b.length) return false;
-    const aKeys = a.filter(h => h && h.club).map(keyOf);
-    return b.some(h => h && h.club && aKeys.includes(keyOf(h)));
+    return b.some(h => {
+        const right = rangeOf(h);
+        return right && a.some(x => { const left = rangeOf(x); return left && left.club === right.club && left.start <= right.end && right.start <= left.end; });
+    });
 }
 
 // Classic rivalries by club name (both directions of each pair).

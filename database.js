@@ -66,7 +66,7 @@ const gameDatabase = {
                     { name: "J. Doku", pos: "LW", rating: 83, img: "assets/jdoku.png" },
                     { name: "R. Cherki", pos: "CAM", rating: 85, img: "assets/rcherki.png" },
                     { name: "A. Semenyo", pos: "RW", rating: 84, img: "assets/asemenyo.png" },
-                    { name: "E. Haaland", pos: "ST", rating: 91, img: "assets/ehaaland.png" },
+                    { name: "E. Haaland", pos: "ST", rating: 91, img: "assets/ehaaland.png", transferHistory: [{ club: "Molde FK", season: "2018/19" }, { club: "RB Salzburg", season: "2019/20" }, { club: "Borussia Dortmund", season: "2020/21" }, { club: "Borussia Dortmund", season: "2021/22" }] },
                 ]},
                 {id: "tot", name: "Tottenham Hotspur", budget: 90000000, players: [
                     { name: "A. Kinský", pos: "GK", rating: 75, img: "assets/akinsk.png" },
@@ -302,7 +302,7 @@ const gameDatabase = {
                     { name: "A. Tchouaméni", pos: "CDM", rating: 84, img: "assets/tchouameni.png" },
                     { name: "F. Valverde", pos: "CM", rating: 89, img: "assets/valverde.png" },
                     { name: "A. Güler", pos: "CM", rating: 83, img: "assets/guler.png" },
-                    { name: "J. Bellingham", pos: "CAM", rating: 90, img: "assets/bellingham.png" },
+                    { name: "J. Bellingham", pos: "CAM", rating: 90, img: "assets/bellingham.png", transferHistory: [{ club: "Birmingham City", season: "2019/20" }, { club: "Borussia Dortmund", season: "2020/21" }, { club: "Borussia Dortmund", season: "2021/22" }, { club: "Borussia Dortmund", season: "2022/23" }] },
                     { name: "K. Mbappé", pos: "ST", rating: 91, img: "assets/mbappe.png" },
                     { name: "Vini Jr.", pos: "ST", rating: 89, img: "assets/vinijr.png" },
                 ]},
@@ -502,7 +502,7 @@ const gameDatabase = {
                     { name: "Vedat Muriqi", pos: "ST", rating: 82, img: "assets/muriqi.png" },
                 ]},
                 {id: "gir", name: "Girona FC", budget: 250000, players: [
-                    { name: "M. ter Stegen", pos: "GK", rating: 85, img: "assets/stegen.png" },
+                    { name: "M. ter Stegen", pos: "GK", rating: 85, img: "assets/stegen.png", transferHistory: [{ club: "Borussia Mönchengladbach", season: "2014/15" }, { club: "FC Barcelona", season: "2020/21" }] },
                     { name: "Arnau Martínez", pos: "RB", rating: 79, img: "assets/martinez.png" },
                     { name: "Vitor Reis", pos: "CB", rating: 81, img: "assets/reis.png" },
                     { name: "Ladislav Krejčí", pos: "CB", rating: 81, img: "assets/krejci.png" },
@@ -2780,4 +2780,109 @@ const UCL_NEW_SQUADS = {
         if (pool && pool.length) team.players = JSON.parse(JSON.stringify(pool));
         delete team.squadFrom;
     });
+})();
+
+// Transfer histories use calendar-year ranges, not one row per season. The
+// top players are selected from club competitions only (World Cup squads are
+// deliberately excluded), so national-team copies never create false links.
+const TOP_PLAYER_HISTORY = {
+    'E. Haaland': [['Molde FK', 2017, 2018], ['RB Salzburg', 2019, 2020], ['Borussia Dortmund', 2020, 2022], ['Manchester City', 2022, 2026]],
+    'J. Bellingham': [['Birmingham City', 2019, 2020], ['Borussia Dortmund', 2020, 2023], ['Real Madrid', 2023, 2026]],
+    'M. ter Stegen': [['Borussia Mönchengladbach', 2011, 2014], ['FC Barcelona', 2014, 2026]],
+    'H. Kane': [['Tottenham Hotspur', 2011, 2023], ['FC Bayern München', 2023, 2026]],
+    'K. Mbappé': [['AS Monaco', 2015, 2017], ['Paris Saint-Germain', 2017, 2024], ['Real Madrid', 2024, 2026]],
+    'O. Dembélé': [['Stade Rennais', 2015, 2016], ['Borussia Dortmund', 2016, 2017], ['FC Barcelona', 2017, 2023], ['Paris Saint-Germain', 2023, 2026]],
+    'Pedri': [['UD Las Palmas', 2019, 2020], ['FC Barcelona', 2020, 2026]],
+    'Lamine Yamal': [['FC Barcelona', 2023, 2026]],
+    'Raphinha': [['Leeds United', 2020, 2022], ['FC Barcelona', 2022, 2026]],
+    'F. Valverde': [['Peñarol', 2015, 2016], ['Real Madrid', 2016, 2026]],
+    'J. Kimmich': [['RB Leipzig', 2013, 2015], ['VfB Stuttgart', 2015, 2015], ['FC Bayern München', 2015, 2026]],
+    'K. Kvaratskhelia': [['Dinamo Batumi', 2022, 2022], ['SSC Napoli', 2022, 2025], ['Paris Saint-Germain', 2025, 2026]],
+    'M. Salah': [['FC Basel', 2012, 2014], ['Chelsea FC', 2014, 2015], ['Fiorentina', 2015, 2015], ['AS Roma', 2015, 2017], ['Liverpool FC', 2017, 2026]],
+    'Rodri': [['Villarreal CF', 2015, 2018], ['Atlético Madrid', 2018, 2019], ['Manchester City', 2019, 2025]],
+    'Vini Jr.': [['Flamengo', 2017, 2018], ['Real Madrid', 2018, 2026]],
+    'T. Courtois': [['KRC Genk', 2009, 2011], ['Chelsea FC', 2011, 2018], ['Atlético Madrid', 2011, 2014], ['Real Madrid', 2018, 2026]],
+    'Alisson': [['Internacional', 2013, 2016], ['AS Roma', 2016, 2018], ['Liverpool FC', 2018, 2026]],
+    'B. Saka': [['Arsenal', 2018, 2026]],
+    'Bruno Fernandes': [['Novara', 2012, 2013], ['Udinese', 2013, 2016], ['Sampdoria', 2016, 2017], ['Sporting CP', 2017, 2020], ['Manchester United', 2020, 2026]],
+    'C. Palmer': [['Manchester City', 2020, 2023], ['Chelsea FC', 2023, 2026]],
+    'J. Oblak': [['Olimpija Ljubljana', 2009, 2010], ['SL Benfica', 2010, 2014], ['Atlético Madrid', 2014, 2026]],
+    'M. Caicedo': [['Independiente del Valle', 2019, 2021], ['Brighton & Hove Albion', 2021, 2023], ['Chelsea FC', 2023, 2026]],
+    'Marquinhos': [['Corinthians', 2012, 2012], ['AS Roma', 2012, 2013], ['Paris Saint-Germain', 2013, 2026]],
+    'N. Barella': [['Cagliari Calcio', 2014, 2019], ['Inter Milan', 2019, 2026]],
+    'P. Dybala': [['Instituto', 2011, 2012], ['US Palermo', 2012, 2015], ['Juventus', 2015, 2022], ['AS Roma', 2022, 2026]],
+    'L. Messi': [['FC Barcelona', 2004, 2021], ['Paris Saint-Germain', 2021, 2023], ['Inter Miami CF', 2023, 2026]],
+    'L. Suárez': [['Nacional', 2005, 2006], ['FC Groningen', 2006, 2007], ['Ajax', 2007, 2011], ['Liverpool FC', 2011, 2014], ['FC Barcelona', 2014, 2020], ['Atlético Madrid', 2020, 2022], ['Inter Miami CF', 2024, 2026]],
+    'K. De Bruyne': [['KRC Genk', 2008, 2012], ['Chelsea FC', 2012, 2014], ['VfL Wolfsburg', 2014, 2015], ['Manchester City', 2015, 2026]],
+    'L. Martínez': [['Racing Club', 2015, 2018], ['Inter Milan', 2018, 2026]],
+    'A. Hakimi': [['Real Madrid', 2016, 2018], ['Borussia Dortmund', 2018, 2020], ['Inter Milan', 2020, 2021], ['Paris Saint-Germain', 2021, 2026]],
+    'Vitinha': [['FC Porto', 2020, 2022], ['Paris Saint-Germain', 2022, 2026]],
+    'O. Neres': [['Ajax', 2017, 2022], ['Shakhtar Donetsk', 2022, 2023], ['SL Benfica', 2023, 2026]],
+    'D. Upamecano': [['Red Bull Salzburg', 2017, 2017], ['RB Leipzig', 2017, 2021], ['FC Bayern München', 2021, 2026]],
+    'J. Musiala': [['Chelsea FC', 2011, 2019], ['FC Bayern München', 2019, 2026]],
+    'L. Díaz': [['Junior FC', 2017, 2019], ['FC Porto', 2019, 2022], ['Liverpool FC', 2022, 2025], ['FC Bayern München', 2025, 2026]],
+    'M. Olise': [['Reading FC', 2019, 2021], ['Crystal Palace', 2021, 2024], ['FC Bayern München', 2024, 2026]],
+    'G. Donnaruma': [['AC Milan', 2015, 2021], ['Paris Saint-Germain', 2021, 2026]],
+    'R. Dias': [['SL Benfica', 2017, 2020], ['Manchester City', 2020, 2026]],
+    'Gabriel': [['Avai FC', 2016, 2017], ['Lille OSC', 2017, 2020], ['Arsenal', 2020, 2026]],
+    'W. Saliba': [['AS Saint-Étienne', 2016, 2019], ['Arsenal', 2019, 2026]],
+    'J. Koundé': [['Girondins de Bordeaux', 2016, 2019], ['Sevilla FC', 2019, 2022], ['FC Barcelona', 2022, 2026]],
+    'A. Tchouaméni': [['Girondins de Bordeaux', 2018, 2020], ['AS Monaco', 2020, 2022], ['Real Madrid', 2022, 2026]],
+    'M. Maignan': [['Paris Saint-Germain', 2012, 2015], ['Lille OSC', 2015, 2021], ['AC Milan', 2021, 2026]],
+    'F. de Jong': [['Willem II', 2015, 2015], ['Ajax', 2015, 2019], ['FC Barcelona', 2019, 2026]],
+    'P. Cubarsí': [['FC Barcelona', 2023, 2026]],
+    'R. Lewandowski': [['Lech Poznań', 2008, 2010], ['Borussia Dortmund', 2010, 2014], ['FC Bayern München', 2014, 2022], ['FC Barcelona', 2022, 2026]]
+};
+
+function normalizeHistoryRange(row) {
+    if (!row || !row.club) return null;
+    if (row.startYear != null || row.endYear != null) {
+        return { club: row.club, startYear: Number(row.startYear) || 0, endYear: Number(row.endYear) || Number(row.startYear) || 0 };
+    }
+    const season = String(row.season || '');
+    const match = season.match(/(\d{4})\s*[/-]\s*(\d{2,4})/);
+    if (!match) return { club: row.club, startYear: 0, endYear: 9999 };
+    const start = Number(match[1]);
+    const end = match[2].length === 2 ? Number(String(start).slice(0, 2) + match[2]) : Number(match[2]);
+    return { club: row.club, startYear: start, endYear: end };
+}
+
+(function applyClubPlayerHistories() {
+    const players = [];
+    for (const leagueKey in gameDatabase.leagues) {
+        if (/^WC\b/i.test(leagueKey)) continue;
+        (gameDatabase.leagues[leagueKey].teams || []).forEach(team => (team.players || []).forEach(player => {
+            if (!players.some(p => p.player.name === player.name)) players.push({ player, team });
+        }));
+    }
+    players.sort((a, b) => Number(b.player.rating || 0) - Number(a.player.rating || 0) || a.player.name.localeCompare(b.player.name));
+    const selected = players.slice(0, 75);
+    selected.forEach(({ player, team }) => {
+        const curated = TOP_PLAYER_HISTORY[player.name];
+        const rows = curated || [{ club: team.name, startYear: 2025, endYear: 2026 }];
+        player.transferHistory = rows.map(row => ({ club: row[0] || row.club, startYear: Number(row[1] ?? row.startYear), endYear: Number(row[2] ?? row.endYear) }));
+    });
+    // Curated entries also apply to lower-rated duplicate copies (for example
+    // a player represented in a domestic league and a competition snapshot).
+    players.slice(75).forEach(({ player }) => {
+        const curated = TOP_PLAYER_HISTORY[player.name];
+        if (curated) player.transferHistory = curated.map(row => ({ club: row[0], startYear: row[1], endYear: row[2] }));
+    });
+    // Apply by name as a final pass too: some historical snapshot leagues
+    // contain a second copy of a player before the domestic roster is loaded.
+    const topNameSet = new Set(selected.map(x => x.player.name));
+    players.forEach(({ player, team }) => {
+        if (topNameSet.has(player.name) && !Array.isArray(player.transferHistory)) {
+            player.transferHistory = [{ club: team.name, startYear: 2025, endYear: 2026 }];
+        }
+    });
+    // Keep every non-national competition copy consistent with the canonical
+    // range data, including UCL squads hydrated from domestic rosters.
+    for (const leagueKey in gameDatabase.leagues) {
+        if (/^WC\b/i.test(leagueKey)) continue;
+        (gameDatabase.leagues[leagueKey].teams || []).forEach(team => (team.players || []).forEach(player => {
+            const curated = TOP_PLAYER_HISTORY[player.name];
+            if (curated) player.transferHistory = curated.map(row => ({ club: row[0], startYear: row[1], endYear: row[2] }));
+        }));
+    }
 })();
