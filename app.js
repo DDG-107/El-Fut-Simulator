@@ -1610,6 +1610,8 @@ function advanceOneMatchday() {
         }
     }
 
+    // Mid-season transfer window: opens once, at the halfway matchday.
+    if (typeof twOpenWindow === 'function') twOpenWindow();
     if (typeof achMarkRosterSnapshot === 'function') {
         const u = saveState.teams.find(t => t.id === saveState.userTeamId);
         if (u) achMarkRosterSnapshot(u, saveState.currentMatchday);
@@ -1694,6 +1696,174 @@ document.getElementById('step-matchday-btn').onclick = () => {
     }
     advanceOneMatchday();
 };
+
+// ============================================================
+// MID-SEASON TRANSFER WINDOW
+// Halfway through the season the window opens: the game draws up to 3
+// mystery signings from other clubs in the save. Ratings are hidden
+// until a player is transferred in — take the risk, then find out.
+// ============================================================
+function twOpeningsAllowed() {
+    if (!isLeagueFormat() || saveState.isCompleted) return 0;
+    const total = saveState.totalMatchdays || 0;
+    if (total < 4) return 0;
+    const half = Math.floor(total / 2);
+    if (half < 2) return 0;
+    // advanceOneMatchday() increments currentMatchday BEFORE calling this, so
+    // at the end of matchday N the counter reads N+1 — compare pre-increment.
+    return saveState.currentMatchday - 1 === half ? 1 : 0;
+}
+
+function twEligibleOutgoing(userTeam, pos) {
+    const roster = userTeam.players || [];
+    return roster.map((p, i) => ({ p, i })).filter(x => x.p && (!pos || x.p.pos === pos));
+}
+
+function twIncomingPool(userTeam, pos) {
+    const usedNames = new Set((userTeam.players || []).map(p => p.name));
+    const pool = [];
+    saveState.teams.forEach(t => {
+        if (t.id === userTeam.id) return;
+        (t.players || []).forEach(p => {
+            if (!p || !p.pos) return;
+            if (pos && p.pos !== pos) return;
+            if (usedNames.has(p.name)) return;
+            pool.push({ player: cloneDeep(p), fromName: t.name });
+        });
+    });
+    // shuffle
+    for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool;
+}
+
+function twPositionLabel(pos) {
+    return pos || 'Any';
+}
+
+let twState = null; // { slots: [{ outPlayer, outIdx, pos, incoming }], done, teamName }
+
+function twOpenWindow() {
+    const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+    if (!userTeam) return;
+    const openings = twOpeningsAllowed();
+    if (openings <= 0) return;
+    const slots = [];
+    const usedOutIdx = new Set();
+    const maxSlots = Math.min(3, (userTeam.players || []).length);
+    for (let s = 0; s < maxSlots; s++) {
+        const outgoing = twEligibleOutgoing(userTeam, null).filter(x => !usedOutIdx.has(x.i));
+        if (outgoing.length === 0) break;
+        const pick = outgoing[Math.floor(Math.random() * outgoing.length)];
+        usedOutIdx.add(pick.i);
+        slots.push({ outPlayer: pick.p, outIdx: pick.i, pos: pick.p.pos, incoming: null });
+    }
+    if (slots.length === 0) return;
+    twState = { slots, done: false, teamName: userTeam.name };
+    twRenderWindow();
+    document.getElementById('tw-modal').style.display = 'flex';
+    if (typeof stopAutoSim === 'function') stopAutoSim();
+}
+
+function twRenderWindow() {
+    const listEl = document.getElementById('tw-slots');
+    if (!listEl || !twState) return;
+    listEl.innerHTML = twState.slots.map((slot, idx) => {
+        let incomingHtml;
+        if (slot.incoming) {
+            const p = slot.incoming.player;
+            incomingHtml = `
+                <div class="tw-incoming">
+                    <div class="tw-incoming-name">${esc(p.name)}</div>
+                    <div class="tw-incoming-sub">${esc(p.pos)} · from ${esc(slot.incoming.fromName)}</div>
+                    <div class="tw-incoming-rating">OVR <span class="rating-badge">${p.rating}</span></div>
+                </div>`;
+        } else {
+            incomingHtml = `
+                <div class="tw-incoming tw-mystery">
+                    <div class="tw-mystery-face">?</div>
+                    <div class="tw-mystery-text">Mystery ${esc(twPositionLabel(slot.pos))}
+                        <span class="tw-mystery-sub">Rating hidden until signed</span>
+                    </div>
+                    <button class="btn-primary tw-sign-btn" data-slot="${idx}">Sign</button>
+                </div>`;
+        }
+        return `
+            <div class="tw-slot">
+                <div class="tw-slot-head">Deal ${idx + 1} of ${twState.slots.length}</div>
+                <div class="tw-slot-body">
+                    <div class="tw-outgoing">
+                        <div class="tw-out-label">Leaving your club</div>
+                        <div class="tw-out-name">${esc(slot.outPlayer.name)}</div>
+                        <div class="tw-out-sub">${esc(slot.outPlayer.pos)} · OVR <span class="rating-badge">${slot.outPlayer.rating}</span></div>
+                    </div>
+                    <div class="tw-arrow">→</div>
+                    ${incomingHtml}
+                </div>
+            </div>`;
+    }).join('');
+    document.querySelectorAll('#tw-slots .tw-sign-btn').forEach(btn => {
+        btn.onclick = () => twSignSlot(parseInt(btn.dataset.slot, 10));
+    });
+    const hint = document.getElementById('tw-hint');
+    if (hint) {
+        const remaining = twState.slots.filter(s => !s.incoming).length;
+        hint.innerText = remaining > 0
+            ? remaining + ' mystery player' + (remaining === 1 ? '' : 's') + ' left to sign — ratings reveal only after you commit. You can also walk away and keep your squad.'
+            : 'All deals done. Welcome your new signings.';
+    }
+    const doneBtn = document.getElementById('tw-done-btn');
+    if (doneBtn) doneBtn.style.display = twState.slots.every(s => s.incoming) ? '' : 'none';
+}
+
+function twSignSlot(idx) {
+    if (!twState || twState.done) return;
+    const slot = twState.slots[idx];
+    if (!slot || slot.incoming) return;
+    const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+    if (!userTeam) return;
+    const pool = twIncomingPool(userTeam, slot.pos);
+    if (pool.length === 0) return; // nobody available — deal stays open
+    slot.incoming = pool[0]; // already shuffled
+    const chosen = slot.incoming.player;
+    chosen.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+    userTeam.players[slot.outIdx] = chosen;
+    try {
+        if (typeof achOnSwapApplied === 'function') achOnSwapApplied(userTeam, chosen);
+    } catch (e) { /* never block the window */ }
+    autoSaveCurrentProgress(); // sign-ins survive a mid-window reload
+    twRenderWindow();
+}
+
+function twCloseWindow() {
+    const modal = document.getElementById('tw-modal');
+    if (modal) modal.style.display = 'none';
+    if (twState && !twState.done) {
+        twState.done = true;
+        const feed = document.getElementById('ticker-feed-box');
+        if (feed) {
+            const signed = twState.slots.filter(s => s.incoming);
+            const line = signed.length > 0
+                ? '<strong>🕐 Transfer window closed.</strong> ' + esc(twState.teamName) + ' signed ' + signed.map(s => esc(s.incoming.player.name)).join(', ') + '.'
+                : '<strong>🕐 Transfer window closed.</strong> ' + esc(twState.teamName) + ' made no signings.';
+            feed.innerHTML += '<br>' + line + '<br>';
+        }
+    }
+    twState = null;
+    if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
+}
+
+const twDoneBtn = document.getElementById('tw-done-btn');
+if (twDoneBtn) twDoneBtn.onclick = twCloseWindow;
+const twCloseX = document.querySelector('#tw-modal .tw-close-trigger');
+if (twCloseX) twCloseX.onclick = twCloseWindow;
+
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('tw-modal');
+    if (modal && e.target === modal && twState && twState.slots.every(s => s.incoming)) twCloseWindow();
+});
 
 function triggerEndgameModalDisplay() {
     let championTeam = null;

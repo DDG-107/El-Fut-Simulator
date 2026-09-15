@@ -1436,3 +1436,163 @@ tr.user-row td { background: rgba(139, 92, 246, 0.08); }
 .ach-card-body strong { font-size: 14px; }
 .ach-card-body span { font-size: 12px; color: var(--text-2); }
 .ach-card-state { font-weight: 700; color: var(--accent-hi); }
+
+/* ============================================================
+   Mid-Season Transfer Window
+   ============================================================ */
+.tw-modal-window {
+    max-width: 620px;
+    width: min(620px, 92vw);
+    max-height: 86vh;
+    overflow-y: auto;
+}
+
+.tw-subtitle {
+    color: var(--text-2);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin: 0 0 16px;
+}
+
+.tw-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tw-slot {
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.tw-slot-head {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    margin-bottom: 10px;
+}
+
+.tw-slot-body {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.tw-outgoing,
+.tw-incoming {
+    flex: 1;
+    background: var(--surface-3);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.tw-out-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    margin-bottom: 4px;
+}
+
+.tw-out-name,
+.tw-incoming-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.98rem;
+}
+
+.tw-out-sub,
+.tw-incoming-sub {
+    color: var(--text-2);
+    font-size: 0.82rem;
+    margin-top: 2px;
+}
+
+.tw-incoming-rating {
+    margin-top: 8px;
+    color: var(--text-2);
+    font-size: 0.82rem;
+}
+
+.tw-arrow {
+    align-self: center;
+    color: var(--text-3);
+    font-size: 1.2rem;
+}
+
+.tw-incoming.tw-mystery {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-style: dashed;
+    border-color: var(--accent-dim);
+    background: linear-gradient(135deg, var(--surface-3), var(--accent-dim));
+}
+
+.tw-mystery-face {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-hi);
+    color: var(--accent-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.tw-mystery-text {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.92rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.tw-mystery-sub {
+    font-weight: 400;
+    color: var(--text-2);
+    font-size: 0.76rem;
+}
+
+.tw-sign-btn {
+    width: auto;
+    padding: 7px 16px;
+    font-size: 0.85rem;
+    flex: 0 0 auto;
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+}
+
+.tw-sign-btn:hover {
+    background: var(--accent-hi);
+    border-color: var(--accent-hi);
+}
+
+.tw-done-btn {
+    width: auto;
+    padding: 9px 18px;
+}
+
+.tw-hint {
+    color: var(--text-2);
+    font-size: 0.85rem;
+    margin: 14px 0 0;
+}
+
+.tw-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}

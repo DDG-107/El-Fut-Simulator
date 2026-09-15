@@ -52,6 +52,10 @@ Match results come from an expected-goals (xG) model: each side's xG derives fro
 - **Clean sheets are credited to goalkeepers only**, so the leaderboard ranks each club's actual keeper
 - Standings track the full P / W / D / L / GF / GA / GD / Pts set
 
+## Mid-Season Transfer Window
+
+Once per league season — at the halfway matchday — the **transfer window** pops open: up to 3 of your players are randomly drawn into deals, each matched with a mystery player from another club in your save. The mystery player plays the same position, but their **rating is hidden until you sign them** — commit and gamble, or walk away and keep your squad intact. Signed deals are final, count toward transfer achievements, and are reported in the match feed. The window never opens in knockout runs, drafts, the World Cup, or the Champions League.
+
 ## Achievements
 
 Fifteen achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
