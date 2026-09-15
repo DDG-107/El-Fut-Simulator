@@ -78,6 +78,9 @@ function uniqueAutoSaveName(base) {
 
 function assignAutoSaveName(clubName, modeId) {
     saveState.saveName = uniqueAutoSaveName(buildAutoSaveName(clubName, modeId));
+    // Every new run is a fresh achievements context (matches, signings, XI
+    // snapshots are tracked per save); unlocks themselves persist forever.
+    if (typeof achResetSaveContext === 'function') achResetSaveContext();
 }
 
 // --- GAME MODES ---
@@ -660,8 +663,9 @@ function distributeAssists(team, scorersList) {
 }
 
 function distributeCleanSheets(team) {
+    // Clean sheets belong to the goalkeeper — the CS leaderboard ranks keepers.
     team.players.forEach(p => {
-        if (["GK", "CB", "LB", "RB", "CDM"].includes(p.pos)) p.stats.cleanSheets++;
+        if (p.pos === "GK") p.stats.cleanSheets++;
     });
 }
 
@@ -1172,8 +1176,11 @@ function getAllDatabasePlayers() {
     return out;
 }
 
+let swapApplyTeamRef = null; // live team object receiving the incoming player
+
 function openSwapModal(teamItem, playerIdx, onDone) {
     swapContext = { teamItem, playerIdx, onDone: typeof onDone === 'function' ? onDone : null };
+    swapApplyTeamRef = teamItem && teamItem.teamData ? teamItem.teamData : null;
     const replaced = teamItem.teamData.players[playerIdx];
     document.getElementById('swap-slot-label').innerText = `Replacing: ${replaced.name} (${replaced.pos})`;
     document.getElementById('swap-search').value = '';
@@ -1246,6 +1253,10 @@ function renderSwapResults() {
             closeSwapModal();
             if (done) done();
             else renderDatabasePickerPanel();
+            // Achievements: count transfers that land a player in the user's
+            // own squad during a live run (blueprint edits don't count).
+            try { achOnSwapApplied(swapApplyTeamRef, chosen); } catch (e) { /* never block the swap */ }
+            swapApplyTeamRef = null;
         };
         listEl.appendChild(card);
     });
@@ -1464,11 +1475,14 @@ function renderLeaderboardCharts() {
 
     let topScorers = [...allPlayers].sort((a,b) => b.player.stats.goals - a.player.stats.goals).slice(0, 5);
     let topAssists = [...allPlayers].sort((a,b) => b.player.stats.assists - a.player.stats.assists).slice(0, 5);
-    let topSheets = [...allPlayers].filter(p => ["GK","CB","LB","RB","CDM"].includes(p.player.pos)).sort((a,b) => b.player.stats.cleanSheets - a.player.stats.cleanSheets).slice(0, 5);
+    // Clean sheets are a goalkeeper stat — only keepers are ranked.
+    let topSheets = [...allPlayers].filter(p => p.player.pos === "GK").sort((a,b) => b.player.stats.cleanSheets - a.player.stats.cleanSheets).slice(0, 5);
 
     document.getElementById('top-scorers-list').innerHTML = topScorers.map(p => `<li>${p.player.name} (${p.teamName}) - <strong>${p.player.stats.goals} G</strong></li>`).join('');
     document.getElementById('top-assists-list').innerHTML = topAssists.map(p => `<li>${p.player.name} (${p.teamName}) - <strong>${p.player.stats.assists} A</strong></li>`).join('');
-    document.getElementById('top-sheets-list').innerHTML = topSheets.map(p => `<li>${p.player.name} (${p.teamName}) - <strong>${p.player.stats.cleanSheets} CS</strong></li>`).join('');
+    document.getElementById('top-sheets-list').innerHTML = topSheets.length
+        ? topSheets.map(p => `<li>${p.player.name} (${p.teamName}) - <strong>${p.player.stats.cleanSheets} CS</strong></li>`).join('')
+        : '<li>No goalkeeper data yet</li>';
 }
 
 // --- CORE SIMULATION PROCESSING ENGINE ---
@@ -1513,6 +1527,15 @@ function advanceOneMatchday() {
 
         let sim = runFixtureSimulation(homeTeam, awayTeam, knockoutScale);
         let isUserMatch = (homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId);
+        let userAchRow = null;
+        if (isUserMatch && typeof achRecordUserMatch === 'function') {
+            userAchRow = achRecordUserMatch({
+                from: homeTeam.name, to: awayTeam.name,
+                homeId: homeTeam.id, awayId: awayTeam.id,
+                goalsFor: sim.details.goalsA, goalsAgainst: sim.details.goalsB,
+                matchday: saveState.currentMatchday
+            });
+        }
         
         let matchRowHtml = "";
         if (isUserMatch) {
@@ -1534,6 +1557,9 @@ function advanceOneMatchday() {
                 } else {
                     matchRowHtml += `<br>${awayTeam.name} wins on Penalties.`;
                     winners.push(awayTeam); homeTeam.isEliminated = true;
+                }
+                if (isUserMatch && typeof achTagShootout === 'function') {
+                    achTagShootout(userAchRow, homeTeam.id === saveState.userTeamId ? winners[winners.length - 1].id === homeTeam.id : winners[winners.length - 1].id !== homeTeam.id);
                 }
             } else {
                 if (sim.details.goalsA > sim.details.goalsB) {
@@ -1584,6 +1610,10 @@ function advanceOneMatchday() {
         }
     }
 
+    if (typeof achMarkRosterSnapshot === 'function') {
+        const u = saveState.teams.find(t => t.id === saveState.userTeamId);
+        if (u) achMarkRosterSnapshot(u, saveState.currentMatchday);
+    }
     refreshHubDashboardUI();
     autoSaveCurrentProgress();
     scrollFeedToBottom();
@@ -1717,6 +1747,7 @@ function triggerEndgameModalDisplay() {
     }
 
     document.getElementById('endgame-modal').style.display = 'flex';
+    if (typeof achEvaluateSeasonEnd === 'function') achEvaluateSeasonEnd();
 }
 
 document.getElementById('endgame-dashboard-btn').onclick = () => {

@@ -529,7 +529,13 @@ function performUclAdvance() {
         saveState.uclPlayedTies = saveState.uclPlayedTies || [];
         saveState.uclPlayedTies.push({ a: tie.a, b: tie.b, aWon: tie.aWon, bWon: tie.bWon });
         let html = uclMatchHtml(sim, home, away);
-        if (sim.details.goalsA === sim.details.goalsB) html += `<br><em>${uclTeamById(winnerId).name} win on penalties.</em>`;
+        if (sim.details.goalsA === sim.details.goalsB) {
+            html += `<br><em>${uclTeamById(winnerId).name} win on penalties.</em>`;
+            // Achievements: a decided shootout is a win or a loss, not a draw.
+            if ((home.id === saveState.userTeamId || away.id === saveState.userTeamId) && typeof achTagShootout === 'function') {
+                achTagShootout(typeof achLastMatchRow === 'function' ? achLastMatchRow() : null, winnerId === saveState.userTeamId);
+            }
+        }
         if (home.id === saveState.userTeamId || away.id === saveState.userTeamId) userHtml += html;
         else basicHtml += html;
     });
@@ -564,6 +570,18 @@ function uclMatchHtml(sim, home, away, isTwoLegged) {
     let html = '';
     if (home.id === saveState.userTeamId || away.id === saveState.userTeamId) {
         html += `<div class="user-match-log"><strong>${sim.text}</strong>`;
+        // Achievements: log the user's result (each leg of a two-legged tie
+        // is its own match and its own result).
+        if (typeof achRecordUserMatch === 'function') {
+            const userIsHome = home.id === saveState.userTeamId;
+            achRecordUserMatch({
+                from: home.name, to: away.name,
+                homeId: home.id, awayId: away.id,
+                goalsFor: userIsHome ? sim.details.goalsA : sim.details.goalsB,
+                goalsAgainst: userIsHome ? sim.details.goalsB : sim.details.goalsA,
+                matchday: saveState.currentMatchday
+            });
+        }
     } else {
         html += `<div class="standard-match-log">${sim.text}`;
     }

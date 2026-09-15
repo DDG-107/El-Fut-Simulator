@@ -35,6 +35,10 @@ function openWorldCupSetup() {
         return alert(`Only ${teams.length} national teams exist in "${found.league.name}". Add more national teams in the Database Manager (8+ needed) and try again.`);
     }
     WC.nationKey = found.key;
+    // Achievements: make the Azzurri selectable (Italy is absent from the
+    // real 2026 field — they did not qualify) and give the USMNT its cult
+    // hero between the sticks. Session-only tweaks to the in-memory database.
+    if (typeof achEnsureWorldCupExtras === 'function') achEnsureWorldCupExtras(found.league);
     WC.yourNationId = null;
     WC.participants = [];
 
@@ -278,6 +282,7 @@ function startWorldCup() {
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
     saveState.challengeGoal = null;
+    if (typeof achMarkRosterSnapshot === 'function') achMarkRosterSnapshot(nationTeam, 1);
 
     document.getElementById('modes-screen').style.display = 'none';
     document.getElementById('hub-screen').style.display = 'flex';
@@ -520,6 +525,17 @@ function performWorldCupAdvance() {
         // past elite sides in a single game.
         const sim = runFixtureSimulation(homeTeam, awayTeam, md > 3 ? 1.5 : 1);
         const isUser = homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId;
+        let userAchRow = null;
+        if (isUser && typeof achRecordUserMatch === 'function') {
+            const userIsHome = homeTeam.id === saveState.userTeamId;
+            userAchRow = achRecordUserMatch({
+                from: homeTeam.name, to: awayTeam.name,
+                homeId: homeTeam.id, awayId: awayTeam.id,
+                goalsFor: userIsHome ? sim.details.goalsA : sim.details.goalsB,
+                goalsAgainst: userIsHome ? sim.details.goalsB : sim.details.goalsA,
+                matchday: md
+            });
+        }
 
         let html = isUser
             ? `<div class="user-match-log"><strong>${sim.text}</strong>`
@@ -538,6 +554,9 @@ function performWorldCupAdvance() {
                     html += `<br>${awayTeam.name} win on Penalties.`;
                     winners.push(awayTeam);
                     homeTeam.isEliminated = true;
+                }
+                if (isUser && typeof achTagShootout === 'function') {
+                    achTagShootout(userAchRow, winners[winners.length - 1].id === homeTeam.id ? homeTeam.id === saveState.userTeamId : awayTeam.id === saveState.userTeamId);
                 }
             } else if (sim.details.goalsA > sim.details.goalsB) {
                 winners.push(homeTeam);

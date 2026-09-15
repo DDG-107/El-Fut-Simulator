@@ -41,6 +41,7 @@
                 
                 <button id="create-save-btn">Create League Blueprint</button>
                 <button id="db-manager-btn" class="db-manager-btn">🗂️ Edit Database</button>
+                <button id="achievements-btn" class="db-manager-btn achievements-btn">🏅 Trophy Cabinet</button>
 
                 <div class="sim-settings-box">
                     <div class="sim-settings-head">
@@ -349,8 +350,26 @@
 
     <input type="file" id="db-import-file" style="display:none;" accept=".json,application/json">
 
+    <div id="ach-toast" class="ach-toast" aria-live="polite"></div>
+
+    <div id="ach-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-window ach-modal-window">
+            <div class="modal-head-row">
+                <h2>🏅 Trophy Cabinet</h2>
+                <span class="modal-close-trigger ach-close-trigger">&times;</span>
+            </div>
+            <div class="ach-progress-row">
+                <span id="ach-progress-label"></span>
+                <div class="ach-progress-track"><div id="ach-progress-bar" class="ach-progress-bar"></div></div>
+            </div>
+            <p class="pane-hint">Achievements persist across every save — unlock them in any career, any game mode.</p>
+            <div id="ach-list" class="ach-list"></div>
+        </div>
+    </div>
+
     <script src="database.js"></script>
     <script src="app.js"></script>
+    <script src="achievements.js"></script>
     <script src="modes-draft.js"></script>
     <script src="modes-worldcup.js"></script>
     <script src="modes-ucl.js"></script>

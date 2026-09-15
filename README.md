@@ -48,8 +48,33 @@ Match results come from an expected-goals (xG) model: each side's xG derives fro
 
 - **Chaos slider** (Realistic ↔ Arcade) scales how strongly rating gaps translate into results
 - Knockout ties sharpen the quality gap, and shootouts favor the stronger side instead of being coin flips
-- Goals, assists, and clean sheets are distributed by position and rating, feeding the Top Players charts
+- Goals and assists are distributed by position and rating, feeding the Top Players charts
+- **Clean sheets are credited to goalkeepers only**, so the leaderboard ranks each club's actual keeper
 - Standings track the full P / W / D / L / GF / GA / GD / Pts set
+
+## Achievements
+
+Fifteen achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
+
+| Achievement | How to earn it |
+| --- | --- |
+| Invincible | Don't lose a game |
+| 38-0 | Win every game |
+| Transfer Market Apprentice | Make your first transfer |
+| Transfer Market Master | Make 50 transfers |
+| Overhaul | Replace and improve the entire starting XI of your team |
+| Ok, Fabrizio | Make a transfer move that happened in real life at some point in time |
+| Welcome back | Bring back an old player of your club |
+| World champions | Win the World Cup |
+| Hello, old friend | Reunite two players who were former teammates |
+| Derby winner | Win a match against your team's rivals |
+| Who's your daddy? | Win the double over your club rivals |
+| After 16 years… | Win the World Cup with Italy |
+| Totally not rigged… | Win the World Cup with Argentina without having Leo Messi |
+| The best USA keeper | Select Brad Stuver to the USMNT as your starting GK |
+| The dictator | With Mbappé on your team, have him win the golden boot |
+
+Two notes on the trickier ones: Italy didn't actually qualify for 2026, so the World Cup setup quietly adds them as a selectable nation — and "The best USA keeper" works because Austin FC's Brad Stuver joins the USMNT squad when the World Cup league loads. A toast pops the moment an achievement unlocks, wherever you are in the app.
 
 ## Saves
 
@@ -87,6 +112,7 @@ The UI is a dark slate theme with a violet accent by default, plus a full **ligh
 | `index.html` | App shell: menu, career hub, modals |
 | `style.css` | Design system — tokens, themes, components |
 | `app.js` | Core: save system, match engine, standings, hub UI |
+| `achievements.js` | Cross-save achievements: definitions, unlock logic, toast, trophy cabinet |
 | `database.js` | Built-in teams and players |
 | `modes-draft.js` | Draft, Draft Challenge, and Omnipotent setup flows |
 | `modes-worldcup.js` | World Cup setup, groups, and bracket |

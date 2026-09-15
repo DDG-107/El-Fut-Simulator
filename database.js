@@ -555,7 +555,7 @@ const gameDatabase = {
                     { name: "M. Olise", pos: "RW", rating: 89, img: "assets/molise.png" },
                     { name: "L. Díaz", pos: "LW", rating: 87, img: "assets/ldaz.png" },
                     { name: "J. Musiala", pos: "CAM", rating: 87, img: "assets/jmusiala.png" },
-                    { name: "H. Kane", pos: "ST", rating: 90, img: "assets/hkane.png" },
+                    { name: "H. Kane", pos: "ST", rating: 90, img: "assets/hkane.png", transferHistory: [{ club: "Tottenham Hotspur", season: "2023/24" }, { club: "Tottenham Hotspur", season: "2024/25" }] },
                 ]},
                 {id: "bvb", name: "Borussia Dortmund", budget: 110000000, players: [
                     { name: "G. Kobel", pos: "GK", rating: 86, img: "assets/gkobel.png" },
@@ -1768,7 +1768,7 @@ const gameDatabase = {
                     { name: "A. Mac Allister", pos: "CM", rating: 90, img: "assets/amacallister.png" },
                     { name: "E. Fernández", pos: "CM", rating: 90, img: "assets/efernndez.png" },
                     { name: "T. Almada", pos: "CAM", rating: 83, img: "assets/talmada.png" },
-                    { name: "L. Messi", pos: "CAM", rating: 91, img: "assets/lmessi.png" },
+                    { name: "L. Messi", pos: "CAM", rating: 91, img: "assets/lmessi.png", transferHistory: [{ club: "FC Barcelona", season: "2020/21" }] },
                     { name: "Lautaro Martínez", pos: "ST", rating: 93, img: "assets/lautaromartnez.png" },
                 ]},
                 {id: "mor", name: "Morocco", budget: 85000000, players: [
@@ -2449,7 +2449,7 @@ const gameDatabase = {
                     { name: "I. Rakitić", pos: "CM", rating: 85, img: "assets/irakiti.png" },
                     { name: "Iniesta", pos: "CM", rating: 88, img: "assets/iniesta.png" },
                     { name: "L. Messi", pos: "RW", rating: 94, img: "assets/lmessi.png" },
-                    { name: "L. Suárez", pos: "ST", rating: 90, img: "assets/lsurez.png" },
+                    { name: "L. Suárez", pos: "ST", rating: 90, img: "assets/lsurez.png", transferHistory: [{ club: "FC Barcelona", season: "2020/21" }] },
                     { name: "Neymar", pos: "LW", rating: 90, img: "assets/neymar.png" },
                 ]},
                 {id: "rma12/13", name: "Real Madrid 2012/13", budget: 120000000, players: [
