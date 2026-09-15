@@ -1169,7 +1169,7 @@ function getAllDatabasePlayers() {
         const league = activeDatabase.leagues[leagueKey];
         (league.teams || []).forEach(t => {
             (t.players || []).forEach(p => {
-                out.push({ player: p, teamName: t.name, leagueName: league.name || leagueKey });
+                out.push({ player: p, team: t, teamName: t.name, leagueName: league.name || leagueKey });
             });
         });
     }
@@ -1178,10 +1178,48 @@ function getAllDatabasePlayers() {
 
 let swapApplyTeamRef = null; // live team object receiving the incoming player
 
+// Completes a two-way transfer: the player leaving the user's squad joins
+// the incoming player's old club, filling the vacated slot. Save-scoped by
+// design — only members of saveState.teams may be touched, so the working
+// database (activeDatabase) and the shipped gameDatabase can never be
+// mutated by a transfer. Blueprint-editor swaps (pre-launch) have nothing
+// to mirror; incoming players whose club is not in the save simply leave
+// the outgoing player out of the save.
+function applyReverseTransfer(outgoing, incomingOriginal, receivingTeam) {
+    try {
+        if (!outgoing || !incomingOriginal || !receivingTeam) return;
+        if (incomingOriginal.name === outgoing.name) return;
+        // Candidate roster pools: the live save, or (before launch) the
+        // blueprint editor's club clones. Both are save-scoped copies —
+        // activeDatabase and gameDatabase are never touched, so transfers
+        // exist only inside the save and every new save starts from real life.
+        let pool = null;
+        if (saveState && Array.isArray(saveState.teams) && saveState.teams.includes(receivingTeam)) pool = saveState.teams;
+        else if (typeof poolTeamsMap !== 'undefined' && Array.isArray(poolTeamsMap)) {
+            const blueprintTeams = poolTeamsMap.map(e => e.teamData);
+            if (blueprintTeams.includes(receivingTeam)) pool = blueprintTeams;
+        }
+        if (!pool) return;
+        const dest = pool.find(t => t !== receivingTeam && (t.players || []).some(pl => pl.name === incomingOriginal.name));
+        if (!dest) return;
+        const idx = dest.players.findIndex(pl => pl.name === incomingOriginal.name);
+        if (idx === -1) return;
+        const moved = cloneDeep(outgoing);
+        moved.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+        dest.players[idx] = moved;
+        const feed = document.getElementById('ticker-feed-box');
+        if (feed) {
+            feed.innerHTML += '<br>🔄 ' + esc(outgoing.name) + ' moves to ' + esc(dest.name) + ' as part of the deal.<br>';
+            if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
+        }
+    } catch (e) { /* never block the swap */ }
+}
+
 function openSwapModal(teamItem, playerIdx, onDone) {
     swapContext = { teamItem, playerIdx, onDone: typeof onDone === 'function' ? onDone : null };
     swapApplyTeamRef = teamItem && teamItem.teamData ? teamItem.teamData : null;
     const replaced = teamItem.teamData.players[playerIdx];
+    swapContext.outgoing = replaced;
     document.getElementById('swap-slot-label').innerText = `Replacing: ${replaced.name} (${replaced.pos})`;
     document.getElementById('swap-search').value = '';
     swapPosFilter = 'all';
@@ -1249,6 +1287,9 @@ function renderSwapResults() {
             const chosen = cloneDeep(p);
             chosen.stats = { goals: 0, assists: 0, cleanSheets: 0 };
             swapContext.teamItem.teamData.players[swapContext.playerIdx] = chosen;
+            // True two-way transfer: the outgoing player joins the incoming
+            // player's club (save members only — see applyReverseTransfer).
+            applyReverseTransfer(swapContext.outgoing, p, swapApplyTeamRef);
             const done = swapContext.onDone;
             closeSwapModal();
             if (done) done();
@@ -1830,6 +1871,8 @@ function twSignSlot(idx) {
     const chosen = slot.incoming.player;
     chosen.stats = { goals: 0, assists: 0, cleanSheets: 0 };
     userTeam.players[slot.outIdx] = chosen;
+    // Two-way deal: the outgoing player joins the mystery player's old club.
+    applyReverseTransfer(slot.outPlayer, chosen, userTeam);
     try {
         if (typeof achOnSwapApplied === 'function') achOnSwapApplied(userTeam, chosen);
     } catch (e) { /* never block the window */ }

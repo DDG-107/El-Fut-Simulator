@@ -19,7 +19,7 @@ Then visit `http://localhost:8080` (or the port your server prints). Opening `in
 ## Game Modes
 
 ### 🏟️ Realistic Career
-The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and manage your club through the season. Swap any database player into your lineup, then simulate the whole season or step through it matchday by matchday. Careers autosave as you play and on exit.
+The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and manage your club through the season. Swap any database player into your lineup — every swap is a true two-way transfer, so the player you give up joins the other club for the rest of that save — then simulate the whole season or step through it matchday by matchday. Careers autosave as you play and on exit.
 
 ### 📋 Single Season Draft
 A one-session run. Choose a formation, name a club, and take over an existing club's slot in a league. Every position deals **five real players** drawn from clubs across the entire database — keep one per slot to build your starting XI, or hit auto-pick and let the game choose the best XI.
@@ -54,7 +54,7 @@ Match results come from an expected-goals (xG) model: each side's xG derives fro
 
 ## Mid-Season Transfer Window
 
-Once per league season — at the halfway matchday — the **transfer window** pops open: up to 3 of your players are randomly drawn into deals, each matched with a mystery player from another club in your save. The mystery player plays the same position, but their **rating is hidden until you sign them** — commit and gamble, or walk away and keep your squad intact. Signed deals are final, count toward transfer achievements, and are reported in the match feed. The window never opens in knockout runs, drafts, the World Cup, or the Champions League.
+Once per league season — at the halfway matchday — the **transfer window** pops open: up to 3 of your players are randomly drawn into deals, each matched with a mystery player from another club in your save. The mystery player plays the same position, but their **rating is hidden until you sign them** — commit and gamble, or walk away and keep your squad intact. Signed deals are final and two-way (your outgoing player takes the mystery player's old slot at their club), count toward transfer achievements, and are reported in the match feed. The window never opens in knockout runs, drafts, the World Cup, or the Champions League.
 
 ## Achievements
 
@@ -79,6 +79,8 @@ Fifteen achievements persist across **all** your saves — unlock them in any ca
 | The dictator | With Mbappé on your team, have him win the golden boot |
 
 Two notes on the trickier ones: Italy didn't actually qualify for 2026, so the World Cup setup quietly adds them as a selectable nation — and "The best USA keeper" works because Austin FC's Brad Stuver joins the USMNT squad when the World Cup league loads. A toast pops the moment an achievement unlocks, wherever you are in the app.
+
+Transfers live only inside the save — the database itself is never modified, so every new career starts from real life.
 
 ## Saves
 
