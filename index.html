@@ -170,6 +170,10 @@
                     <div class="club-sub" id="hub-competition-line">—</div>
                 </div>
             </div>
+            <div id="hub-career-status" class="hub-career-status">
+                <div><span>Club Reputation</span><strong id="hub-reputation-badge">🏷️ Minnow</strong></div>
+                <p id="hub-board-objective">Board objective loading…</p>
+            </div>
 
             <div class="hub-stat-grid">
                 <div class="stat-badge stat-tile"><span class="stat-label" id="hub-pos-label">Position</span><span class="stat-value" id="hub-position-ui">—</span></div>
@@ -187,7 +191,7 @@
             </div>
 
             <button id="view-squad-btn" class="btn-secondary sidebar-btn">View Squad</button>
-            <button id="career-insights-btn" class="btn-secondary sidebar-btn">📚 Career &amp; Youth</button>
+            <button id="career-insights-btn" class="btn-secondary sidebar-btn">📚 Career Insights</button>
             <div class="sim-controls">
                 <button id="advance-matchday-btn" class="advance-btn">Simulate Season</button>
                 <button id="step-matchday-btn" class="step-btn" title="Simulate one matchday only">Step</button>
@@ -216,7 +220,7 @@
         <div class="main-content">
             <div class="hub-tabbar">
                 <button class="hub-tab-btn active" data-pane="table">Table / Bracket</button>
-                <button class="hub-tab-btn" data-pane="feed">Match Feed</button>
+                <button class="hub-tab-btn" data-pane="news">📰 News Feed</button>
                 <button class="hub-tab-btn" data-pane="stats">Top Players</button>
             </div>
 
@@ -235,10 +239,10 @@
                 </div>
             </div>
 
-            <div class="hub-tabpane" id="hub-pane-feed">
+            <div class="hub-tabpane" id="hub-pane-news">
                 <div class="panel feed-panel">
                     <div class="panel-head">
-                        <h3>Latest Simulation Feed</h3>
+                        <h3>News &amp; Match Headlines</h3>
                         <span class="panel-sub" id="feed-round-ui"></span>
                     </div>
                     <div id="ticker-feed-box" class="feed-scroll">Welcome back, Gaffer. Click 'Simulate Season' to run the matchdays, or 'Step' for one at a time.</div>
@@ -291,6 +295,7 @@
             <div id="endgame-verdict" class="endgame-verdict" style="display:none;"></div>
             <p id="endgame-subtitle" class="endgame-subtitle">The matches are over and all statistics have been finalized.</p>
             <div class="endgame-button-group">
+                <button id="endgame-next-season-btn" class="endgame-btn-action next-season-btn">Continue to Next Season</button>
                 <button id="endgame-replay-btn" class="endgame-btn-action replay-btn">Replay League</button>
                 <button id="endgame-dashboard-btn" class="endgame-btn-action dashboard-btn">Back to Dashboard</button>
                 <button id="endgame-menu-btn" class="endgame-btn-action menu-btn">Return to Menu</button>
@@ -301,7 +306,7 @@
     <div id="career-modal" class="modal-overlay" style="display:none;">
         <div class="modal-window career-modal-window">
             <div class="modal-head-row">
-                <h2>📚 Career &amp; Youth</h2>
+                <h2>📚 Career Insights</h2>
                 <span class="modal-close-trigger career-close-trigger">&times;</span>
             </div>
             <div class="career-summary-grid">
@@ -310,7 +315,6 @@
                 <div class="career-summary-card"><span>Transfer Activity</span><strong id="career-transfer-count">0</strong></div>
             </div>
             <div class="career-modal-columns">
-                <section><div class="pane-head"><span class="pane-eyebrow">YOUTH ACADEMY</span><h3>Next generation</h3></div><div id="career-youth-list"></div></section>
                 <section><div class="pane-head"><span class="pane-eyebrow">CAREER TIMELINE</span><h3>Save history</h3></div><div id="career-timeline-list" class="career-scroll"></div></section>
                 <section><div class="pane-head"><span class="pane-eyebrow">TRANSFER HISTORY</span><h3>Deals in this save</h3></div><div id="career-transfer-list" class="career-scroll"></div></section>
             </div>
@@ -396,6 +400,15 @@
                 <span class="modal-close-trigger tw-close-trigger">&times;</span>
             </div>
             <p class="tw-subtitle">The mid-season window is open. Up to 3 of your players are in deals — every incoming player is a <strong>mystery</strong>: their rating stays hidden until you sign them. Commit and gamble, or walk away and keep your squad.</p>
+            <div class="tw-approach-box">
+                <strong>🤝 Approach a club <small>(once per window)</small></strong>
+                <div class="tw-approach-controls">
+                    <select id="tw-club-picker"></select>
+                    <select id="tw-approach-pos"><option value="">Any position</option><option value="GK">GK</option><option value="CB">CB</option><option value="LB">LB</option><option value="RB">RB</option><option value="CDM">CDM</option><option value="CM">CM</option><option value="CAM">CAM</option><option value="LW">LW</option><option value="RW">RW</option><option value="ST">ST</option></select>
+                    <button id="tw-approach-btn" class="mini-btn">Offer swap</button>
+                </div>
+                <small>Pick a club from this competition. The incoming rating stays hidden until the swap is complete.</small>
+            </div>
             <div id="tw-slots" class="tw-slots"></div>
             <p id="tw-hint" class="tw-hint"></p>
             <div class="tw-actions">

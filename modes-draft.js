@@ -278,6 +278,8 @@ const SB = {
     xi: null,              // array of 11 (entry or null)
     activeSlot: 0,
     posFilter: 'all',
+    leagueFilter: 'all',
+    sortBy: 'rating-desc',
     search: '',
     poolScroll: 0,
     // pick-1-of-5 draft state
@@ -373,6 +375,8 @@ function openSquadModeSetup(mode) {
     SB.xi = new Array(curSlots().length).fill(null);
     SB.activeSlot = 0;
     SB.posFilter = 'all';
+    SB.leagueFilter = 'all';
+    SB.sortBy = 'rating-desc';
     SB.search = '';
     SB.poolScroll = 0;
     SB.draftPool = null;
@@ -651,6 +655,10 @@ function renderBrowseBuilderUI() {
                 <div class="swap-filters" id="sb-pos-filters">
                     ${['all', 'GK', 'DEF', 'MID', 'FWD'].map(g => `<button type="button" class="chip ${SB.posFilter === g ? 'active' : ''}" data-pos="${g}">${g === 'all' ? 'All' : g}</button>`).join('')}
                 </div>
+                <div class="picker-filter-grid">
+                    <label class="picker-filter-field"><span>League</span><select id="sb-league-filter"><option value="all">All leagues</option>${[...new Map(SB.pool.map(e => [e.leagueKey, e.leagueName])).entries()].sort((a,b) => a[1].localeCompare(b[1])).map(([key,name]) => `<option value="${esc(key)}" ${SB.leagueFilter === key ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
+                    <label class="picker-filter-field"><span>Sort by</span><select id="sb-sort"><option value="rating-desc" ${SB.sortBy === 'rating-desc' ? 'selected' : ''}>Rating: highest first</option><option value="rating-asc" ${SB.sortBy === 'rating-asc' ? 'selected' : ''}>Rating: lowest first</option><option value="name-asc" ${SB.sortBy === 'name-asc' ? 'selected' : ''}>Name: A–Z</option></select></label>
+                </div>
                 <div class="picker-scroll" id="sb-pool-list"></div>
             </div>
             <div class="sb-pick-col roster-modifier-pane">
@@ -674,6 +682,14 @@ function renderBrowseBuilderUI() {
     document.querySelectorAll('#sb-pos-filters .chip').forEach(c => {
         c.onclick = () => { SB.posFilter = c.dataset.pos; renderSBPoolList(true); };
     });
+    document.getElementById('sb-league-filter').onchange = (e) => {
+        SB.leagueFilter = e.target.value;
+        renderSBPoolList();
+    };
+    document.getElementById('sb-sort').onchange = (e) => {
+        SB.sortBy = e.target.value;
+        renderSBPoolList();
+    };
     document.getElementById('sb-autofill').onclick = () => sbAutoFill();
     document.getElementById('sb-clearsi').onclick = () => {
         SB.xi = new Array(curSlots().length).fill(null);
@@ -705,9 +721,14 @@ function renderSBPoolList(keepScroll) {
     const taken = new Set(SB.xi.filter(Boolean).map(x => xiKey(x.player)));
     const filtered = SB.pool.filter(e => {
         if (SB.posFilter !== 'all' && (POS_GROUPS[e.p.pos] || '') !== SB.posFilter) return false;
+        if (SB.leagueFilter !== 'all' && e.leagueKey !== SB.leagueFilter) return false;
         if (!q) return true;
         const hay = `${e.p.name} ${e.p.pos} ${e.teamName} ${e.leagueName}`.toLowerCase();
         return hay.includes(q);
+    }).sort((a, b) => {
+        if (SB.sortBy === 'name-asc') return a.p.name.localeCompare(b.p.name);
+        const delta = Number(a.p.rating || 0) - Number(b.p.rating || 0);
+        return SB.sortBy === 'rating-asc' ? delta : -delta;
     });
     document.getElementById('sb-pool-count').innerText = `${filtered.length} eligible player${filtered.length === 1 ? '' : 's'}`;
     wrap.innerHTML = '';

@@ -575,7 +575,7 @@ function performWorldCupAdvance() {
     if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
     // Only jump to the feed on a manual Step; during auto-sim let the player
     // keep browsing the table/bracket and stats tabs.
-    if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('feed');
+    if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('news');
 
     if (md <= 3) {
         if (md === 3) wcComputeQualifiers();

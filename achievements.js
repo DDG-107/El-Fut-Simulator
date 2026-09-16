@@ -488,6 +488,150 @@ const ACHIEVEMENTS = [
         check: (ctx) => !!(ctx && ctx.wonTournament)
     },
     {
+        id: 'royal-white',
+        icon: '⚪',
+        title: 'Royal Whiteout',
+        desc: 'Win the league with Real Madrid.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /real madrid/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'blaugrana-blueprint',
+        icon: '🔵🔴',
+        title: 'Blaugrana Blueprint',
+        desc: 'Win La Liga with FC Barcelona.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /barcelona/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'red-devils-revival',
+        icon: '😈',
+        title: 'Red Devils Revival',
+        desc: 'Win the Premier League with Manchester United.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /manchester united/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'klassiker-champion',
+        icon: '🟡⚫',
+        title: 'Klassiker Champion',
+        desc: 'Win the Bundesliga with Bayern Munich or Borussia Dortmund.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /bayern|dortmund/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'milan-master',
+        icon: '🖤🔴',
+        title: 'Milan Master',
+        desc: 'Win Serie A with AC Milan or Inter Milan.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /ac milan|inter milan/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'portuguese-crown',
+        icon: '🇵🇹',
+        title: 'Portuguese Crown',
+        desc: 'Win Liga Portugal with Benfica, Porto or Sporting CP.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /benfica|porto|sporting cp/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'riyadh-royalty',
+        icon: '🏜️',
+        title: 'Riyadh Royalty',
+        desc: 'Win the Saudi Pro League with Al Nassr or Al Hilal.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /al nassr|al hilal/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'azulcrema-crown',
+        icon: '🟡🔵',
+        title: 'Azulcrema Crown',
+        desc: 'Win Liga MX with Club América.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /club am[eé]rica/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'rayados-reign',
+        icon: '🔵⚪',
+        title: 'Rayados Reign',
+        desc: 'Win Liga MX with Rayados/CF Monterrey.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /monterrey|rayados/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'atlante-rising',
+        icon: '🐎',
+        title: 'Atlante Rising',
+        desc: 'Take Atlante to a Liga MX title.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && /atlante/i.test(achUserTeam()?.name || ''))
+    },
+    {
+        id: 'ronaldo-last-dance',
+        icon: '🇵🇹',
+        title: "Ronaldo's Last Dance",
+        desc: 'With Cristiano Ronaldo on your team, have him win the golden boot.',
+        check: (ctx) => !!(ctx && /ronaldo|cristiano/i.test(ctx.goldenBootWinner || '') && (achUserTeam()?.players || []).some(p => /ronaldo|cristiano/i.test(p.name)))
+    },
+    {
+        id: 'salah-time',
+        icon: '👑',
+        title: 'Salah Time',
+        desc: 'With Mohamed Salah on your team, have him win the golden boot.',
+        check: (ctx) => !!(ctx && /salah/i.test(ctx.goldenBootWinner || '') && (achUserTeam()?.players || []).some(p => /salah/i.test(p.name)))
+    },
+    {
+        id: 'the-wall',
+        icon: '🧤',
+        title: 'The Wall',
+        desc: 'Have your goalkeeper keep 15 clean sheets in a season.',
+        check: (ctx) => !!(ctx && ctx.userBestGoalkeeperCleanSheets >= 15)
+    },
+    {
+        id: 'thirty-goal-season',
+        icon: '🔥',
+        title: 'Thirty-goal Season',
+        desc: 'Have one player score 30 league goals in a season.',
+        check: (ctx) => !!(ctx && ctx.userTopScorerGoals >= 30)
+    },
+    {
+        id: 'legacy-builder',
+        icon: '🏛️',
+        title: 'Legacy Builder',
+        desc: 'Build a club legacy score of 100.',
+        check: () => !!(typeof saveState !== 'undefined' && (saveState.legacyScore || 0) >= 100)
+    },
+    {
+        id: 'assist-king',
+        icon: '🪄',
+        title: 'Assist King',
+        desc: 'Have one player record 20 league assists in a season.',
+        check: (ctx) => !!(ctx && ctx.userTopAssists >= 20)
+    },
+    {
+        id: 'clean-sheet-streak',
+        icon: '🔒',
+        title: 'Clean-Sheet Streak',
+        desc: 'Keep five consecutive league clean sheets.',
+        check: () => {
+            const rows = achState.matches[saveState.saveName] || [];
+            for (let i = 0; i <= rows.length - 5; i++) if (rows.slice(i, i + 5).every(r => r.goalsAgainst === 0)) return true;
+            return false;
+        }
+    },
+    {
+        id: 'away-kingdom',
+        icon: '✈️',
+        title: 'Away Kingdom',
+        desc: 'Win 10 away league matches in one save.',
+        check: () => {
+            const team = achUserTeam();
+            const rows = achState.matches[saveState.saveName] || [];
+            return !!(team && rows.filter(r => r.homeId !== team.id && achIsWon(r)).length >= 10);
+        }
+    },
+    {
+        id: 'perfect-ten',
+        icon: '💎',
+        title: 'Perfect Ten',
+        desc: 'Win your first 10 league matches of a season.',
+        check: () => {
+            const rows = achState.matches[saveState.saveName] || [];
+            return rows.length >= 10 && rows.slice(0, 10).every(r => achIsWon(r));
+        }
+    },
+    {
         id: 'italy16',
         icon: '🇮🇹',
         title: 'After 16 years…',
@@ -781,7 +925,9 @@ function achEvaluateSeasonEnd() {
             ctx.userTopScorerGoals = userScorers[0] && userScorers[0].stats ? userScorers[0].stats.goals : 0;
             ctx.userPlayersWithTenGoals = userScorers.filter(p => p.stats && p.stats.goals >= 10).length;
             ctx.userTopAssists = userAssisters[0] && userAssisters[0].stats ? userAssisters[0].stats.assists : 0;
+            ctx.userTopAssistsPlayer = userAssisters[0] ? userAssisters[0].name : null;
             ctx.userBestGoalkeeperCleanSheets = userKeepers[0] && userKeepers[0].stats ? userKeepers[0].stats.cleanSheets : 0;
+            ctx.userBestGoalkeeper = userKeepers[0] ? userKeepers[0].name : null;
         }
 
         // Champion detection per competition format.

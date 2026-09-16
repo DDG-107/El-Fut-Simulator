@@ -171,6 +171,7 @@ function startUcl() {
     saveState.uclBracket = null;           // fixed R16→final bracket (built after MD8)
     saveState.uclPlayoffPairs = null;      // seeded draw pairs for the KO playoffs
     saveState.uclTieAgg = null;            // two-legged aggregate tracking
+    saveState.uclLeg = null;                // knockout leg (1 or 2); final is single-leg
 
     if (typeof assignAutoSaveName === 'function') assignAutoSaveName(uclTeam(UCL.yourClubId).name, 'ucl');
     saveState.mode = 'ucl';
@@ -299,8 +300,8 @@ function renderUclHubUI() {
 
     // Progress = league matchdays, then one slot per knockout round played
     // (playoffs span two matchdays: first legs + deciders).
-    const total = 14; // 8 league + 2 playoffs + R16 + QF + SF + Final
-    const played = saveState.isCompleted ? total : Math.min(8, Math.max(0, saveState.currentMatchday - 1)) + Math.max(0, Math.min(6, (saveState.currentMatchday || 1) - 8));
+    const total = 17; // 8 league + 2 playoff + 2 R16 + 2 QF + 2 SF + final
+    const played = saveState.isCompleted ? total : Math.min(total, Math.max(0, saveState.currentMatchday - 1));
     const pct = Math.max(0, Math.min(100, Math.round((played / total) * 100)));
     const fill = document.getElementById('hub-progress-fill');
     if (fill) fill.style.width = pct + '%';
@@ -325,7 +326,7 @@ function renderUclHubUI() {
         if (thead) thead.innerHTML = '<tr><th>Pos</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>';
     } else {
         if (tableTitle) tableTitle.innerText = `Champions League — ${saveState.uclPhase === 'playoff' ? 'Knockout Playoffs' : 'Knockout Phase'}`;
-        if (tableSub) tableSub.innerText = saveState.uclPhase === 'playoff' ? 'Two-legged ties · winners join the top 8 in the Round of 16' : 'Playoff winners join the Round of 16 · single legs to the final';
+        if (tableSub) tableSub.innerText = saveState.uclPhase === 'playoff' ? 'Two-legged ties · winners join the top 8 in the Round of 16' : 'Two-legged R16, quarter-finals and semi-finals · single-leg final';
         if (feedRound) feedRound.innerText = uclPhaseLabel();
         if (thead) thead.innerHTML = '<tr><th>Tie</th><th>Team 1</th><th></th><th>Team 2</th></tr>';
     }
@@ -338,7 +339,10 @@ function renderUclHubUI() {
 }
 
 function uclTieLabel(idx, phase) {
-    return phase === 'playoff' ? `PO ${idx + 1}` : `R16 ${idx + 1}`;
+    if (phase === 'playoff') return `PO ${idx + 1}`;
+    const alive = saveState.teams.filter(t => !t.isEliminated).length;
+    const round = alive <= 2 ? 'Final' : alive <= 4 ? 'SF' : alive <= 8 ? 'QF' : 'R16';
+    return `${round} ${idx + 1}`;
 }
 
 function renderUclTable() {
@@ -408,7 +412,8 @@ function uclCurrentTies() {
 // --- Simulation engine ----------------------------------------------------------
 // Simulates one matchday. League phase: all 18 fixtures. Knockout playoffs:
 // first legs, then second legs with aggregate tracking. R16 onwards: single
-// legs, penalties if level, exactly like the real format from 2025/26.
+// legs, then the two-legged R16, quarter-finals and semi-finals. The final
+// is a single match with penalties if level.
 function performUclAdvance() {
     const feedBox = document.getElementById('ticker-feed-box');
 
@@ -440,7 +445,7 @@ function performUclAdvance() {
             saveState.currentMatchday++;
         }
         if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
-        if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('feed');
+        if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('news');
         refreshHubDashboardUI();
         return;
     }
@@ -494,13 +499,13 @@ function performUclAdvance() {
             saveState.uclLeg = null;
         }
         if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
-        if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('feed');
+        if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('news');
         saveState.currentMatchday++;
         refreshHubDashboardUI();
         return;
     }
 
-    // --- Knockout phase: single legs ---
+    // --- Knockout phase: two legs in every round except the final ---
     const ties = uclCurrentTies();
     if (!ties || !ties.length) {
         saveState.isCompleted = true;
@@ -508,53 +513,86 @@ function performUclAdvance() {
         return;
     }
     const roundName = uclKoRoundName();
-    feedBox.innerHTML = `<strong>— ${roundName.toUpperCase()} —</strong><br>`;
+    const isFinal = roundName === 'Final';
+    const leg = isFinal ? 1 : (saveState.uclLeg || 1);
+    feedBox.innerHTML = `<strong>— ${roundName.toUpperCase()}${isFinal ? '' : ` · LEG ${leg}`} —</strong><br>`;
     let userHtml = '', basicHtml = '';
     const winners = [];
-    ties.forEach(tie => {
+    const nextAggregates = {};
+
+    ties.forEach((tie, idx) => {
         if (!tie.a || !tie.b) return;
-        const home = uclTeamById(tie.a), away = uclTeamById(tie.b);
+        // Non-final ties reverse home advantage in the second leg. The final
+        // remains a single neutral-style match, decided by penalties if level.
+        const homeId = isFinal || leg === 1 ? tie.a : tie.b;
+        const awayId = isFinal || leg === 1 ? tie.b : tie.a;
+        const home = uclTeamById(homeId), away = uclTeamById(awayId);
         if (!home || !away) { feedBox.innerHTML += `<div class="standard-match-log">⚠ Skipped unresolvable tie: ${esc(tie.a)} vs ${esc(tie.b)}</div>`; return; }
-        const sim = runFixtureSimulation(home, away, 1.5);
-        let winnerId;
-        if (sim.details.goalsA > sim.details.goalsB) winnerId = tie.a;
-        else if (sim.details.goalsB > sim.details.goalsA) winnerId = tie.b;
-        else if (Math.random() < shootoutWinnerProbability(home, away)) winnerId = tie.a;
-        else winnerId = tie.b;
-        winners.push(winnerId);
-        const loser = winnerId === tie.a ? away : home;
-        loser.isEliminated = true;
-        tie.aWon = winnerId === tie.a;
-        tie.bWon = winnerId === tie.b;
-        saveState.uclPlayedTies = saveState.uclPlayedTies || [];
-        saveState.uclPlayedTies.push({ a: tie.a, b: tie.b, aWon: tie.aWon, bWon: tie.bWon });
-        let html = uclMatchHtml(sim, home, away);
-        if (sim.details.goalsA === sim.details.goalsB) {
-            html += `<br><em>${uclTeamById(winnerId).name} win on penalties.</em>`;
-            // Achievements: a decided shootout is a win or a loss, not a draw.
-            if ((home.id === saveState.userTeamId || away.id === saveState.userTeamId) && typeof achTagShootout === 'function') {
-                achTagShootout(typeof achLastMatchRow === 'function' ? achLastMatchRow() : null, winnerId === saveState.userTeamId);
-            }
+        const sim = runFixtureSimulation(home, away, isFinal ? 1.5 : 1.35);
+        const prior = saveState.uclTieAgg && saveState.uclTieAgg[idx];
+        const aggregate = prior ? { a: prior.a, b: prior.b } : { a: 0, b: 0 };
+        if (homeId === tie.a) aggregate.a += sim.details.goalsA;
+        else aggregate.b += sim.details.goalsA;
+        if (awayId === tie.a) aggregate.a += sim.details.goalsB;
+        else aggregate.b += sim.details.goalsB;
+        nextAggregates[idx] = aggregate;
+
+        let html = uclMatchHtml(sim, home, away, !isFinal);
+        if (sim.details.goalsA === sim.details.goalsB && isFinal) {
+            html += `<br><em>${home.name} and ${away.name} go to penalties.</em>`;
         }
         if (home.id === saveState.userTeamId || away.id === saveState.userTeamId) userHtml += html;
         else basicHtml += html;
     });
     feedBox.innerHTML += userHtml + basicHtml;
 
-    uclAdvanceBracket(winners);
+    if (!isFinal && leg === 1) {
+        // Store first-leg aggregates and wait for the return fixtures.
+        saveState.uclTieAgg = nextAggregates;
+        saveState.uclLeg = 2;
+        saveState.currentMatchday++;
+        if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
+        if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('news');
+        refreshHubDashboardUI();
+        return;
+    }
 
-    const finalTie = saveState.uclBracket.final;
-    if (finalTie.a && finalTie.b && finalTie.aWon !== undefined) {
-        saveState.uclBracket.champion = finalTie.aWon ? finalTie.a : finalTie.b;
+    // Decide the tie after the return leg, or decide the one-match final.
+    ties.forEach((tie, idx) => {
+        if (!tie.a || !tie.b) return;
+        const aggregate = nextAggregates[idx] || { a: 0, b: 0 };
+        let winnerId;
+        if (aggregate.a > aggregate.b) winnerId = tie.a;
+        else if (aggregate.b > aggregate.a) winnerId = tie.b;
+        else {
+            const a = uclTeamById(tie.a), b = uclTeamById(tie.b);
+            winnerId = Math.random() < shootoutWinnerProbability(a, b) ? tie.a : tie.b;
+            feedBox.innerHTML += `<br><em>${uclTeamById(winnerId).name} win ${isFinal ? 'the final' : 'the tie'} on penalties.</em>`;
+        }
+        winners.push(winnerId);
+        const loser = winnerId === tie.a ? uclTeamById(tie.b) : uclTeamById(tie.a);
+        if (loser) loser.isEliminated = true;
+        tie.aWon = winnerId === tie.a;
+        tie.bWon = winnerId === tie.b;
+        saveState.uclPlayedTies = saveState.uclPlayedTies || [];
+        saveState.uclPlayedTies.push({ a: tie.a, b: tie.b, aWon: tie.aWon, bWon: tie.bWon, aggregate });
+    });
+
+    if (isFinal) {
+        saveState.uclBracket.champion = winners[0] || null;
         saveState.isCompleted = true;
         refreshHubDashboardUI();
         if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
         setTimeout(() => triggerEndgameModalDisplay(), 300);
         return;
     }
+
+    saveState.uclTieAgg = null;
+    saveState.uclLeg = 1;
+    uclAdvanceBracket(winners);
     saveState.currentMatchday++;
     if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
-    if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('feed');
+    if (typeof isAutoSimRunning === 'function' && !isAutoSimRunning()) switchHubPane('news');
     refreshHubDashboardUI();
 }
 

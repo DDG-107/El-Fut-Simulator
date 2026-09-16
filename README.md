@@ -19,7 +19,7 @@ Then visit `http://localhost:8080` (or the port your server prints). Opening `in
 ## Game Modes
 
 ### 🏟️ Realistic Career
-The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and configure your lineup before launching the season. Once play begins, rosters are locked apart from the dedicated transfer-window system. Simulate the whole season or step through it matchday by matchday. Careers autosave as you play and on exit.
+The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and configure your lineup before launching the season. Once play begins, rosters are locked apart from the dedicated transfer-window system. Simulate the whole season or step through it matchday by matchday. Careers are multi-seasonal: after each season, continue into the next campaign with your squad, transfers, timeline, and legacy preserved — or quit whenever you want from the dashboard.
 
 ### 📋 Single Season Draft
 A one-session run. Choose a formation, name a club, and take over an existing club's slot in a league. Every position deals **five real players** drawn from clubs across the entire database — keep one per slot to build your starting XI, or hit auto-pick and let the game choose the best XI.
@@ -42,7 +42,7 @@ Unlimited budget and total control over your club. Same league structure, no fin
 Pick any nation from the 48 qualified teams and play the 2026 World Cup: group stages that mirror the real format, then knockout rounds with penalty shootouts. Choose the full 48-nation field or a smaller custom one.
 
 ### 🏆 UEFA Champions League
-Lead one of the 36 qualified clubs through the authentic 2026/27 Champions League: the Swiss-model league phase using the real draw (eight matchdays, two opponents from each pot, four home and four away), then the knockout phase — top 8 skip straight to the Round of 16 while teams 9–24 contest two-legged playoffs, with single-leg ties and penalties from there to the final.
+Lead one of the 36 qualified clubs through the authentic 2026/27 Champions League: the Swiss-model league phase using the real draw (eight matchdays, two opponents from each pot, four home and four away), then the knockout phase — top 8 skip straight to the Round of 16 while teams 9–24 contest two-legged playoffs. The Round of 16, quarter-finals, and semi-finals are all played over two legs; only the final is a single match, with penalties if level.
 
 Configure your squad before launch, then use **View Squad** from the hub as a read-only team profile. Realistic Careers can change the roster only through the dedicated transfer window; tournament and draft rosters remain fixed once play begins.
 
@@ -62,7 +62,7 @@ Match results come from an expected-goals (xG) model: each side's xG derives fro
 
 League players now carry short-term form and morale. Wins build form streaks, defeats hurt confidence, and rivalry matches create extra atmosphere; current form is visible in squad profiles and influences team strength.
 
-Completed realistic league seasons generate a three-player youth intake. Promote prospects from the **Career & Youth** dashboard, where each save also tracks a legacy score, career timeline, and transfer history.
+Each career tracks a club legacy score, career timeline, and transfer history in the **Career Insights** panel.
 
 Transfer-window mystery players now come with scouting hints and personality reveals after signing. The same dashboard records two-way deals, while matchdays create rivalry-aware headlines in the feed.
 
@@ -71,7 +71,7 @@ Once per league season — at the halfway matchday — the **transfer window** p
 
 ## Achievements
 
-Thirty-one achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
+Fifty achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
 
 | Achievement | How to earn it |
 | --- | --- |
@@ -106,6 +106,25 @@ Thirty-one achievements persist across **all** your saves — unlock them in any
 | Draft Master | Win a league using a drafted squad |
 | Kings of Europe | Win the UEFA Champions League |
 | Cup Lift | Win a knockout tournament |
+| Royal Whiteout | Win the league with Real Madrid |
+| Blaugrana Blueprint | Win La Liga with FC Barcelona |
+| Red Devils Revival | Win the Premier League with Manchester United |
+| Klassiker Champion | Win the Bundesliga with Bayern Munich or Borussia Dortmund |
+| Milan Master | Win Serie A with AC Milan or Inter Milan |
+| Portuguese Crown | Win Liga Portugal with Benfica, Porto or Sporting CP |
+| Riyadh Royalty | Win the Saudi Pro League with Al Nassr or Al Hilal |
+| Azulcrema Crown | Win Liga MX with Club América |
+| Rayados Reign | Win Liga MX with Rayados/CF Monterrey |
+| Atlante Rising | Take Atlante to a Liga MX title |
+| Ronaldo's Last Dance | With Cristiano Ronaldo on your team, have him win the golden boot |
+| Salah Time | With Mohamed Salah on your team, have him win the golden boot |
+| The Wall | Have your goalkeeper keep 15 clean sheets in a season |
+| Thirty-goal Season | Have one player score 30 league goals in a season |
+| Legacy Builder | Build a club legacy score of 100 |
+| Assist King | Have one player record 20 league assists in a season |
+| Clean-Sheet Streak | Keep five consecutive league clean sheets |
+| Away Kingdom | Win 10 away league matches in one save |
+| Perfect Ten | Win your first 10 league matches of a season |
 
 Two notes on the trickier ones: Italy didn't actually qualify for 2026, so the World Cup setup quietly adds them as a selectable nation — and "The best USA keeper" works because Austin FC's Brad Stuver joins the USMNT squad when the World Cup league loads. A toast pops the moment an achievement unlocks, wherever you are in the app.
 

@@ -8,12 +8,18 @@ let saveState = {
     currentMatchday: 1,
     totalMatchdays: 0,
     isCompleted: false, // Flag blocking action ticks once threshold crosses
+    seasonNumber: 1,
     teams: [], // User-selected clubs running live inside this environment
     schedule: [],
     timeline: [],
-    youthAcademy: [],
     legacyScore: 0,
-    transferHistory: []
+    // Realistic Career systems only. Reputation is a tier number: 0 Minnow,
+    // 1 Mid-table, 2 Contender, 3 Elite.
+    reputation: 0,
+    academyEvents: [],
+    boardObjective: null,
+    transferHistory: [],
+    cupWins: 0
 };
 
 // --- THEME ---
@@ -83,10 +89,14 @@ function uniqueAutoSaveName(base) {
 function assignAutoSaveName(clubName, modeId) {
     saveState.saveName = uniqueAutoSaveName(buildAutoSaveName(clubName, modeId));
     saveState.timeline = [];
-    saveState.youthAcademy = [];
     saveState.transferHistory = [];
     saveState.legacyScore = 0;
     saveState.seasonSummaryRecorded = false;
+    saveState.seasonNumber = 1;
+    saveState.reputation = 0;
+    saveState.academyEvents = [];
+    saveState.boardObjective = null;
+    saveState.cupWins = 0;
     // Every new run is a fresh achievements context (matches, signings, XI
     // snapshots are tracked per save); unlocks themselves persist forever.
     if (typeof achResetSaveContext === 'function') achResetSaveContext();
@@ -97,7 +107,7 @@ function assignAutoSaveName(clubName, modeId) {
 // 'realistic' is the persistent full-club save; every other mode is a
 // one-session run that opens its own setup flow (implemented in modes-*.js).
 const GAME_MODES = [
-    { id: 'realistic', icon: '🏟️', name: 'Realistic Career', desc: 'Full season (league or knockout) with transfers and a youth academy. The complete El Fut experience.' },
+    { id: 'realistic', icon: '🏟️', name: 'Realistic Career', desc: 'Full season (league or knockout) with transfers, club legacy, and career history. The complete El Fut experience.' },
     { id: 'draft', icon: '📋', name: 'Single Season Draft', desc: 'Classic five-card drafting with visible ratings and optional re-deals.' },
     { id: 'draftRookie', icon: '🟢', name: 'Rookie Draft', desc: 'Ratings are revealed and you may re-roll any hand until you find the right fit.' },
     { id: 'draftChallenging', icon: '🔒', name: 'Challenging Draft', desc: 'Ratings are hidden and every hand is final — trust your scouting instincts.' },
@@ -131,9 +141,15 @@ function migrateSaveState(data) {
     if (data.mode === 'draftChallenge') data.mode = 'draft';
     if (data.mode === 'draftRookie' || data.mode === 'draftChallenging') data.mode = 'draft';
     if (!Array.isArray(data.timeline)) data.timeline = [];
-    if (!Array.isArray(data.youthAcademy)) data.youthAcademy = [];
+    if (!Number.isFinite(data.seasonNumber) || data.seasonNumber < 1) data.seasonNumber = 1;
+    delete data.youthAcademy;
     if (!Array.isArray(data.transferHistory)) data.transferHistory = [];
     if (typeof data.legacyScore !== 'number') data.legacyScore = 0;
+    if (!Number.isFinite(data.reputation)) data.reputation = 0;
+    data.reputation = Math.max(0, Math.min(3, Math.round(data.reputation)));
+    if (!Array.isArray(data.academyEvents)) data.academyEvents = [];
+    if (!data.boardObjective || typeof data.boardObjective !== 'object') data.boardObjective = null;
+    if (!Number.isFinite(data.cupWins)) data.cupWins = 0;
     return data;
 }
 
@@ -603,27 +619,6 @@ function careerHeadline(homeTeam, awayTeam, goalsA, goalsB, rivalry) {
     return `📰 ${winner.name} edge ${goalsA}-${goalsB} and keep their campaign moving.`;
 }
 
-function generateYouthIntake() {
-    const positions = ['GK', 'CB', 'LB', 'RB', 'CM', 'CAM', 'LW', 'RW', 'ST'];
-    const names = ['A. Mensah', 'L. Novak', 'M. Duarte', 'S. Okafor', 'J. Petrov', 'N. Silva', 'E. Rossi', 'K. Adeyemi', 'T. Wilson'];
-    return Array.from({ length: 3 }, (_, i) => ({
-        id: `youth-${Date.now()}-${i}`,
-        name: names[Math.floor(Math.random() * names.length)] + ` ${Math.floor(Math.random() * 90 + 10)}`,
-        pos: positions[Math.floor(Math.random() * positions.length)],
-        rating: 64 + Math.floor(Math.random() * 12),
-        potential: 78 + Math.floor(Math.random() * 17),
-        morale: 80,
-        form: 0,
-        stats: { goals: 0, assists: 0, cleanSheets: 0 }
-    }));
-}
-
-function prepareYouthIntake() {
-    if (!isLeagueFormat() || !isRealistic() || saveState.youthAcademy.length) return;
-    saveState.youthAcademy = generateYouthIntake();
-    recordCareerEvent('🌱 A new youth intake has arrived at the academy.', 'youth');
-}
-
 // Optimized 1-99 Position-Agnostic Multiplier Engine
 function parseTacticalStrength(team) {
     // --- FIXED SAFETY NET ---
@@ -709,6 +704,94 @@ function teamAverageRating(team) {
     return pl.reduce((s, p) => s + (p.rating || 0) + ((p.form || 0) * 0.35) + (((p.morale || 75) - 75) * 0.03), 0) / pl.length;
 }
 
+// --- REALISTIC CAREER SYSTEMS ----------------------------------------------
+const REPUTATION_TIERS = ['Minnow', 'Mid-table', 'Contender', 'Elite'];
+function reputationTier(value) {
+    return REPUTATION_TIERS[Math.max(0, Math.min(3, Math.round(Number(value) || 0)))];
+}
+function reputationTargetRating(value) {
+    return [72, 78, 84, 90][Math.max(0, Math.min(3, Number(value) || 0))];
+}
+function reputationBadgeHtml() {
+    return `<span class="reputation-badge reputation-${saveState.reputation || 0}">🏷️ ${esc(reputationTier(saveState.reputation))}</span>`;
+}
+function initialCareerReputation(team) {
+    const avg = teamAverageRating(team);
+    return avg >= 86 ? 3 : avg >= 82 ? 2 : avg >= 77 ? 1 : 0;
+}
+function objectiveForTier(tier) {
+    const options = [
+        { label: 'Avoid relegation', targetTier: 0, minPosition: 999 },
+        { label: 'Finish top half', targetTier: 1, minPosition: 0.5 },
+        { label: 'Finish in the top four', targetTier: 2, minPosition: 4 },
+        { label: 'Win the league', targetTier: 3, minPosition: 1 }
+    ];
+    return cloneDeep(options[Math.max(0, Math.min(3, tier))]);
+}
+function setBoardObjective() {
+    if (!isRealistic()) return;
+    const tier = Number(saveState.reputation || 0);
+    saveState.boardObjective = Object.assign(objectiveForTier(tier), { season: saveState.seasonNumber });
+    recordCareerEvent(`📋 Board objective: ${saveState.boardObjective.label}.`, 'board');
+}
+function applySeasonProgression() {
+    if (!isRealistic()) return;
+    saveState.teams.forEach(team => (team.players || []).forEach(player => {
+        if (!Number.isFinite(player.age)) player.age = 18 + Math.floor(Math.random() * 17);
+        const starts = Number(player.starts || 0);
+        const regular = starts >= Math.max(3, Math.floor((saveState.totalMatchdays || 10) * 0.25));
+        let delta = 0;
+        if (player.age < 23 && regular) delta = 1;
+        else if (player.age >= 33) delta = -2;
+        else if (player.age >= 30) delta = -1;
+        player.rating = Math.max(55, Math.min(99, Number(player.rating || 70) + delta));
+        player.age++;
+        if (delta) recordCareerEvent(`${delta > 0 ? '📈 Developed' : '📉 Declined'}: ${player.name} ${delta > 0 ? '+' : ''}${delta} OVR.`, 'insight');
+        player.starts = 0;
+    }));
+}
+function academyCandidate(team) {
+    const candidates = (team.players || []).map((p, i) => ({ p, i }))
+        .filter(x => Number(x.p.age || 99) >= 29 || Number(x.p.form || 0) <= -2);
+    return candidates[Math.floor(Math.random() * candidates.length)] || { p: team.players[team.players.length - 1], i: team.players.length - 1 };
+}
+function generateAcademyGraduate(team, replaced) {
+    const age = 16 + Math.floor(Math.random() * 6);
+    const potential = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
+    const target = Math.max(60, Number(replaced.rating || 70) - 8);
+    const player = generateRandomPlayer(replaced.pos, target);
+    player.name = `${player.name.replace(' (Gen)', '')} (Academy)`;
+    player.age = age; player.potential = potential; player.starts = 0;
+    return player;
+}
+function showAcademyEvent() {
+    if (!isRealistic()) return;
+    const team = saveState.teams.find(t => t.id === saveState.userTeamId);
+    if (!team || !team.players.length) return;
+    const outgoing = academyCandidate(team);
+    const graduate = generateAcademyGraduate(team, outgoing.p);
+    const feed = document.getElementById('ticker-feed-box');
+    const eventId = `academy-${Date.now()}`;
+    saveState.academyEvents = Array.isArray(saveState.academyEvents) ? saveState.academyEvents : [];
+    saveState.academyEvents.push({ id: eventId, season: saveState.seasonNumber, player: graduate.name, status: 'offered' });
+    if (!feed) return;
+    feed.innerHTML += `<div class="academy-event" id="${eventId}"><strong>🎓 Academy graduate available</strong><span>${esc(graduate.name)} · age ${graduate.age} · ${esc(graduate.pos)} · potential: ${esc(graduate.potential)}</span><small>Replace ${esc(outgoing.p.name)} to keep the 11-man roster intact.</small><div><button class="mini-btn academy-accept">Swap in graduate</button><button class="mini-btn academy-decline">Keep current starter</button></div></div>`;
+    const card = document.getElementById(eventId);
+    card.querySelector('.academy-accept').onclick = () => {
+        team.players[outgoing.i] = graduate;
+        saveState.academyEvents.find(e => e.id === eventId).status = 'accepted';
+        recordCareerEvent(`🎓 ${graduate.name} promoted from the academy.`, 'academy');
+        card.innerHTML = `<strong>🎓 Academy graduate promoted</strong><span>${esc(graduate.name)} replaces ${esc(outgoing.p.name)}.</span>`;
+        autoSaveCurrentProgress(); refreshHubDashboardUI();
+    };
+    card.querySelector('.academy-decline').onclick = () => {
+        saveState.academyEvents.find(e => e.id === eventId).status = 'declined';
+        recordCareerEvent(`🎓 Academy offer declined for ${graduate.name}.`, 'academy');
+        card.innerHTML = '<strong>🎓 Academy offer declined</strong><span>The current 11-man roster remains unchanged.</span>';
+        autoSaveCurrentProgress();
+    };
+}
+
 // Expected-goals (xG) match model. Each team's expected goals come from the
 // overall rating gap to its opponent, and the actual goals are drawn from a
 // Poisson distribution around that xG. This produces realistic football
@@ -724,14 +807,14 @@ function teamAverageRating(team) {
 // gap (no safety net of a return leg), so mid-tier nations can't luck their
 // way past elite sides in cups — while close clashes stay close.
 function expectedGoalsFor(ratingA, ratingB, home, gapScale) {
-    // Ratings live on a ~60-99 scale. Positive edges convert steeply (a +1
-    // edge is ~0.16 xG); negative edges decay more gently with a floor so the
-    // weaker side still creates the odd chance instead of vanishing.
-    // The chaos slider scales the effective gap (1.0 = default curve).
+    // Ratings live on a ~60-99 scale. Keep the baseline close to modern
+    // league scoring (roughly 2.2–2.6 total goals per match), then let quality
+    // move a side's xG gradually rather than turning every rating gap into a
+    // shootout. The chaos slider still widens this curve when desired.
     const gap = (ratingA - ratingB) * (gapScale || 1) * simChaosGapFactor();
-    let xg = gap >= 0 ? 1.18 + 0.16 * gap : Math.max(0.26, 1.18 + 0.10 * gap);
-    if (home) xg *= 1.07; // slight home advantage
-    return Math.min(3.8, xg);
+    let xg = gap >= 0 ? 1.10 + 0.09 * gap : Math.max(0.30, 1.10 + 0.065 * gap);
+    if (home) xg *= 1.04; // modest home advantage
+    return Math.min(2.65, xg);
 }
 function samplePoissonGoals(lambda) {
     if (lambda <= 0) return 0;
@@ -754,6 +837,10 @@ function runFixtureSimulation(homeTeam, awayTeam, gapScale) {
     // Overall squad ratings drive the matchup (robust for any roster shape).
     const ovrA = teamAverageRating(homeTeam);
     const ovrB = teamAverageRating(awayTeam);
+    if (isRealistic()) {
+        (homeTeam.players || []).forEach(p => { p.starts = (p.starts || 0) + 1; });
+        (awayTeam.players || []).forEach(p => { p.starts = (p.starts || 0) + 1; });
+    }
 
     // Sample goals from each side's expected goals against the other.
     let goalsA = samplePoissonGoals(expectedGoalsFor(ovrA, ovrB, true, gapScale));
@@ -802,39 +889,55 @@ function runFixtureSimulation(homeTeam, awayTeam, gapScale) {
     };
 }
 
+function playerRatingFactor(player) {
+    // Rating matters, but only as a soft edge: a 90-rated attacker should be
+    // more likely to finish than a 70-rated midfielder, not score every goal.
+    return Math.pow(Math.max(0.65, Number(player.rating || 70) / 80), 1.55);
+}
+
 function distributeGoals(team, count) {
-    let scorers = [];
+    const scorers = [];
     if (count <= 0) return scorers;
-    let weights = team.players.map(p => {
-        if (["ST"].includes(p.pos)) return 45;
-        if (["LW", "RW"].includes(p.pos)) return 35;
-        if (["CAM"].includes(p.pos)) return 20;
-        if (["CM"].includes(p.pos)) return 10;
-        if (["CDM"].includes(p.pos)) return 4;
-        return 2;
+    const weights = team.players.map(p => {
+        let positionWeight = 2;
+        if (p.pos === 'ST') positionWeight = 34;
+        else if (['LW', 'RW'].includes(p.pos)) positionWeight = 24;
+        else if (p.pos === 'CAM') positionWeight = 16;
+        else if (p.pos === 'CM') positionWeight = 9;
+        else if (p.pos === 'CDM') positionWeight = 5;
+        return positionWeight * playerRatingFactor(p);
     });
     for (let c = 0; c < count; c++) {
-        let idx = selectWeightedIndex(weights);
-        team.players[idx].stats.goals++;
-        scorers.push(team.players[idx].name);
+        const idx = selectWeightedIndex(weights);
+        const player = team.players[idx];
+        if (!player.stats) player.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+        player.stats.goals++;
+        scorers.push(player.name);
     }
     return scorers;
 }
 
 function distributeAssists(team, scorersList) {
-    let assisters = [];
-    scorersList.forEach(() => {
-        if (Math.random() > 0.7) return;
-        let weights = team.players.map(p => {
-            if (["LW", "RW", "CAM"].includes(p.pos)) return 40;
-            if (["CM"].includes(p.pos)) return 30;
-            if (["CDM"].includes(p.pos)) return 15;
-            if (["ST"].includes(p.pos)) return 10;
-            return 5;
+    const assisters = [];
+    scorersList.forEach(scorerName => {
+        // Most goals have a credited assist, but not all: rebounds, solo
+        // runs and set pieces keep the leaderboard from inflating.
+        if (Math.random() > 0.72) return;
+        const weights = team.players.map(p => {
+            if (p.name === scorerName) return 0;
+            let positionWeight = 5;
+            if (['LW', 'RW', 'CAM'].includes(p.pos)) positionWeight = 34;
+            else if (p.pos === 'CM') positionWeight = 25;
+            else if (p.pos === 'CDM') positionWeight = 13;
+            else if (p.pos === 'ST') positionWeight = 8;
+            return positionWeight * playerRatingFactor(p);
         });
-        let idx = selectWeightedIndex(weights);
-        team.players[idx].stats.assists++;
-        assisters.push(team.players[idx].name);
+        if (!weights.some(Boolean)) return;
+        const idx = selectWeightedIndex(weights);
+        const player = team.players[idx];
+        if (!player.stats) player.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+        player.stats.assists++;
+        assisters.push(player.name);
     });
     return assisters;
 }
@@ -1509,6 +1612,16 @@ document.getElementById('launch-sim-btn').onclick = () => {
 
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
+    if (isRealistic()) {
+        saveState.reputation = initialCareerReputation(saveState.teams.find(t => t.id === saveState.userTeamId));
+        saveState.cupWins = Number(saveState.cupWins || 0);
+        saveState.academyEvents = [];
+        setBoardObjective();
+        saveState.teams.forEach(team => (team.players || []).forEach(player => {
+            if (!Number.isFinite(player.age)) player.age = 18 + Math.floor(Math.random() * 17);
+            if (!Number.isFinite(player.starts)) player.starts = 0;
+        }));
+    }
 
     // The save is only now real — name it from its final club, mode and date.
     assignAutoSaveName((saveState.teams.find(t => t.id === saveState.userTeamId) || {}).name, saveState.mode);
@@ -1519,6 +1632,8 @@ document.getElementById('launch-sim-btn').onclick = () => {
     } else {
         saveState.schedule = buildDirectKnockoutTree(saveState.teams);
         saveState.totalMatchdays = Math.log2(saveState.teams.length);
+        saveState.knockoutFixtureIndex = 0;
+        saveState.knockoutRoundWinners = [];
     }
     document.getElementById('config-screen').style.display = 'none';
         const hub = document.getElementById('hub-screen');
@@ -1527,6 +1642,7 @@ document.getElementById('launch-sim-btn').onclick = () => {
         hub.style.inset = '0';
         hub.style.zIndex = '50';
     refreshHubDashboardUI();
+    showAcademyEvent();
     switchHubPane('table');
 };
 
@@ -1570,6 +1686,12 @@ function refreshHubDashboardUI() {
     document.getElementById('hub-user-team').innerText = userTeamObj.name;
     const avatar = document.getElementById('hub-club-avatar');
     if (avatar) avatar.innerText = initialsOf(userTeamObj.name);
+    const careerStatus = document.getElementById('hub-career-status');
+    if (careerStatus) careerStatus.style.display = isRealistic() ? '' : 'none';
+    const repBadge = document.getElementById('hub-reputation-badge');
+    if (repBadge && isRealistic()) repBadge.innerHTML = reputationBadgeHtml();
+    const objectiveEl = document.getElementById('hub-board-objective');
+    if (objectiveEl && isRealistic()) objectiveEl.innerText = saveState.boardObjective ? `Board: ${saveState.boardObjective.label}` : 'Board objective pending';
     const leagueLine = document.getElementById('hub-competition-line');
     if (leagueLine) {
         const leagueName = saveState.userLeagueName || findTeamLeagueName(userTeamObj.id);
@@ -1637,6 +1759,15 @@ function refreshHubDashboardUI() {
 
     const exitBtn = document.getElementById('save-exit-btn');
     if (exitBtn) exitBtn.innerText = isRealistic() ? 'Save & Exit to Menu' : 'End Run · not saved';
+    const stepBtn = document.getElementById('step-matchday-btn');
+    if (stepBtn && isKnockoutFormat()) {
+        const remaining = (saveState.schedule[saveState.currentMatchday - 1] || []).length - (saveState.knockoutFixtureIndex || 0);
+        stepBtn.innerText = 'Play Next Match';
+        stepBtn.title = `Play the next knockout fixture${remaining > 0 ? ` · ${remaining} remaining this round` : ''}`;
+    } else if (stepBtn) {
+        stepBtn.innerText = 'Step';
+        stepBtn.title = 'Simulate one matchday only';
+    }
 
     renderActiveStandings();
     renderLeaderboardCharts();
@@ -1712,6 +1843,124 @@ function renderLeaderboardCharts() {
         : '<li>No goalkeeper data yet</li>';
 }
 
+// --- KNOCKOUT MATCHDAY EXPERIENCE -------------------------------------------
+// Knockout runs advance one fixture at a time. That gives every tie its own
+// matchday moment instead of resolving an entire round in one click.
+function advanceKnockoutFixture() {
+    const roundIndex = saveState.currentMatchday - 1;
+    const matches = saveState.schedule[roundIndex] || [];
+    const feedBox = document.getElementById('ticker-feed-box');
+    if (!matches.length) {
+        saveState.isCompleted = true;
+        triggerEndgameModalDisplay();
+        return;
+    }
+
+    const fixtureIndex = saveState.knockoutFixtureIndex || 0;
+    if (fixtureIndex >= matches.length) return;
+    const match = matches[fixtureIndex];
+    const homeTeam = saveState.teams.find(t => t.id === match.home);
+    const awayTeam = saveState.teams.find(t => t.id === match.away);
+    if (!homeTeam || !awayTeam) return;
+
+    if (fixtureIndex === 0 && feedBox) {
+        feedBox.innerHTML += `<div class="knockout-round-banner"><strong>🏆 ${esc(knockoutRoundName())}</strong><span>High-stakes knockout night · match 1 of ${matches.length}</span></div>`;
+    }
+
+    const sim = runFixtureSimulation(homeTeam, awayTeam, 1.5);
+    const isUserMatch = homeTeam.id === saveState.userTeamId || awayTeam.id === saveState.userTeamId;
+    let userAchRow = null;
+    if (isUserMatch && typeof achRecordUserMatch === 'function') {
+        userAchRow = achRecordUserMatch({
+            from: homeTeam.name, to: awayTeam.name,
+            homeId: homeTeam.id, awayId: awayTeam.id,
+            goalsFor: sim.details.goalsA, goalsAgainst: sim.details.goalsB,
+            matchday: saveState.currentMatchday
+        });
+    }
+
+    let winner = null;
+    let matchHtml = isUserMatch
+        ? `<div class="user-match-log knockout-match-log"><strong>🎙️ ${sim.text}</strong>`
+        : `<div class="standard-match-log knockout-match-log"><strong>${sim.text}</strong>`;
+    if (sim.details.scorersA.length) matchHtml += `<br><span class="feed-goals">Goals [Home]: ${sim.details.scorersA.join(', ')}</span>`;
+    if (sim.details.scorersB.length) matchHtml += `<br><span class="feed-goals">Goals [Away]: ${sim.details.scorersB.join(', ')}</span>`;
+
+    if (sim.details.goalsA === sim.details.goalsB) {
+        winner = Math.random() < shootoutWinnerProbability(homeTeam, awayTeam) ? homeTeam : awayTeam;
+        const loser = winner === homeTeam ? awayTeam : homeTeam;
+        loser.isEliminated = true;
+        matchHtml += `<br><em>⚽ ${homeTeam.name} and ${awayTeam.name} are level — penalties.</em><br><strong>🏆 ${winner.name} win the shootout and advance.</strong>`;
+        if (isUserMatch && typeof achTagShootout === 'function') {
+            achTagShootout(userAchRow, winner.id === saveState.userTeamId);
+        }
+    } else {
+        winner = sim.details.goalsA > sim.details.goalsB ? homeTeam : awayTeam;
+        const loser = winner === homeTeam ? awayTeam : homeTeam;
+        loser.isEliminated = true;
+        matchHtml += `<br><strong>➡️ ${winner.name} advance to the next round.</strong>`;
+    }
+    matchHtml += '</div>';
+    if (feedBox) {
+        feedBox.innerHTML += matchHtml;
+        feedBox.innerHTML += `<div class="knockout-match-status">Match ${fixtureIndex + 1} of ${matches.length} complete${isUserMatch ? ' · Your tie is decided' : ''}</div>`;
+    }
+    if (isUserMatch && sim.headline) recordCareerEvent(sim.headline, 'headline');
+
+    saveState.knockoutRoundWinners = saveState.knockoutRoundWinners || [];
+    saveState.knockoutRoundWinners.push(winner.id);
+    saveState.knockoutFixtureIndex = fixtureIndex + 1;
+    if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
+    switchHubPane('news');
+
+    if (saveState.knockoutFixtureIndex < matches.length) {
+        refreshHubDashboardUI();
+        autoSaveCurrentProgress();
+        return;
+    }
+
+    const winners = saveState.knockoutRoundWinners.slice();
+    const roundComplete = winners.length === 1;
+    if (roundComplete) {
+        saveState.isCompleted = true;
+        saveState.knockoutFixtureIndex = 0;
+        refreshHubDashboardUI();
+        autoSaveCurrentProgress();
+        setTimeout(() => triggerEndgameModalDisplay(), 400);
+        return;
+    }
+
+    const nextRoundMatches = [];
+    for (let i = 0; i < winners.length; i += 2) {
+        nextRoundMatches.push({ home: winners[i], away: winners[i + 1] });
+    }
+    saveState.schedule.push(nextRoundMatches);
+    saveState.knockoutRoundWinners = [];
+    saveState.knockoutFixtureIndex = 0;
+    saveState.currentMatchday++;
+    refreshHubDashboardUI();
+    autoSaveCurrentProgress();
+}
+
+function runSilentAITransfers() {
+    if (!isRealistic() || saveState.isCompleted || saveState.teams.length < 3 || Math.random() > 0.28) return;
+    const clubs = saveState.teams.filter(t => t.id !== saveState.userTeamId && (t.players || []).length === 11);
+    if (clubs.length < 2) return;
+    const from = clubs[Math.floor(Math.random() * clubs.length)];
+    const targets = clubs.filter(t => t !== from && t.players.some(p => p.pos === from.players[0].pos));
+    const to = targets[Math.floor(Math.random() * targets.length)];
+    if (!to) return;
+    const outgoing = from.players[Math.floor(Math.random() * from.players.length)];
+    const target = to.players.find(p => p.pos === outgoing.pos);
+    if (!target) return;
+    const fromIdx = from.players.indexOf(outgoing), toIdx = to.players.indexOf(target);
+    from.players[fromIdx] = cloneDeep(target);
+    to.players[toIdx] = cloneDeep(outgoing);
+    from.players[fromIdx].stats = { goals: 0, assists: 0, cleanSheets: 0 };
+    to.players[toIdx].stats = { goals: 0, assists: 0, cleanSheets: 0 };
+    recordCareerEvent(`🔄 AI market movement: ${outgoing.name} and ${target.name} swapped clubs.`, 'transfer');
+}
+
 // --- CORE SIMULATION PROCESSING ENGINE ---
 // Simulates exactly one matchday (or one tournament round) and refreshes the hub.
 function advanceOneMatchday() {
@@ -1728,6 +1977,11 @@ function advanceOneMatchday() {
     // Champions League runs use the Swiss-model league + bracket engine.
     if (isUclFormat()) {
         if (typeof performUclAdvance === 'function') performUclAdvance();
+        return;
+    }
+
+    if (isKnockoutFormat()) {
+        advanceKnockoutFixture();
         return;
     }
 
@@ -1815,7 +2069,7 @@ function advanceOneMatchday() {
 
     // Reveal results on a manual Step. During auto-sim, leave the player's
     // current tab alone so they can watch the table/bracket and stats live.
-    if (!isAutoSimRunning()) switchHubPane('feed');
+    if (!isAutoSimRunning()) switchHubPane('news');
 
     if (isLeagueFormat()) {
         if (saveState.currentMatchday >= saveState.totalMatchdays) {
@@ -1844,6 +2098,9 @@ function advanceOneMatchday() {
         }
     }
 
+    // Silent AI activity keeps rival rosters moving between matchdays without a
+    // separate market screen. The user's 11-man roster is never touched.
+    runSilentAITransfers();
     // Mid-season transfer window: opens once, at the halfway matchday.
     if (typeof twOpenWindow === 'function') twOpenWindow();
     if (typeof achMarkRosterSnapshot === 'function') {
@@ -1857,7 +2114,18 @@ function advanceOneMatchday() {
 
 function scrollFeedToBottom() {
     const feed = document.getElementById('ticker-feed-box');
-    if (feed) feed.scrollTop = feed.scrollHeight;
+    if (!feed) return;
+    const pinToBottom = () => {
+        feed.scrollTop = feed.scrollHeight;
+        if (typeof feed.scrollTo === 'function') feed.scrollTo({ top: feed.scrollHeight, behavior: 'auto' });
+    };
+    // The feed is often updated while its tab is hidden. Pin immediately and
+    // again after layout so the newly-rendered matchday is always visible at
+    // the bottom when the News Feed opens.
+    pinToBottom();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(pinToBottom);
+    setTimeout(pinToBottom, 0);
+    setTimeout(pinToBottom, 60);
 }
 
 // --- CONTINUOUS SIMULATION ---
@@ -1955,9 +2223,14 @@ function twEligibleOutgoing(userTeam, pos) {
 
 function twIncomingPool(userTeam, pos) {
     const usedNames = new Set((userTeam.players || []).map(p => p.name));
+    const userTier = Number(saveState.reputation || 0);
     const pool = [];
     saveState.teams.forEach(t => {
         if (t.id === userTeam.id) return;
+        const sourceTier = teamAverageRating(t) >= 86 ? 3 : teamAverageRating(t) >= 82 ? 2 : teamAverageRating(t) >= 77 ? 1 : 0;
+        // Reputation gates the mystery market: a Minnow mostly sees Minnows,
+        // while an Elite club can reach Contender and Elite squads.
+        if (sourceTier > Math.max(0, userTier)) return;
         (t.players || []).forEach(p => {
             if (!p || !p.pos) return;
             if (pos && p.pos !== pos) return;
@@ -1972,7 +2245,40 @@ function twIncomingPool(userTeam, pos) {
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+    pool.sort((a, b) => (Math.random() - 0.5) + (Number(b.player.rating || 0) - Number(a.player.rating || 0)) * 0.01);
     return pool;
+}
+
+function twApproachClub() {
+    if (!twState || twState.approached) return;
+    const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+    const clubId = document.getElementById('tw-club-picker')?.value;
+    const rival = saveState.teams.find(t => t.id === clubId && t.id !== userTeam.id);
+    if (!userTeam || !rival) return;
+    const outgoing = twEligibleOutgoing(userTeam, document.getElementById('tw-approach-pos')?.value || null)
+        .sort((a, b) => (Number(a.p.age || 99) - 30) - (Number(b.p.age || 99) - 30) || Number(a.p.form || 0) - Number(b.p.form || 0))[0];
+    const candidates = (rival.players || []).filter(p => p.pos === outgoing?.p?.pos && !userTeam.players.some(q => q.name === p.name));
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!outgoing || !chosen) return;
+    const rivalTier = teamAverageRating(rival) >= 86 ? 3 : teamAverageRating(rival) >= 82 ? 2 : teamAverageRating(rival) >= 77 ? 1 : 0;
+    if (rivalTier > Number(saveState.reputation || 0) && Math.random() < 0.2 + (rivalTier - Number(saveState.reputation || 0)) * 0.15) {
+        const feed = document.getElementById('ticker-feed-box');
+        if (feed) feed.innerHTML += `<br>🤝 ${esc(rival.name)} rejected the approach — their player demanded a higher counter-offer.<br>`;
+        twState.approached = true;
+        twRenderWindow();
+        return;
+    }
+    const idx = userTeam.players.indexOf(outgoing.p);
+    const incoming = cloneDeep(chosen);
+    incoming.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+    userTeam.players[idx] = incoming;
+    applyReverseTransfer(outgoing.p, incoming, userTeam);
+    twState.approached = true;
+    recordTransferEvent(outgoing.p.name, incoming.name, userTeam.name, rival.name);
+    recordCareerEvent(`🤝 Approached ${rival.name}: ${incoming.name} joined in a directed swap.`, 'transfer');
+    const feed = document.getElementById('ticker-feed-box');
+    if (feed) feed.innerHTML += `<br><strong>🤝 Directed approach:</strong> ${esc(incoming.name)} arrives from ${esc(rival.name)}.<br>`;
+    twRenderWindow(); refreshHubDashboardUI(); autoSaveCurrentProgress();
 }
 
 function twPositionLabel(pos) {
@@ -2007,7 +2313,7 @@ function twOpenWindow() {
         slots.push({ outPlayer: pick.p, outIdx: pick.i, pos: pick.p.pos, incoming: null, scoutHint: preview ? preview.hint : 'No scout report available' });
     }
     if (slots.length === 0) return;
-    twState = { slots, done: false, teamName: userTeam.name };
+    twState = { slots, done: false, approached: false, teamName: userTeam.name };
     twRenderWindow();
     document.getElementById('tw-modal').style.display = 'flex';
     if (typeof stopAutoSim === 'function') stopAutoSim();
@@ -2016,6 +2322,12 @@ function twOpenWindow() {
 function twRenderWindow() {
     const listEl = document.getElementById('tw-slots');
     if (!listEl || !twState) return;
+    const clubPicker = document.getElementById('tw-club-picker');
+    if (clubPicker && !clubPicker.options.length) {
+        clubPicker.innerHTML = saveState.teams.filter(t => t.id !== saveState.userTeamId).map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+    }
+    const approachBtn = document.getElementById('tw-approach-btn');
+    if (approachBtn) { approachBtn.disabled = !!twState.approached; approachBtn.innerText = twState.approached ? 'Approach used' : 'Offer swap'; }
     listEl.innerHTML = twState.slots.map((slot, idx) => {
         let incomingHtml;
         if (slot.incoming) {
@@ -2111,6 +2423,8 @@ function twCloseWindow() {
 
 const twDoneBtn = document.getElementById('tw-done-btn');
 if (twDoneBtn) twDoneBtn.onclick = twCloseWindow;
+const twApproachBtn = document.getElementById('tw-approach-btn');
+if (twApproachBtn) twApproachBtn.onclick = twApproachClub;
 const twCloseX = document.querySelector('#tw-modal .tw-close-trigger');
 if (twCloseX) twCloseX.onclick = twCloseWindow;
 
@@ -2118,6 +2432,25 @@ document.addEventListener('click', (e) => {
     const modal = document.getElementById('tw-modal');
     if (modal && e.target === modal && twState && twState.slots.every(s => s.incoming)) twCloseWindow();
 });
+
+function resolveRealisticSeasonSystems(championTeam, userTeam) {
+    if (!isRealistic() || saveState.seasonSystemsResolved) return;
+    const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
+    const position = sorted.findIndex(t => t.id === saveState.userTeamId) + 1;
+    const total = sorted.length || 1;
+    const finishTier = position === 1 ? 3 : position <= 4 ? 2 : position <= Math.ceil(total / 2) ? 1 : 0;
+    const wonCup = !isLeagueFormat() && championTeam && userTeam && championTeam.id === userTeam.id;
+    if (wonCup) saveState.cupWins = (saveState.cupWins || 0) + 1;
+    const expected = saveState.boardObjective ? saveState.boardObjective.targetTier : Number(saveState.reputation || 0);
+    const badlyMissed = expected - finishTier >= 2;
+    const exceeded = finishTier >= expected + 1 || wonCup;
+    const legacyBoost = Math.min(3, Math.floor((saveState.legacyScore || 0) / 100));
+    const derived = Math.max(0, Math.min(3, finishTier + (wonCup ? 1 : 0) + legacyBoost));
+    saveState.reputation = badlyMissed ? Math.max(0, Number(saveState.reputation || 0) - 1) : exceeded ? Math.max(Number(saveState.reputation || 0), derived) : derived;
+    saveState.seasonSystemsResolved = true;
+    recordCareerEvent(`🏷️ Club reputation recalculated: ${reputationTier(saveState.reputation)}.`, 'reputation');
+    recordCareerEvent(badlyMissed ? '📋 The board was disappointed by the campaign.' : exceeded ? '📋 The board is delighted with the club\'s progress.' : `📋 Board objective reviewed: ${saveState.boardObjective ? saveState.boardObjective.label : 'campaign complete'}.`, 'board');
+}
 
 function triggerEndgameModalDisplay() {
     let championTeam = null;
@@ -2140,12 +2473,12 @@ function triggerEndgameModalDisplay() {
     }
 
     const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId) || null;
+    resolveRealisticSeasonSystems(championTeam, userTeam);
     const wonLeague = isLeagueFormat() && !!championTeam && !!userTeam && championTeam.id === userTeam.id;
     if (!saveState.seasonSummaryRecorded) {
         saveState.seasonSummaryRecorded = true;
         recordCareerEvent(wonLeague ? `🏆 ${userTeam ? userTeam.name : 'Your club'} won the league.` : `Season complete — ${championName} lifted the league title.`, 'season');
         if (wonLeague) addLegacyPoints(100, 'League title');
-        prepareYouthIntake();
         autoSaveCurrentProgress();
     }
     const endgameModal = document.getElementById('endgame-modal');
@@ -2159,10 +2492,12 @@ function triggerEndgameModalDisplay() {
     }
     if (titleEl) titleEl.innerText = wonLeague ? 'League Champions!' : 'Season Ended';
     if (subtitleEl) subtitleEl.innerText = wonLeague
-        ? `${userTeam.name} lifted the trophy — an unforgettable league campaign.`
-        : 'The matches are over and all statistics have been finalized.';
+        ? `${userTeam.name} lifted the trophy in Season ${saveState.seasonNumber || 1} — an unforgettable campaign.`
+        : `Season ${saveState.seasonNumber || 1} is complete. The matches are over and all statistics have been finalized.`;
     document.getElementById('endgame-winner-name').innerText = championName;
 
+    const nextSeasonBtn = document.getElementById('endgame-next-season-btn');
+    if (nextSeasonBtn) nextSeasonBtn.style.display = isRealistic() ? '' : 'none';
     const replayBtn = document.getElementById('endgame-replay-btn');
     if (replayBtn) replayBtn.style.display = (isWorldCupFormat() || isUclFormat()) ? 'none' : '';
 
@@ -2196,6 +2531,47 @@ function triggerEndgameModalDisplay() {
     if (typeof achEvaluateSeasonEnd === 'function') achEvaluateSeasonEnd();
 }
 
+function startNextCareerSeason() {
+    if (!isRealistic()) return;
+    const modal = document.getElementById('endgame-modal');
+    if (modal) modal.style.display = 'none';
+    if (typeof twState !== 'undefined') twState = null;
+
+    saveState.seasonNumber = (saveState.seasonNumber || 1) + 1;
+    applySeasonProgression();
+    saveState.seasonSystemsResolved = false;
+    saveState.currentMatchday = 1;
+    saveState.isCompleted = false;
+    saveState.seasonSummaryRecorded = false;
+    setBoardObjective();
+    saveState.knockoutFixtureIndex = 0;
+    saveState.knockoutRoundWinners = [];
+    saveState.teams.forEach(team => {
+        team.points = 0; team.p = 0; team.w = 0; team.d = 0; team.l = 0;
+        team.gf = 0; team.ga = 0; team.gd = 0; team.isEliminated = false;
+        (team.players || []).forEach(player => {
+            player.stats = { goals: 0, assists: 0, cleanSheets: 0 };
+            player.form = 0;
+            player.formStreak = 0;
+            player.morale = 75;
+        });
+    });
+    if (isLeagueFormat()) {
+        saveState.schedule = buildDoubleRoundRobin(saveState.teams);
+        saveState.totalMatchdays = saveState.schedule.length;
+    } else {
+        saveState.schedule = buildDirectKnockoutTree(saveState.teams);
+        saveState.totalMatchdays = Math.log2(saveState.teams.length);
+    }
+    recordCareerEvent(`📅 Season ${saveState.seasonNumber} begins. The club's story continues.`, 'season');
+    showAcademyEvent();
+    autoSaveCurrentProgress();
+    refreshHubDashboardUI();
+    switchHubPane('table');
+}
+
+document.getElementById('endgame-next-season-btn').onclick = startNextCareerSeason;
+
 document.getElementById('endgame-dashboard-btn').onclick = () => {
     document.getElementById('endgame-modal').style.display = 'none';
 };
@@ -2217,7 +2593,9 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     });
 
     saveState.seasonSummaryRecorded = false;
-    saveState.youthAcademy = [];
+    saveState.seasonSystemsResolved = false;
+    saveState.knockoutFixtureIndex = 0;
+    saveState.knockoutRoundWinners = [];
     saveState.currentMatchday = 1;
     saveState.isCompleted = false;
 
@@ -2774,7 +3152,6 @@ function resumeTargetSave(storageKey) {
 function renderCareerInsights() {
     const modal = document.getElementById('career-modal');
     if (!modal) return;
-    const youth = document.getElementById('career-youth-list');
     const timeline = document.getElementById('career-timeline-list');
     const transfers = document.getElementById('career-transfer-list');
     const legacy = document.getElementById('career-legacy-score');
@@ -2783,27 +3160,9 @@ function renderCareerInsights() {
     if (legacy) legacy.innerText = saveState.legacyScore || 0;
     if (eventCount) eventCount.innerText = (saveState.timeline || []).length;
     if (transferCount) transferCount.innerText = (saveState.transferHistory || []).length;
-    if (youth) {
-        youth.innerHTML = (saveState.youthAcademy || []).length
-            ? saveState.youthAcademy.map(p => `<div class="youth-card"><div><strong>${esc(p.name)}</strong><span>${esc(p.pos)} · OVR ${p.rating} · POT ${p.potential}</span></div><button class="mini-btn youth-promote-btn" data-youth-id="${esc(p.id)}">Promote</button></div>`).join('')
-            : '<p class="pane-hint">Your next intake arrives after the next completed league season.</p>';
-        youth.querySelectorAll('.youth-promote-btn').forEach(btn => btn.onclick = () => promoteYouthPlayer(btn.dataset.youthId));
-    }
     if (timeline) timeline.innerHTML = (saveState.timeline || []).slice().reverse().map(e => `<div class="career-event"><span>${esc(e.text)}</span><small>${new Date(e.date).toLocaleDateString()}</small></div>`).join('') || '<p class="pane-hint">No major events yet.</p>';
     if (transfers) transfers.innerHTML = (saveState.transferHistory || []).slice().reverse().map(e => `<div class="career-event"><span>🔄 ${esc(e.outgoing || 'Player')} → ${esc(e.incoming || 'Player')}</span><small>${esc(e.from || '')} → ${esc(e.to || '')}</small></div>`).join('') || '<p class="pane-hint">No transfers completed yet.</p>';
     modal.style.display = 'flex';
-}
-
-function promoteYouthPlayer(id) {
-    const youth = (saveState.youthAcademy || []).find(p => p.id === id);
-    const team = saveState.teams.find(t => t.id === saveState.userTeamId);
-    if (!youth || !team) return;
-    team.players.push(Object.assign({}, youth, { stats: { goals: 0, assists: 0, cleanSheets: 0 }, form: 0, morale: 80 }));
-    saveState.youthAcademy = saveState.youthAcademy.filter(p => p.id !== id);
-    addLegacyPoints(10, `${youth.name} promoted from the academy`);
-    recordCareerEvent(`🌱 ${youth.name} promoted to the first team.`, 'youth');
-    autoSaveCurrentProgress();
-    renderCareerInsights();
 }
 
 function closeCareerInsights() {
@@ -2812,14 +3171,11 @@ function closeCareerInsights() {
 }
 
 function switchHubPane(name) {
-    const panes = { table: 'hub-pane-table', feed: 'hub-pane-feed', stats: 'hub-pane-stats' };
+    const panes = { table: 'hub-pane-table', news: 'hub-pane-news', feed: 'hub-pane-news', stats: 'hub-pane-stats' };
     if (!panes[name]) return;
     document.querySelectorAll('.hub-tabpane').forEach(p => p.classList.toggle('active', p.id === panes[name]));
     document.querySelectorAll('.hub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pane === name));
-    if (name === 'feed') {
-        const feedBox = document.getElementById('ticker-feed-box');
-        if (feedBox) feedBox.scrollTop = feedBox.scrollHeight;
-    }
+    if (name === 'news' || name === 'feed') scrollFeedToBottom();
 }
 
 document.querySelectorAll('.hub-tab-btn').forEach(b => {
