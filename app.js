@@ -98,7 +98,9 @@ function assignAutoSaveName(clubName, modeId) {
 // one-session run that opens its own setup flow (implemented in modes-*.js).
 const GAME_MODES = [
     { id: 'realistic', icon: '🏟️', name: 'Realistic Career', desc: 'Full season (league or knockout) with transfers and a youth academy. The complete El Fut experience.' },
-    { id: 'draft', icon: '📋', name: 'Single Season Draft', desc: 'For every position the game deals you 5 real players from any league — keep the best pick of each.' },
+    { id: 'draft', icon: '📋', name: 'Single Season Draft', desc: 'Classic five-card drafting with visible ratings and optional re-deals.' },
+    { id: 'draftRookie', icon: '🟢', name: 'Rookie Draft', desc: 'Ratings are revealed and you may re-roll any hand until you find the right fit.' },
+    { id: 'draftChallenging', icon: '🔒', name: 'Challenging Draft', desc: 'Ratings are hidden and every hand is final — trust your scouting instincts.' },
     { id: 'draftChallenge', icon: '🥊', name: 'Single Season Draft Challenge', desc: 'The same five-card draft, but preset guidelines decide the pool and must be met before the season starts.' },
     { id: 'omnipotent', icon: '👑', name: 'Omnipotent Mode', desc: 'Unlimited budget and god-tier control over your club.' },
     { id: 'national', icon: '🌍', name: 'National Team / World Cup', desc: 'Take a national team to the World Cup.' },
@@ -127,6 +129,7 @@ function migrateSaveState(data) {
     if (data.mode === 'realistic' && !data.competitionType) data.competitionType = 'league';
     // Draft Challenge was merged into Single Season Draft.
     if (data.mode === 'draftChallenge') data.mode = 'draft';
+    if (data.mode === 'draftRookie' || data.mode === 'draftChallenging') data.mode = 'draft';
     if (!Array.isArray(data.timeline)) data.timeline = [];
     if (!Array.isArray(data.youthAcademy)) data.youthAcademy = [];
     if (!Array.isArray(data.transferHistory)) data.transferHistory = [];
@@ -140,7 +143,7 @@ function migrateSaveState(data) {
 // the built-in data at load time.
 let activeDatabase = null;                    // Working copy used everywhere
 const DB_STORAGE_KEY = 'elfut_db_custom';
-const DB_SCHEMA_VERSION = 12;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps; 11 = built-in transferHistory rows backfilled; 12 = transfer histories normalized to calendar-year ranges
+const DB_SCHEMA_VERSION = 13;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps; 11 = built-in transferHistory rows backfilled; 12 = transfer histories normalized to calendar-year ranges; 13 = expanded Saudi, Liga MX, Portuguese and Mexican club rosters
 let dbEditorState = { leagueKey: null, teamIdx: null }; // Selection in the DB manager
 
 function cloneDeep(obj) {
@@ -185,6 +188,17 @@ function upgradeStoredDatabase(stored) {
                     customTeam.players = cloneDeep(built.players);
                 }
             });
+        }
+    }
+    // Schema 13: Liga MX replaced Mazatlán with Atlante. Apply the structural
+    // replacement to old built-in snapshots while leaving unrelated custom teams alone.
+    if (version < 13) {
+        const mex = db.leagues && db.leagues['MEX 1 25/26'];
+        const bmex = builtin.leagues && builtin.leagues['MEX 1 25/26'];
+        if (mex && bmex) {
+            mex.teams = (mex.teams || []).filter(t => t.id !== 'maz');
+            const atl = (bmex.teams || []).find(t => t.id === 'atl');
+            if (atl && !(mex.teams || []).some(t => t.id === 'atlante')) mex.teams.push(cloneDeep(atl));
         }
     }
     // Schema 10: national-team ratings were recalibrated. Sync player ratings

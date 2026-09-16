@@ -96,6 +96,8 @@
 /* --- RESET & BASE --- */
 * { box-sizing: border-box; }
 
+html, body { width: 100%; }
+
 body {
     margin: 0;
     font-family: var(--font);
@@ -290,7 +292,7 @@ input[type="range"] { accent-color: var(--accent); cursor: pointer; }
    ============================================================ */
 .screen-container {
     min-height: 100vh;
-    padding: 44px 24px;
+    padding: 24px;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
@@ -304,14 +306,18 @@ input[type="range"] { accent-color: var(--accent); cursor: pointer; }
 
 .menu-box {
     width: 100%;
-    max-width: 920px;
+    max-width: none;
+    min-height: calc(100vh - 48px);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     padding: 34px;
     box-shadow: var(--shadow-2);
 }
-.menu-box.large-box { max-width: 1280px; }
+.menu-box.large-box { max-width: none; }
+#welcome-screen .menu-box { max-width: 1480px; min-height: auto; }
+#modes-screen .menu-box, #config-screen .menu-box, #db-screen .menu-box { width: 100%; }
+.rating-hidden { color: var(--text-3); background: var(--surface-3); border-color: var(--border); letter-spacing: 1px; }
 .menu-box h1 { font-size: 1.7rem; margin: 0 0 6px; }
 .menu-box h2 { color: var(--text); margin: 0 0 6px; }
 .menu-box h3 { margin: 22px 0 10px; font-size: 1rem; }

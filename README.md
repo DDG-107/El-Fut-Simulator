@@ -26,6 +26,12 @@ A one-session run. Choose a formation, name a club, and take over an existing cl
 
 A **draft pot** selector offers a Champions League edition: every dealt player comes from one of the 36 qualified UCL clubs' squads, and the finished XI replaces a club of your choice and plays the full authentic Champions League format — league phase, playoffs and knockouts.
 
+### 🟢 Rookie Draft
+Ratings are revealed on every card. You can deal another five for the current slot and click a completed slot to re-roll it when the first hand does not suit your plan.
+
+### 🔒 Challenging Draft
+Ratings are hidden until the squad reaches the season. Every pick is final: no re-roll button and no clearing completed slots. Scout by position, club reputation and instinct.
+
 ### 🥊 Draft Challenge
 The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Every daily challenge now locks its competition league — for example, *Der Klassiker* can only be played in the Bundesliga, *El Clasico Kings* in La Liga, and *Milan Derby Draft* in Serie A — so the target league cannot be changed to bypass the scenario. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Under the Radar*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, *One-Club Wonder*, *Milan Derby Draft*, *Le Classique*, *Portuguese Pipeline*, *Youth Movement*, and *Brazilian Royalty*. Daily challenges also add modifiers such as minimum source-club diversity or using both sides of a rivalry, and the setup screen checks those rules before launch. Re-deal any position until the squad passes every rule.
 
@@ -117,6 +123,10 @@ Chelsea FC — Realistic Career — 14 Sept 2026
 - Same-club, same-day collisions get a `(2)`, `(3)`, … suffix so nothing is ever overwritten
 - Autosaved after simulated matchdays and when you exit to the menu
 - Stored in your browser's `localStorage`; the load menu lists, resumes, and deletes them
+
+## Rosters
+
+The built-in database includes playable squads for Al Nassr, Al Hilal, Al Qadsiah, Rayados/CF Monterrey, Tigres UANL, Club América, Cruz Azul, Club Necaxa, SL Benfica, FC Porto, Sporting CP, and Atlante. Liga MX replaces Mazatlán with Atlante and includes an Atlante 2026/27-style squad. Existing custom database snapshots are migrated automatically.
 
 ## Custom Database
 

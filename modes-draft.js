@@ -267,7 +267,8 @@ function pickDraftChallenge() {
 
 // --- Flow state ---
 const SB = {
-    mode: null,            // 'draft' | 'draftChallenge' | 'omnipotent'
+    mode: null,            // 'draft' | 'draftRookie' | 'draftChallenging' | 'draftChallenge' | 'omnipotent'
+    draftStyle: 'classic', // classic | rookie | challenging
     challenge: null,       // preset definition (draftChallenge) or null
     formation: '4-3-3',
     pool: [],              // cached eligible players for browse flows
@@ -351,7 +352,7 @@ function openModeSetupFlow(mode) {
         if (typeof openUclSetup === 'function') return openUclSetup();
         return alert('UEFA Champions League mode is not available.');
     }
-    if (['draft', 'draftChallenge', 'omnipotent'].indexOf(mode) === -1) {
+    if (['draft', 'draftRookie', 'draftChallenging', 'draftChallenge', 'omnipotent'].indexOf(mode) === -1) {
         if (mode === 'realistic') return;
         return alert('This mode is not available yet.');
     }
@@ -360,6 +361,8 @@ function openModeSetupFlow(mode) {
 
 function openSquadModeSetup(mode) {
     SB.mode = mode;
+    SB.draftStyle = mode === 'draftRookie' ? 'rookie' : mode === 'draftChallenging' ? 'challenging' : 'classic';
+    // The UCL sub-draft remains a classic draft unless explicitly changed here.
     SB.challenge = null;
     SB.uclDraft = false;
     SB.formation = '4-3-3';
@@ -433,7 +436,7 @@ function renderSBStep1() {
     // launch the finished XI into the authentic UCL format in place of a club.
     const uclDraft = SB.mode === 'draft' && SB.uclDraft;
     const ch = SB.challenge;
-    const randomDraft = (SB.mode === 'draft' || SB.mode === 'draftChallenge') && !uclDraft;
+    const randomDraft = (['draft', 'draftRookie', 'draftChallenging', 'draftChallenge'].indexOf(SB.mode) !== -1) && !uclDraft;
     const targets = uclDraft ? [] : sbTargetLeagues();
     const challengeLeague = ch && ch.targetLeagueKey ? activeDatabase.leagues[ch.targetLeagueKey] : null;
 
@@ -486,7 +489,7 @@ function renderSBStep1() {
     let poolHtml = '';
     if (uclDraft) {
         poolHtml = `<div class="notice-box">🏆 <strong>Champions League draft.</strong> Same pick-one-of-five rule — every dealt player comes from one of the <strong>36 qualified UCL clubs</strong>. The finished XI replaces one of those clubs and plays the authentic league phase, playoffs and knockouts.</div>`;
-    } else if (SB.mode === 'draft') {
+    } else if (['draft', 'draftRookie', 'draftChallenging'].indexOf(SB.mode) !== -1) {
         poolHtml = `<div class="notice-box">🃏 <strong>Pick one of five.</strong> For every open position the game deals you <strong>5 real players</strong> drawn at random from clubs across any league. Keep one, then the next position is dealt. No generated players, no browsing.</div>`;
     } else if (SB.mode === 'draftChallenge') {
         poolHtml = `<div class="notice-box"><strong>Same draft, with rules.</strong> Each position still deals <strong>5 real players</strong> — but the deal pool obeys the guideline above, and you cannot start the season until the whole XI passes every rule. Re-deal hands to find a compliant squad.</div>`;
@@ -495,7 +498,7 @@ function renderSBStep1() {
     }
 
     // Draft pot picker: the classic all-database pool, or the UCL sub-draft.
-    const potPickerHtml = SB.mode === 'draft' ? `
+    const potPickerHtml = ['draft', 'draftRookie', 'draftChallenging'].indexOf(SB.mode) !== -1 ? `
         <div class="pane-head"><span class="pane-eyebrow">DRAFT POT</span><h3>Where are the deals drawn from?</h3></div>
         <select id="sb-draft-pot">
             <option value="all" ${!SB.uclDraft ? 'selected' : ''}>Every league in the database</option>
@@ -611,7 +614,7 @@ function renderSBStep1() {
 
 // --- STEP 2 dispatcher ---
 function renderSBStep2() {
-    if (SB.mode === 'draft' || SB.mode === 'draftChallenge') renderDraftPickUI();
+    if (['draft', 'draftRookie', 'draftChallenging', 'draftChallenge'].indexOf(SB.mode) !== -1) renderDraftPickUI();
     else renderBrowseBuilderUI();
 }
 
@@ -740,7 +743,7 @@ function renderSBSlots() {
     const wrap = document.getElementById('sb-slots');
     if (!wrap) return;
     const slots = curSlots();
-    const draftFlow = SB.mode === 'draft' || SB.mode === 'draftChallenge';
+    const draftFlow = ['draft', 'draftRookie', 'draftChallenging', 'draftChallenge'].indexOf(SB.mode) !== -1;
     wrap.innerHTML = '';
     slots.forEach((slot, i) => {
         const pick = SB.xi[i];
@@ -748,12 +751,14 @@ function renderSBSlots() {
         const div = document.createElement('div');
         div.className = 'slot-card' + (pick ? ' filled' : ' empty') + (draftFlow ? (isNext ? ' active' : '') : (SB.activeSlot === i ? ' active' : ''));
         div.innerHTML = pick
-            ? `<span class="slot-pos">${slot.pos}</span><strong>${esc(pick.player.p.name)}</strong><small>${esc(pick.player.p.pos)} · ${esc(pick.player.p.rating)}</small>${draftFlow ? '<em class="slot-redo">click to re-deal</em>' : ''}`
+            ? `<span class="slot-pos">${slot.pos}</span><strong>${esc(pick.player.p.name)}</strong><small>${esc(pick.player.p.pos)} · ${SB.draftStyle === 'challenging' ? 'Rating hidden' : esc(pick.player.p.rating)}</small>${draftFlow && SB.draftStyle !== 'challenging' ? '<em class="slot-redo">click to re-deal</em>' : ''}`
             : `<span class="slot-pos">${slot.pos}</span><em>${isNext ? '⬇ drafting…' : '+ ' + (POS_GROUPS[slot.pos] || '').toLowerCase()}</em>`;
         div.onclick = () => {
             if (!draftFlow) { SB.activeSlot = i; renderSBSlots(); return; }
             if (!pick) return;
-            // Draft flow: clicking a FILLED slot clears that pick so it can be re-dealt.
+            // Challenging mode locks every pick as soon as it is made.
+            if (SB.draftStyle === 'challenging') return;
+            // Rookie/classic draft: clicking a filled slot clears that pick so it can be re-dealt.
             SB.xi[i] = null;
             SB.shortlist = [];
             SB.shortlistSlot = -1;
@@ -858,7 +863,7 @@ function renderSBStep3() {
                 <div class="review-line"><span>Formation</span><strong>${esc(SB.formation)}</strong></div>
                 <div class="review-line"><span>Competition</span><strong>${esc(compName)}</strong></div>
                 <div class="review-line"><span>Takes the place of</span><strong>${displaced ? esc(displaced.name) : '—'}</strong></div>
-                <div class="review-line"><span>Team OVR</span><strong>${sum} (avg ${avg})</strong></div>
+                <div class="review-line"><span>Team OVR</span><strong>${SB.draftStyle === 'challenging' ? 'Hidden until matchday' : `${sum} (avg ${avg})`}</strong></div>
                 <div class="review-line"><span>Matchdays</span><strong>${matchdayLine}</strong></div>
                 ${SB.challenge ? `<div class="notice-box"><strong>Goal:</strong> ${esc(SB.challenge.goal ? SB.challenge.goal.label : 'Win the league')}</div>` : ''}
                 <div class="req-list" style="margin-top:10px;">
@@ -1039,7 +1044,9 @@ function renderDraftPickUI() {
         ? `${sbModeMeta().name} — ${esc(SB.challenge.title)}. Dealt 5 real players per position, obeying the guideline; the squad must pass every rule before the season starts.`
         : SB.uclDraft
         ? `${sbModeMeta().name} — Champions League edition. For every position you are dealt 5 real players from the 36 qualified UCL clubs. Keep one.`
-        : `${sbModeMeta().name} — for every position you are dealt 5 real players from any league. Keep one.`;
+        : SB.draftStyle === 'challenging'
+        ? `${sbModeMeta().name} — five hidden-rating players per position. Every selection is final.`
+        : `${sbModeMeta().name} — for every position you are dealt 5 real players from any league. Keep one or re-roll.`;
 
     document.getElementById('sb-body').innerHTML = `
         <div class="sb-builder">
@@ -1072,7 +1079,7 @@ function sbRefreshDraftUI() {
         const isChallenge = SB.mode === 'draftChallenge';
         zone.innerHTML = `
             <div class="pane-head"><span class="pane-eyebrow">DRAFT COMPLETE</span><h3>Your XI is set</h3></div>
-            <div class="notice-box" style="margin:14px 0;">✔ All ${curSlots().length} slots filled — combined OVR <strong>${sum}</strong>.</div>
+            <div class="notice-box" style="margin:14px 0;">✔ All ${curSlots().length} slots filled — ${SB.draftStyle === 'challenging' ? 'your XI is locked in.' : `combined OVR <strong>${sum}</strong>.`}</div>
             ${isChallenge ? `<div class="pane-head" style="margin-top:6px;"><span class="pane-eyebrow">GUIDELINE CHECK</span><h3>Pass every rule to continue</h3></div>
             <div class="req-list" style="margin-top:6px;">${reqs.map(r => `<div class="req-item ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✔' : '✖'} ${esc(r.label)}</div>`).join('')}</div>
             <p class="pane-hint">Click any filled slot on the board to clear it and re-deal that position until the squad passes.</p>` : ''}`;
@@ -1110,20 +1117,18 @@ function sbRefreshDraftUI() {
     const pickLabel = (slot.pos === 'GK' || slot.pos === 'RB' || slot.pos === 'LB') ? `a ${slot.pos}` : `an ${slot.pos}`;
     zone.innerHTML = `
         <div class="pane-head"><span class="pane-eyebrow">PICK ${idx + 1} OF ${curSlots().length} — ${esc(slot.pos)}</span><h3>Dealt for your ${esc(slot.pos)} slot</h3></div>
-        <p class="pane-hint">Real players, drawn from clubs across every league. Click a card to draft ${pickLabel}. Players already in your XI are never re-dealt.</p>
+        <p class="pane-hint">Real players, drawn from clubs across every league. Click a card to draft ${pickLabel}. ${SB.draftStyle === 'challenging' ? 'Ratings are hidden and every pick is final.' : 'You can deal another hand or re-roll a filled slot.'}</p>
         <div class="pick5-list" id="sb-shortlist">
             ${SB.shortlist.map((e, i) => {
                 const p = e.p;
                 return `<div class="team-picker-row pool-row pick5-row" data-k="${i}">
                     <div class="player-avatar mini-avatar"><span>${esc(initialsOf(p.name))}</span></div>
                     <span class="team-picker-name">${esc(p.name)}<small>${esc(p.pos)} · ${esc(e.teamName)} · <span class="pool-league">${esc(e.leagueName)}</span></small></span>
-                    <span class="rating-badge">${esc(p.rating)}</span>
+                    ${SB.draftStyle === 'challenging' ? '<span class="rating-badge rating-hidden">?</span>' : `<span class="rating-badge">${esc(p.rating)}</span>`}
                 </div>`;
             }).join('')}
         </div>
-        <div class="picker-tool-row">
-            <button id="sb-redraw" class="tool-btn">🔄 Deal another five</button>
-        </div>`;
+        ${SB.draftStyle === 'challenging' ? '<div class="notice-box">🔒 Challenging rule: ratings stay hidden and this hand cannot be re-rolled. Scout by position and club reputation.</div>' : '<div class="picker-tool-row"><button id="sb-redraw" class="tool-btn">🔄 Deal another five</button></div>'}`;
 
     document.querySelectorAll('#sb-shortlist .pick5-row').forEach(row => {
         row.onclick = () => {
@@ -1136,7 +1141,8 @@ function sbRefreshDraftUI() {
             sbRefreshDraftUI();
         };
     });
-    document.getElementById('sb-redraw').onclick = () => {
+    const redraw = document.getElementById('sb-redraw');
+    if (redraw) redraw.onclick = () => {
         SB.shortlist = sbDealShortlist();
         sbRefreshDraftUI();
     };

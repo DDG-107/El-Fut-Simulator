@@ -1402,14 +1402,18 @@ const gameDatabase = {
         "MEX 1 25/26": {
             name: "Liga MX 25/26", teams: [
                 {id: "ame", name: "Club América", budget: 35000000, players: [
+                    { name: "L. Malagón", pos: "GK", rating: 79 }, { name: "K. Álvarez", pos: "RB", rating: 77 }, { name: "S. Cáceres", pos: "CB", rating: 78 }, { name: "N. Araujo", pos: "CB", rating: 79 }, { name: "C. Borja", pos: "LB", rating: 77 }, { name: "J. dos Santos", pos: "CDM", rating: 76 }, { name: "Á. Fidalgo", pos: "CM", rating: 80 }, { name: "A. Zendejas", pos: "RW", rating: 80 }, { name: "B. Rodríguez", pos: "LW", rating: 82 }, { name: "H. Martín", pos: "ST", rating: 81 }, { name: "J. Dilrosun", pos: "ST", rating: 77 },
                 ]},
                 {id: "gdl", name: "CD Guadalajara", budget: 35000000, players: [
                 ]},
                 {id: "caz", name: "Cruz Azul", budget: 30000000, players: [
+                    { name: "K. Mier", pos: "GK", rating: 77 }, { name: "J. Sánchez", pos: "RB", rating: 76 }, { name: "Willer Ditta", pos: "CB", rating: 77 }, { name: "G. Piovi", pos: "CB", rating: 78 }, { name: "A. Gutiérrez", pos: "LB", rating: 75 }, { name: "L. Romo", pos: "CDM", rating: 80 }, { name: "C. Rodríguez", pos: "CM", rating: 79 }, { name: "L. Faravelli", pos: "CAM", rating: 77 }, { name: "G. Giakoumakis", pos: "ST", rating: 81 }, { name: "A. Sepúlveda", pos: "ST", rating: 77 }, { name: "Á. Sepúlveda", pos: "RW", rating: 75 },
                 ]},
                 {id: "tig", name: "Tigres UANL", budget: 30000000, players: [
+                    { name: "F. Rodríguez", pos: "GK", rating: 77 }, { name: "J. Aquino", pos: "RB", rating: 78 }, { name: "R. Carioca", pos: "CDM", rating: 81 }, { name: "J. Angulo", pos: "CB", rating: 76 }, { name: "J. Vigón", pos: "CM", rating: 78 }, { name: "R. Pizarro", pos: "CAM", rating: 79 }, { name: "D. Lainez", pos: "RW", rating: 78 }, { name: "O. Herrera", pos: "LW", rating: 77 }, { name: "A. Gignac", pos: "ST", rating: 83 }, { name: "N. Ibáñez", pos: "ST", rating: 80 }, { name: "J. Brunetta", pos: "CAM", rating: 82 },
                 ]},
                 {id: "mty", name: "CF Monterrey", budget: 30000000, players: [
+                    { name: "E. Andrada", pos: "GK", rating: 79 }, { name: "S. Medina", pos: "RB", rating: 78 }, { name: "H. Moreno", pos: "CB", rating: 80 }, { name: "V. Guzmán", pos: "CB", rating: 79 }, { name: "G. Arteaga", pos: "LB", rating: 78 }, { name: "J. Rodríguez", pos: "CDM", rating: 79 }, { name: "Ó. Torres", pos: "CM", rating: 77 }, { name: "S. Canales", pos: "CAM", rating: 84 }, { name: "G. Berterame", pos: "ST", rating: 82 }, { name: "L. Ocampos", pos: "LW", rating: 82 }, { name: "I. Fimbres", pos: "CM", rating: 74 },
                 ]},
                 {id: "pum", name: "Pumas UNAM", budget: 25000000, players: [
                 ]},
@@ -1424,6 +1428,7 @@ const gameDatabase = {
                 {id: "ats", name: "Atlas FC", budget: 18000000, players: [
                 ]},
                 {id: "nec", name: "Club Necaxa", budget: 15000000, players: [
+                    { name: "E. Unsain", pos: "GK", rating: 76 }, { name: "A. Peña", pos: "RB", rating: 73 }, { name: "A. Oliveros", pos: "CB", rating: 73 }, { name: "J. González", pos: "CB", rating: 72 }, { name: "A. Mayorga", pos: "LB", rating: 74 }, { name: "F. Arce", pos: "CDM", rating: 75 }, { name: "J. Paradela", pos: "CM", rating: 77 }, { name: "D. Cambindo", pos: "ST", rating: 78 }, { name: "P. Pérez", pos: "CAM", rating: 73 }, { name: "R. Monreal", pos: "ST", rating: 72 }, { name: "H. Jurado", pos: "RW", rating: 72 },
                 ]},
                 {id: "que", name: "Querétaro FC", budget: 15000000, players: [
                 ]},
@@ -1433,7 +1438,8 @@ const gameDatabase = {
                 ]},
                 {id: "tij", name: "Club Tijuana", budget: 14000000, players: [
                 ]},
-                {id: "maz", name: "Mazatlán FC", budget: 14000000, players: [
+                {id: "atlante", name: "Atlante", budget: 14000000, players: [
+                    { name: "G. Ruiz", pos: "GK", rating: 70 }, { name: "J. García", pos: "RB", rating: 68 }, { name: "E. Hernández", pos: "CB", rating: 69 }, { name: "A. Zamora", pos: "CB", rating: 68 }, { name: "J. Pérez", pos: "LB", rating: 68 }, { name: "A. Escoto", pos: "CDM", rating: 70 }, { name: "D. Aguilar", pos: "CM", rating: 69 }, { name: "V. Alvarado", pos: "CAM", rating: 71 }, { name: "J. Salas", pos: "RW", rating: 69 }, { name: "E. López", pos: "LW", rating: 68 }, { name: "A. Nava", pos: "ST", rating: 72 },
                 ]},
                 {id: "asl", name: "Atlético de San Luis", budget: 14000000, players: [
                 ]},
@@ -1442,8 +1448,10 @@ const gameDatabase = {
         "KSA 1 25/26": {
             name: "Saudi Pro League 25/26", teams: [
                 {id: "hil", name: "Al Hilal", budget: 120000000, players: [
+                    { name: "Y. Bounou", pos: "GK", rating: 86 }, { name: "J. Cancelo", pos: "RB", rating: 86 }, { name: "K. Koulibaly", pos: "CB", rating: 84 }, { name: "A. Rüdiger", pos: "CB", rating: 88 }, { name: "Renan Lodi", pos: "LB", rating: 81 }, { name: "Rúben Neves", pos: "CDM", rating: 85 }, { name: "Sergej Milinković-Savić", pos: "CM", rating: 86 }, { name: "Malcom", pos: "RW", rating: 84 }, { name: "R. Leonardo", pos: "ST", rating: 82 }, { name: "M. Mitrović", pos: "ST", rating: 83 }, { name: "S. Al-Dawsari", pos: "LW", rating: 84 },
                 ]},
                 {id: "nas", name: "Al Nassr", budget: 120000000, players: [
+                    { name: "Bento", pos: "GK", rating: 82 }, { name: "S. Al-Ghannam", pos: "RB", rating: 78 }, { name: "Aymeric Laporte", pos: "CB", rating: 84 }, { name: "M. Simakan", pos: "CB", rating: 82 }, { name: "A. Telles", pos: "LB", rating: 79 }, { name: "M. Brozović", pos: "CDM", rating: 84 }, { name: "Otávio", pos: "CM", rating: 82 }, { name: "Sadio Mané", pos: "LW", rating: 84 }, { name: "A. Ghareeb", pos: "RW", rating: 77 }, { name: "Cristiano Ronaldo", pos: "ST", rating: 88 }, { name: "J. Durán", pos: "ST", rating: 82 },
                 ]},
                 {id: "ah", name: "Al Ahli", budget: 90000000, players: [
                 ]},
@@ -1472,6 +1480,7 @@ const gameDatabase = {
                 {id: "haz", name: "Al Hazem", budget: 18000000, players: [
                 ]},
                 {id: "qad", name: "Al Qadsiah", budget: 30000000, players: [
+                    { name: "K. Casteels", pos: "GK", rating: 83 }, { name: "M. Al-Oujami", pos: "RB", rating: 73 }, { name: "Nacho", pos: "CB", rating: 82 }, { name: "J. González", pos: "CB", rating: 75 }, { name: "C. Lajud", pos: "LB", rating: 73 }, { name: "N. Nández", pos: "CDM", rating: 80 }, { name: "P. Aubameyang", pos: "ST", rating: 83 }, { name: "J. Quiñones", pos: "LW", rating: 82 }, { name: "T. Kvaratskhelia", pos: "RW", rating: 85 }, { name: "J. Quinones", pos: "ST", rating: 80 }, { name: "C. Puertas", pos: "CAM", rating: 78 },
                 ]},
                 {id: "kho", name: "Al Kholood", budget: 18000000, players: [
                 ]},
@@ -1618,10 +1627,13 @@ const gameDatabase = {
         "POR 1 25/26": {
             name: "Liga Portugal 25/26", teams: [
                 {id: "ben", name: "SL Benfica", budget: 80000000, players: [
+                    { name: "A. Trubin", pos: "GK", rating: 83 }, { name: "A. Bah", pos: "RB", rating: 80 }, { name: "N. Otamendi", pos: "CB", rating: 82 }, { name: "A. Silva", pos: "CB", rating: 81 }, { name: "A. Carreras", pos: "LB", rating: 81 }, { name: "Florentino", pos: "CDM", rating: 81 }, { name: "O. Kokçu", pos: "CM", rating: 84 }, { name: "A. Di María", pos: "RW", rating: 84 }, { name: "G. Aktürkoğlu", pos: "LW", rating: 80 }, { name: "V. Pavlidis", pos: "ST", rating: 84 }, { name: "A. Schjelderup", pos: "CAM", rating: 77 },
                 ]},
                 {id: "fcp", name: "FC Porto", budget: 75000000, players: [
+                    { name: "Diogo Costa", pos: "GK", rating: 86 }, { name: "João Mário", pos: "RB", rating: 79 }, { name: "Nehuén Pérez", pos: "CB", rating: 79 }, { name: "Zé Pedro", pos: "CB", rating: 75 }, { name: "Francisco Moura", pos: "LB", rating: 77 }, { name: "Alan Varela", pos: "CDM", rating: 83 }, { name: "F. Vieira", pos: "CAM", rating: 80 }, { name: "Pepê", pos: "RW", rating: 81 }, { name: "Galeno", pos: "LW", rating: 82 }, { name: "Samu Omorodion", pos: "ST", rating: 83 }, { name: "Rodrigo Mora", pos: "CAM", rating: 80 },
                 ]},
                 {id: "spt", name: "Sporting CP", budget: 80000000, players: [
+                    { name: "Rui Silva", pos: "GK", rating: 81 }, { name: "Iván Fresneda", pos: "RB", rating: 77 }, { name: "O. Diomande", pos: "CB", rating: 84 }, { name: "Gonçalo Inácio", pos: "CB", rating: 84 }, { name: "M. Reis", pos: "LB", rating: 78 }, { name: "M. Hjulmand", pos: "CDM", rating: 85 }, { name: "D. Bragança", pos: "CM", rating: 78 }, { name: "P. Gonçalves", pos: "CAM", rating: 84 }, { name: "G. Quenda", pos: "RW", rating: 80 }, { name: "V. Gyökeres", pos: "ST", rating: 88 }, { name: "Trincão", pos: "LW", rating: 82 },
                 ]},
                 {id: "brg", name: "SC Braga", budget: 45000000, players: [
                 ]},
