@@ -2846,6 +2846,19 @@ const TOP_PLAYER_HISTORY = {
     'R. Lewandowski': [['Lech Poznań', 2008, 2010], ['Borussia Dortmund', 2010, 2014], ['FC Bayern München', 2014, 2022], ['FC Barcelona', 2022, 2026]]
 };
 
+function normalizeHistoryClubName(name) {
+    return String(name || '').toLowerCase()
+        .replace(/\b(football club|fc|cf|sc|ac|calcio|20\d{2}\/(?:20)?\d{2}|20\d{2}\s+(?:20)?\d{2})\b/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function isCurrentClubHistory(row, teamName) {
+    const historyClub = normalizeHistoryClubName(row && row.club);
+    const currentClub = normalizeHistoryClubName(teamName);
+    return !!(historyClub && currentClub && (historyClub === currentClub || historyClub.includes(currentClub) || currentClub.includes(historyClub)));
+}
+
 function normalizeHistoryRange(row) {
     if (!row || !row.club) return null;
     if (row.startYear != null || row.endYear != null) {
@@ -2895,6 +2908,12 @@ function normalizeHistoryRange(row) {
         (gameDatabase.leagues[leagueKey].teams || []).forEach(team => (team.players || []).forEach(player => {
             const curated = TOP_PLAYER_HISTORY[player.name];
             if (curated) player.transferHistory = curated.map(row => ({ club: row[0], startYear: row[1], endYear: row[2] }));
+            if (Array.isArray(player.transferHistory)) {
+                // A player's current club is not a transfer-history event.
+                // Keep only former clubs so reunion detection describes an
+                // actual return to a previous dressing room.
+                player.transferHistory = player.transferHistory.filter(row => !isCurrentClubHistory(row, team.name));
+            }
         }));
     }
 })();

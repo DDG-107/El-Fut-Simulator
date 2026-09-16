@@ -143,7 +143,7 @@ function migrateSaveState(data) {
 // the built-in data at load time.
 let activeDatabase = null;                    // Working copy used everywhere
 const DB_STORAGE_KEY = 'elfut_db_custom';
-const DB_SCHEMA_VERSION = 13;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps; 11 = built-in transferHistory rows backfilled; 12 = transfer histories normalized to calendar-year ranges; 13 = expanded Saudi, Liga MX, Portuguese and Mexican club rosters
+const DB_SCHEMA_VERSION = 14;                 // 2 = expanded leagues merged in; 3+ = real rosters filled into empty teams (marquee clubs, MLS, Serie A, PL, La Liga); 8 = all 48 qualified 2026 WC nations present; 9 = merge ensures stored snapshots also gain the WC nations added at v8; 10 = national team ratings recalibrated to realistic gaps; 11 = built-in transferHistory rows backfilled; 12 = transfer histories normalized to calendar-year ranges; 13 = expanded Saudi, Liga MX, Portuguese and Mexican club rosters; 14 = current clubs removed from transfer histories
 let dbEditorState = { leagueKey: null, teamIdx: null }; // Selection in the DB manager
 
 function cloneDeep(obj) {
@@ -268,6 +268,26 @@ function upgradeStoredDatabase(stored) {
                     } else if (Array.isArray(cp.transferHistory)) {
                         cp.transferHistory = cp.transferHistory.map(normalize).filter(Boolean);
                     }
+                });
+            });
+        }
+    }
+    // Schema 14: a player's current team is not a transfer-history event.
+    // Remove it from stored snapshots as well, including names such as
+    // "Real Madrid 2026/27" that normalize to "Real Madrid".
+    if (version < 14) {
+        const normalizeClub = (name) => String(name || '').toLowerCase()
+            .replace(/\b(football club|fc|cf|sc|ac|calcio|20\d{2}\/(?:20)?\d{2}|20\d{2}\s+(?:20)?\d{2})\b/g, '')
+            .replace(/[^a-z0-9]+/g, ' ').trim();
+        for (const key in db.leagues) {
+            (db.leagues[key].teams || []).forEach(team => {
+                (team.players || []).forEach(player => {
+                    if (!Array.isArray(player.transferHistory)) return;
+                    const current = normalizeClub(team.name);
+                    player.transferHistory = player.transferHistory.filter(row => {
+                        const historic = normalizeClub(row && row.club);
+                        return !(historic && current && (historic === current || historic.includes(current) || current.includes(historic)));
+                    });
                 });
             });
         }
