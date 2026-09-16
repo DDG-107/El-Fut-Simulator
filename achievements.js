@@ -286,13 +286,6 @@ const ACHIEVEMENTS = [
         }
     },
     {
-        id: 'fabrizio',
-        icon: '📰',
-        title: 'Ok, Fabrizio',
-        desc: 'Make a transfer move that happened in real life at some point in time.',
-        check: () => achSigsThisSave().some(s => s.kind === 'real')
-    },
-    {
         id: 'welcomeback',
         icon: '🏠',
         title: 'Welcome back',
@@ -340,6 +333,159 @@ const ACHIEVEMENTS = [
                 return wins >= 2 && losses === 0;
             });
         }
+    },
+    {
+        id: 'roadwarriors',
+        icon: '🛣️',
+        title: 'Road Warriors',
+        desc: 'Win every away league match in a season.',
+        check: () => {
+            const team = achUserTeam();
+            const rows = achState.matches[saveState.saveName] || [];
+            const away = team ? rows.filter(r => r.homeId !== team.id) : [];
+            return away.length >= 5 && away.every(r => achIsWon(r));
+        }
+    },
+    {
+        id: 'clean-sweep',
+        icon: '🧱',
+        title: 'Clean Sweep',
+        desc: 'Keep a clean sheet in every recorded league match.',
+        check: () => {
+            const rows = achState.matches[saveState.saveName] || [];
+            return rows.length >= 5 && rows.every(r => r.goalsAgainst === 0);
+        }
+    },
+    {
+        id: 'goal-machine',
+        icon: '⚡',
+        title: 'Goal Machine',
+        desc: 'Have one of your players score 20 league goals in a season.',
+        check: (ctx) => !!(ctx && ctx.userTopScorerGoals >= 20)
+    },
+    {
+        id: 'golden-gloves',
+        icon: '🧤',
+        title: 'Golden Gloves',
+        desc: 'Have your goalkeeper record 10 clean sheets in a season.',
+        check: (ctx) => !!(ctx && ctx.userBestGoalkeeperCleanSheets >= 10)
+    },
+    {
+        id: 'the-viking',
+        icon: '🇳🇴',
+        title: 'The Viking',
+        desc: 'With Erling Haaland on your team, have him win the golden boot.',
+        check: (ctx) => {
+            const team = achUserTeam();
+            return !!(ctx && /haaland/i.test(ctx.goldenBootWinner || '') && team && (team.players || []).some(p => /haaland/i.test(p.name)));
+        }
+    },
+    {
+        id: 'messi-magic',
+        icon: '✨',
+        title: 'Messi Magic',
+        desc: 'With Lionel Messi on your team, have him win the golden boot.',
+        check: (ctx) => {
+            const team = achUserTeam();
+            return !!(ctx && /messi/i.test(ctx.goldenBootWinner || '') && team && (team.players || []).some(p => /messi/i.test(p.name)));
+        }
+    },
+    {
+        id: 'maestro',
+        icon: '🎯',
+        title: 'The Maestro',
+        desc: 'Have one of your players lead the league in assists with 15 or more.',
+        check: (ctx) => !!(ctx && ctx.userTopAssists >= 15)
+    },
+    {
+        id: 'fast-start',
+        icon: '🚀',
+        title: 'Fast Start',
+        desc: 'Win your first three league matches.',
+        check: () => {
+            const rows = achState.matches[saveState.saveName] || [];
+            return rows.length >= 3 && rows.slice(0, 3).every(r => achIsWon(r));
+        }
+    },
+    {
+        id: 'long-haul',
+        icon: '⏱️',
+        title: 'Long Haul',
+        desc: 'Go 20 league matches without a defeat.',
+        check: () => {
+            const rows = achState.matches[saveState.saveName] || [];
+            for (let i = 0; i <= rows.length - 20; i++) {
+                if (rows.slice(i, i + 20).every(r => achIsWon(r) || r.draw)) return true;
+            }
+            return false;
+        }
+    },
+    {
+        id: 'home-fortress',
+        icon: '🏰',
+        title: 'Home Fortress',
+        desc: 'Finish a season without losing at home.',
+        check: () => {
+            const team = achUserTeam();
+            const rows = achState.matches[saveState.saveName] || [];
+            const home = team ? rows.filter(r => r.homeId === team.id) : [];
+            return home.length >= 5 && home.every(r => achIsWon(r) || r.draw);
+        }
+    },
+    {
+        id: 'centurions',
+        icon: '💯',
+        title: 'Centurions',
+        desc: 'Reach 100 points in a league season.',
+        check: () => {
+            const team = achUserTeam();
+            return !!(team && isLeagueFormat() && (team.points || 0) >= 100);
+        }
+    },
+    {
+        id: 'golden-generation',
+        icon: '🌟',
+        title: 'Golden Generation',
+        desc: 'Win the league with at least three players rated 85 or higher.',
+        check: (ctx) => {
+            const team = achUserTeam();
+            return !!(ctx && ctx.wonLeague && team && (team.players || []).filter(p => (p.rating || 0) >= 85).length >= 3);
+        }
+    },
+    {
+        id: 'three-headed-attack',
+        icon: '🐉',
+        title: 'Three-Headed Attack',
+        desc: 'Have three players score at least 10 league goals each.',
+        check: (ctx) => !!(ctx && ctx.userPlayersWithTenGoals >= 3)
+    },
+    {
+        id: 'deadline-day',
+        icon: '⏰',
+        title: 'Deadline Day',
+        desc: 'Complete three transfers in one save.',
+        check: () => achSigsThisSave().length >= 3
+    },
+    {
+        id: 'draft-master',
+        icon: '🃏',
+        title: 'Draft Master',
+        desc: 'Win a league using a drafted squad.',
+        check: (ctx) => !!(ctx && ctx.wonLeague && saveState.mode === 'draft')
+    },
+    {
+        id: 'kings-of-europe',
+        icon: '👑',
+        title: 'Kings of Europe',
+        desc: 'Win the UEFA Champions League.',
+        check: (ctx) => !!(ctx && ctx.wonUcl)
+    },
+    {
+        id: 'cup-lift',
+        icon: '🏆',
+        title: 'Cup Lift',
+        desc: 'Win a knockout tournament.',
+        check: (ctx) => !!(ctx && ctx.wonTournament)
     },
     {
         id: 'italy16',
@@ -446,29 +592,6 @@ function achCloseModal() {
     document.getElementById('ach-modal').style.display = 'none';
 }
 
-// --- Real-life transfer table (for "Ok, Fabrizio") ---
-// [playerName, sourceClub, destinationClub] — destination must match the club
-// the player lands in during a save. Sources use their 2025/26 club.
-const ACH_REAL_TRANSFERS = [
-    ['F. Wirtz', 'Bayer Leverkusen', 'Liverpool FC'],
-    ['J. Frimpong', 'Bayer Leverkusen', 'Liverpool FC'],
-    ['L. Díaz', 'Liverpool FC', 'FC Bayern München'],
-    ['L. Díaz', 'Liverpool FC', 'Bayern Munich'],
-    ['H. Kane', 'Tottenham Hotspur', 'FC Bayern München'],
-    ['H. Kane', 'Tottenham Hotspur', 'Bayern Munich'],
-    ['M. Gyökeres', 'Sporting CP', 'Arsenal'],
-    ['V. Gyökeres', 'Sporting CP', 'Arsenal'],
-    ['B. Mbeumo', 'Brentford', 'Manchester United'],
-    ['M. Cunha', 'Wolverhampton Wanderers', 'Manchester United'],
-    ['M. Cunha', 'Wolves', 'Manchester United'],
-    ['K. Mbappé', 'Paris Saint-Germain', 'Real Madrid'],
-    ['N. Williams', 'Athletic Club', 'FC Barcelona'],
-    ['L. Suárez', 'FC Barcelona', 'Inter Miami CF'],
-    ['L. Messi', 'Paris Saint-Germain', 'Inter Miami CF'],
-    ['Son Heungmin', 'Tottenham Hotspur', 'Los Angeles FC'],
-    ['Neymar', 'Al Hilal', 'Santos FC']
-];
-
 // [playerName, clubTheyReturnTo] — the club they played for earlier in their
 // career and are now rejoining.
 const ACH_HOMECOMINGS = [
@@ -487,15 +610,11 @@ const ACH_HOMECOMINGS = [
 // --- Signing classification -------------------------------------------------
 // Called after any transfer lands a player in the user's club. Decides what
 // kind of achievement-worthy move this was:
-//   kind: 'real'       → the move happened in real life (Ok, Fabrizio)
 //   kind: 'homecoming' → the player returns to a club from their history
 //   kind: 'reunion'    → the destination squad already holds a former teammate
 // Returns null for an ordinary transfer.
 function achClassifySigning(playerName, destClubName, destSquad) {
     if (!playerName || !destClubName) return null;
-    const real = ACH_REAL_TRANSFERS.some(([p, , dest]) => p === playerName && dest === destClubName);
-    if (real) return { kind: 'real' };
-
     // Homecoming: the player's transfer history contains this club.
     const hist = achHistoryOf(playerName);
     if (hist.some(h => h && h.club && achClubNameLooselyEquals(h.club, destClubName))) {
@@ -627,10 +746,23 @@ function achEvaluateSeasonEnd() {
             const g = p.stats ? p.stats.goals : 0;
             if (!best || g > best.g) best = { name: p.name, g };
         }));
-        if (best && best.g > 0) ctx.goldenBootWinner = best.name;
+        if (best && best.g > 0) {
+            ctx.goldenBootWinner = best.name;
+            ctx.goldenBootGoals = best.g;
+        }
+        const user = achUserTeam();
+        if (user) {
+            const userScorers = (user.players || []).slice().sort((a, b) => (b.stats ? b.stats.goals : 0) - (a.stats ? a.stats.goals : 0));
+            const userAssisters = (user.players || []).slice().sort((a, b) => (b.stats ? b.stats.assists : 0) - (a.stats ? a.stats.assists : 0));
+            const userKeepers = (user.players || []).filter(p => p.pos === 'GK').sort((a, b) => (b.stats ? b.stats.cleanSheets : 0) - (a.stats ? a.stats.cleanSheets : 0));
+            ctx.userTopScorer = userScorers[0] ? userScorers[0].name : null;
+            ctx.userTopScorerGoals = userScorers[0] && userScorers[0].stats ? userScorers[0].stats.goals : 0;
+            ctx.userPlayersWithTenGoals = userScorers.filter(p => p.stats && p.stats.goals >= 10).length;
+            ctx.userTopAssists = userAssisters[0] && userAssisters[0].stats ? userAssisters[0].stats.assists : 0;
+            ctx.userBestGoalkeeperCleanSheets = userKeepers[0] && userKeepers[0].stats ? userKeepers[0].stats.cleanSheets : 0;
+        }
 
         // Champion detection per competition format.
-        const user = achUserTeam();
         if (typeof isWorldCupFormat === 'function' && isWorldCupFormat()) {
             const remaining = saveState.teams.filter(t => !t.isEliminated);
             const champ = remaining.length ? remaining[0] : null;
@@ -640,9 +772,16 @@ function achEvaluateSeasonEnd() {
             const champId = saveState.uclBracket && saveState.uclBracket.champion;
             const champ = saveState.teams.find(t => t.id === champId);
             ctx.championName = champ ? champ.name : null;
+            ctx.wonUcl = !!(champ && user && champ.id === user.id);
         } else if (typeof isLeagueFormat === 'function' && isLeagueFormat()) {
             const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
             ctx.championName = sorted[0] ? sorted[0].name : null;
+            ctx.wonLeague = !!(sorted[0] && user && sorted[0].id === user.id);
+        } else if (typeof isKnockoutFormat === 'function' && isKnockoutFormat()) {
+            const remaining = saveState.teams.filter(t => !t.isEliminated);
+            const champ = remaining.length === 1 ? remaining[0] : null;
+            ctx.championName = champ ? champ.name : null;
+            ctx.wonTournament = !!(champ && user && champ.id === user.id);
         }
 
         achEvaluate(ctx);

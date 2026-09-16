@@ -58,7 +58,7 @@ Once per league season — at the halfway matchday — the **transfer window** p
 
 ## Achievements
 
-Fifteen achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
+Thirty-one achievements persist across **all** your saves — unlock them in any career, any game mode, and they stay unlocked. The 🏅 **Trophy Cabinet** on the main menu tracks them:
 
 | Achievement | How to earn it |
 | --- | --- |
@@ -67,7 +67,6 @@ Fifteen achievements persist across **all** your saves — unlock them in any ca
 | Transfer Market Apprentice | Make your first transfer |
 | Transfer Market Master | Make 50 transfers |
 | Overhaul | Replace and improve the entire starting XI of your team |
-| Ok, Fabrizio | Make a transfer move that happened in real life at some point in time |
 | Welcome back | Bring back an old player of your club |
 | World champions | Win the World Cup |
 | Hello, old friend | Reunite two players who were former teammates |
@@ -77,6 +76,23 @@ Fifteen achievements persist across **all** your saves — unlock them in any ca
 | Totally not rigged… | Win the World Cup with Argentina without having Leo Messi |
 | The best USA keeper | Select Brad Stuver to the USMNT as your starting GK |
 | The dictator | With Mbappé on your team, have him win the golden boot |
+| Road Warriors | Win every away league match in a season |
+| Clean Sweep | Keep a clean sheet in every recorded league match |
+| Goal Machine | Have one of your players score 20 league goals in a season |
+| Golden Gloves | Have your goalkeeper record 10 clean sheets in a season |
+| The Viking | With Haaland on your team, have him win the golden boot |
+| Messi Magic | With Messi on your team, have him win the golden boot |
+| The Maestro | Have one of your players lead the league in assists with 15 or more |
+| Fast Start | Win your first three league matches |
+| Long Haul | Go 20 league matches without a defeat |
+| Home Fortress | Finish a season without losing at home |
+| Centurions | Reach 100 points in a league season |
+| Golden Generation | Win the league with at least three players rated 85+ |
+| Three-Headed Attack | Have three players score at least 10 league goals each |
+| Deadline Day | Complete three transfers in one save |
+| Draft Master | Win a league using a drafted squad |
+| Kings of Europe | Win the UEFA Champions League |
+| Cup Lift | Win a knockout tournament |
 
 Two notes on the trickier ones: Italy didn't actually qualify for 2026, so the World Cup setup quietly adds them as a selectable nation — and "The best USA keeper" works because Austin FC's Brad Stuver joins the USMNT squad when the World Cup league loads. A toast pops the moment an achievement unlocks, wherever you are in the app.
 

@@ -282,15 +282,17 @@
 
     <div id="endgame-modal" class="modal-overlay">
         <div class="modal-window endgame-window">
-            <h2>Season Ended</h2>
+            <div id="endgame-trophy" class="endgame-trophy" style="display:none;" aria-hidden="true">🏆</div>
+            <h2 id="endgame-title">Season Ended</h2>
             <div class="winner-announcement">
                 Winner: <span id="endgame-winner-name">None</span>
             </div>
             <div id="endgame-verdict" class="endgame-verdict" style="display:none;"></div>
-            <p class="endgame-subtitle">The matches are over and all statistics have been finalized.</p>
+            <p id="endgame-subtitle" class="endgame-subtitle">The matches are over and all statistics have been finalized.</p>
             <div class="endgame-button-group">
-                <button id="endgame-dashboard-btn" class="endgame-btn-action dashboard-btn">Go Back to Dashboard</button>
                 <button id="endgame-replay-btn" class="endgame-btn-action replay-btn">Replay League</button>
+                <button id="endgame-dashboard-btn" class="endgame-btn-action dashboard-btn">Back to Dashboard</button>
+                <button id="endgame-menu-btn" class="endgame-btn-action menu-btn">Return to Menu</button>
             </div>
         </div>
     </div>

@@ -1981,6 +1981,21 @@ function triggerEndgameModalDisplay() {
         championName = championTeam ? championTeam.name : 'Tournament Finalist';
     }
 
+    const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId) || null;
+    const wonLeague = isLeagueFormat() && !!championTeam && !!userTeam && championTeam.id === userTeam.id;
+    const endgameModal = document.getElementById('endgame-modal');
+    const trophyEl = document.getElementById('endgame-trophy');
+    const titleEl = document.getElementById('endgame-title');
+    const subtitleEl = document.getElementById('endgame-subtitle');
+    if (endgameModal) endgameModal.classList.toggle('endgame-champion', wonLeague);
+    if (trophyEl) {
+        trophyEl.style.display = wonLeague ? 'grid' : 'none';
+        trophyEl.setAttribute('aria-hidden', wonLeague ? 'false' : 'true');
+    }
+    if (titleEl) titleEl.innerText = wonLeague ? 'League Champions!' : 'Season Ended';
+    if (subtitleEl) subtitleEl.innerText = wonLeague
+        ? `${userTeam.name} lifted the trophy — an unforgettable league campaign.`
+        : 'The matches are over and all statistics have been finalized.';
     document.getElementById('endgame-winner-name').innerText = championName;
 
     const replayBtn = document.getElementById('endgame-replay-btn');
@@ -1992,21 +2007,21 @@ function triggerEndgameModalDisplay() {
         const goal = saveState.challengeGoal;
         if (goal && saveState.mode !== 'realistic' && isLeagueFormat()) {
             const sorted = [...saveState.teams].sort((a, b) => b.points - a.points || b.gd - a.gd);
-            const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+            const userTeamForChallenge = saveState.teams.find(t => t.id === saveState.userTeamId);
             let ok = false;
             let detail = '';
             if (goal.type === 'win') {
                 ok = !!championTeam && !!userTeam && championTeam.id === userTeam.id;
                 detail = ok ? 'won the league outright' : `finished behind champion ${championTeam ? championTeam.name : ''}`;
             } else if (goal.type === 'top4') {
-                const userPos = userTeam ? sorted.findIndex(t => t.id === userTeam.id) + 1 : -1;
+                const userPos = userTeamForChallenge ? sorted.findIndex(t => t.id === userTeamForChallenge.id) + 1 : -1;
                 ok = userPos >= 1 && userPos <= 4;
                 detail = ok ? `finished ${ordinal(userPos)}` : (userPos > 0 ? `finished ${ordinal(userPos)} — needed a top-4 spot` : 'did not qualify');
             }
             const goalLabel = goal.label || 'the challenge goal';
             verdictEl.style.display = '';
             verdictEl.className = 'endgame-verdict ' + (ok ? 'verdict-good' : 'verdict-bad');
-            verdictEl.innerHTML = `<strong>${ok ? '✔ CHALLENGE COMPLETE' : '✖ CHALLENGE FAILED'}</strong><span>Goal: ${esc(goalLabel)} — ${userTeam ? esc(userTeam.name) : 'Your team'} ${detail}.</span>`;
+            verdictEl.innerHTML = `<strong>${ok ? '✔ CHALLENGE COMPLETE' : '✖ CHALLENGE FAILED'}</strong><span>Goal: ${esc(goalLabel)} — ${userTeamForChallenge ? esc(userTeamForChallenge.name) : 'Your team'} ${detail}.</span>`;
         } else {
             verdictEl.style.display = 'none';
         }
@@ -2018,6 +2033,11 @@ function triggerEndgameModalDisplay() {
 
 document.getElementById('endgame-dashboard-btn').onclick = () => {
     document.getElementById('endgame-modal').style.display = 'none';
+};
+
+document.getElementById('endgame-menu-btn').onclick = () => {
+    document.getElementById('endgame-modal').style.display = 'none';
+    loadActiveMenu();
 };
 
 document.getElementById('endgame-replay-btn').onclick = () => {
