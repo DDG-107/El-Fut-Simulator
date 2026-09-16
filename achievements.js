@@ -532,6 +532,8 @@ function achUnlock(id) {
     const def = ACHIEVEMENTS.find(a => a.id === id);
     if (!def) return false;
     achState.unlocked[id] = Date.now();
+    achState.unlockedMeta = achState.unlockedMeta || {};
+    achState.unlockedMeta[id] = { save: saveState.saveName, date: achState.unlocked[id] };
     achSaveState(achState);
     achShowToast(def);
     return true;
@@ -539,6 +541,23 @@ function achUnlock(id) {
 
 function achUnlockedCount() {
     return Object.keys(achState.unlocked).filter(id => ACHIEVEMENTS.some(a => a.id === id)).length;
+}
+
+function achProgressText(def) {
+    try {
+        const rows = (achState.matches && achState.matches[saveState.saveName]) || [];
+        const team = achUserTeam();
+        if (def.id === 'transfer50') return `${Math.min(achState.transfers || 0, 50)}/50 transfers`;
+        if (def.id === 'transfer1') return `${Math.min(achState.transfers || 0, 1)}/1 transfer`;
+        if (def.id === 'deadline-day') return `${Math.min(achSigsThisSave().length, 3)}/3 transfers`;
+        if (def.id === 'fast-start') return `${Math.min(rows.slice(0, 3).filter(r => achIsWon(r)).length, 3)}/3 opening wins`;
+        if (def.id === 'long-haul') return `${Math.min(rows.length, 20)}/20 matches tracked`;
+        if (def.id === 'golden-gloves' && team) {
+            const gk = (team.players || []).filter(p => p.pos === 'GK').sort((a, b) => (b.stats?.cleanSheets || 0) - (a.stats?.cleanSheets || 0))[0];
+            return `${Math.min(gk?.stats?.cleanSheets || 0, 10)}/10 clean sheets`;
+        }
+        return '';
+    } catch (e) { return ''; }
 }
 
 // Evaluate every achievement against the current context. Safe to call often —
@@ -576,11 +595,14 @@ function achOpenModal() {
     if (bar) bar.style.width = total ? `${Math.round((got / total) * 100)}%` : '0%';
     listEl.innerHTML = ACHIEVEMENTS.map(a => {
         const when = achState.unlocked[a.id];
+        const meta = achState.unlockedMeta && achState.unlockedMeta[a.id];
+        const progress = when ? `Unlocked ${new Date(when).toLocaleDateString()}${meta && meta.save ? ` · ${meta.save}` : ''}` : achProgressText(a);
         return `<div class="ach-card ${when ? 'unlocked' : 'locked'}">
             <span class="ach-card-icon">${when ? a.icon : '🔒'}</span>
             <div class="ach-card-body">
                 <strong>${esc(a.title)}</strong>
                 <span>${esc(a.desc)}</span>
+                ${progress ? `<small class="ach-progress-note">${esc(progress)}</small>` : ''}
             </div>
             <span class="ach-card-state">${when ? '✔' : '—'}</span>
         </div>`;

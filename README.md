@@ -27,7 +27,7 @@ A one-session run. Choose a formation, name a club, and take over an existing cl
 A **draft pot** selector offers a Champions League edition: every dealt player comes from one of the 36 qualified UCL clubs' squads, and the finished XI replaces a club of your choice and plays the full authentic Champions League format — league phase, playoffs and knockouts.
 
 ### 🥊 Draft Challenge
-The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Every daily challenge now locks its competition league — for example, *Der Klassiker* can only be played in the Bundesliga, *El Clasico Kings* in La Liga, and *Milan Derby Draft* in Serie A — so the target league cannot be changed to bypass the scenario. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Under the Radar*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, *One-Club Wonder*, *Milan Derby Draft*, *Le Classique*, *Portuguese Pipeline*, *Youth Movement*, and *Brazilian Royalty*. Re-deal any position until the squad passes every rule.
+The same five-card draft, but preset guidelines decide the player pool and must be satisfied before the season can start. Every daily challenge now locks its competition league — for example, *Der Klassiker* can only be played in the Bundesliga, *El Clasico Kings* in La Liga, and *Milan Derby Draft* in Serie A — so the target league cannot be changed to bypass the scenario. Challenges include *Underdogs Only*, *Elite Poachers*, *The Wanderers*, *Moneyball*, *Under the Radar*, *Der Klassiker*, *El Clasico Kings*, *The Big Six*, *One-Club Wonder*, *Milan Derby Draft*, *Le Classique*, *Portuguese Pipeline*, *Youth Movement*, and *Brazilian Royalty*. Daily challenges also add modifiers such as minimum source-club diversity or using both sides of a rivalry, and the setup screen checks those rules before launch. Re-deal any position until the squad passes every rule.
 
 ### 👑 Omnipotent Mode
 Unlimited budget and total control over your club. Same league structure, no financial limits.
@@ -52,8 +52,15 @@ Match results come from an expected-goals (xG) model: each side's xG derives fro
 - **Clean sheets are credited to goalkeepers only**, so the leaderboard ranks each club's actual keeper
 - Standings track the full P / W / D / L / GF / GA / GD / Pts set
 
-## Mid-Season Transfer Window
+## Career Systems
 
+League players now carry short-term form and morale. Wins build form streaks, defeats hurt confidence, and rivalry matches create extra atmosphere; current form is visible in squad profiles and influences team strength.
+
+Completed realistic league seasons generate a three-player youth intake. Promote prospects from the **Career & Youth** dashboard, where each save also tracks a legacy score, career timeline, and transfer history.
+
+Transfer-window mystery players now come with scouting hints and personality reveals after signing. The same dashboard records two-way deals, while matchdays create rivalry-aware headlines in the feed.
+
+## Mid-Season Transfer Window
 Once per league season — at the halfway matchday — the **transfer window** pops open: up to 3 of your players are randomly drawn into deals, each matched with a mystery player from another club in your save. The mystery player plays the same position, but their **rating is hidden until you sign them** — commit and gamble, or walk away and keep your squad intact. Signed deals are final and two-way (your outgoing player takes the mystery player's old slot at their club), count toward transfer achievements, and are reported in the match feed. The window never opens in knockout runs, drafts, the World Cup, or the Champions League.
 
 ## Achievements

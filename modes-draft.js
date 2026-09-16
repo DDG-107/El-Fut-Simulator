@@ -65,6 +65,8 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'bottom-half',
         cap: 845,
         targetLeagueKey: 'SA 25/26',
+        minSourceClubs: 5,
+        modifierLabel: 'Use players from at least 5 different clubs',
         goal: { type: 'win', label: 'Win Serie A' }
     },
     {
@@ -74,6 +76,8 @@ const DRAFT_CHALLENGE_DEFS = [
         maxRating: 85,
         minSum: 900,
         targetLeagueKey: 'ENG 1 25/26',
+        minSourceClubs: 5,
+        modifierLabel: 'Use players from at least 5 different clubs',
         goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
     },
     {
@@ -81,6 +85,8 @@ const DRAFT_CHALLENGE_DEFS = [
         desc: 'The deals come from three random leagues and EVERY one of them must end up represented in your XI. A true continental scavenger hunt.',
         pool: 'three-random',
         minLeagues: 3,
+        minSourceClubs: 6,
+        modifierLabel: 'Use at least 6 different source clubs',
         targetLeagueKey: 'FRA 1 25/26',
         goal: { type: 'top4', label: 'Finish in Ligue 1 top 4' }
     },
@@ -90,6 +96,8 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'any',
         cap: 860,
         targetLeagueKey: 'ESP 1 25/26',
+        minSourceClubs: 7,
+        modifierLabel: 'Use at least 7 different source clubs',
         goal: { type: 'win', label: 'Win La Liga' }
     },
     {
@@ -98,6 +106,8 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'any',
         maxRating: 83,
         targetLeagueKey: 'NED 1 25/26',
+        minSourceClubs: 6,
+        modifierLabel: 'Use at least 6 different source clubs',
         goal: { type: 'top4', label: 'Finish in the Eredivisie top 4' }
     },
     {
@@ -106,6 +116,8 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'clubs',
         clubNames: ['FC Bayern München', 'Borussia Dortmund'],
         targetLeagueKey: 'BL 25/26',
+        minSourceClubs: 2,
+        modifierLabel: 'Use players from both giants',
         goal: { type: 'win', label: 'Win the Bundesliga' }
     },
     {
@@ -114,6 +126,8 @@ const DRAFT_CHALLENGE_DEFS = [
         pool: 'clubs',
         clubNames: ['Real Madrid', 'FC Barcelona'],
         targetLeagueKey: 'ESP 1 25/26',
+        minSourceClubs: 2,
+        modifierLabel: 'Use players from both rivals',
         goal: { type: 'win', label: 'Win La Liga' }
     },
     {
@@ -123,6 +137,8 @@ const DRAFT_CHALLENGE_DEFS = [
         clubNames: ['Arsenal', 'Chelsea FC', 'Liverpool FC', 'Manchester City', 'Manchester United', 'Tottenham Hotspur'],
         minSum: 935,
         targetLeagueKey: 'ENG 1 25/26',
+        minSourceClubs: 4,
+        modifierLabel: 'Use at least four Big Six clubs',
         goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
     },
     {
@@ -130,37 +146,44 @@ const DRAFT_CHALLENGE_DEFS = [
         desc: 'A single famous club is drawn as your only supplier — you must build the entire XI from exactly its squad. Every pick costs you one of theirs.',
         pool: 'one-club',
         formation: '4-3-3',
+        minSourceClubs: 1,
+        modifierLabel: 'Every player must come from the sole supplier',
         goal: { type: 'top4', label: 'Finish in the supplier league top 4' }
     },
     {
         id: 'milan-derby', icon: '🔴⚫', title: 'Milan Derby Draft',
         desc: 'Every deal comes from AC Milan or Inter Milan. Build the city’s best XI and conquer Italy.',
         pool: 'clubs', clubNames: ['AC Milan', 'Inter Milan'],
-        targetLeagueKey: 'SA 25/26', goal: { type: 'win', label: 'Win Serie A' }
+        targetLeagueKey: 'SA 25/26', minSourceClubs: 2,
+        modifierLabel: 'Use players from both Milan clubs', goal: { type: 'win', label: 'Win Serie A' }
     },
     {
         id: 'le-classique', icon: '🇫🇷', title: 'Le Classique',
         desc: 'Choose only from Paris Saint-Germain or Olympique de Marseille, then take the rivalry into Ligue 1.',
         pool: 'clubs', clubNames: ['Paris Saint-Germain', 'Olympique de Marseille'],
-        targetLeagueKey: 'FRA 1 25/26', goal: { type: 'win', label: 'Win Ligue 1' }
+        targetLeagueKey: 'FRA 1 25/26', minSourceClubs: 2,
+        modifierLabel: 'Use players from both rivals', goal: { type: 'win', label: 'Win Ligue 1' }
     },
     {
         id: 'portuguese-pipeline', icon: '🟢🔴', title: 'Portuguese Pipeline',
         desc: 'Every recruit comes from Benfica, Porto or Sporting CP. Turn Portugal’s classic three-way rivalry into one champion.',
         pool: 'clubs', clubNames: ['SL Benfica', 'FC Porto', 'Sporting CP'],
-        targetLeagueKey: 'POR 1 25/26', goal: { type: 'win', label: 'Win the Primeira Liga' }
+        targetLeagueKey: 'POR 1 25/26', minSourceClubs: 3,
+        modifierLabel: 'Use players from all three giants', goal: { type: 'win', label: 'Win the Primeira Liga' }
     },
     {
         id: 'youth-movement', icon: '🧒', title: 'Youth Movement',
         desc: 'No player above 80 OVR. Develop a squad of prospects and prove they belong in England’s top flight.',
         pool: 'any', maxRating: 80,
-        targetLeagueKey: 'ENG 1 25/26', goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
+        targetLeagueKey: 'ENG 1 25/26', minSourceClubs: 6,
+        modifierLabel: 'Use at least six different clubs', goal: { type: 'top4', label: 'Finish in the Premier League top 4' }
     },
     {
         id: 'brazilian-royalty', icon: '🇧🇷', title: 'Brazilian Royalty',
         desc: 'Your entire draft pool comes from Flamengo, Palmeiras, Corinthians or São Paulo. Rule Brazil with a domestic super-squad.',
         pool: 'clubs', clubNames: ['Flamengo', 'Palmeiras', 'Corinthians', 'São Paulo FC'],
-        targetLeagueKey: 'BRA 1 2025', goal: { type: 'win', label: 'Win Brasileirão' }
+        targetLeagueKey: 'BRA 1 2025', minSourceClubs: 3,
+        modifierLabel: 'Use at least three Brazilian giants', goal: { type: 'win', label: 'Win Brasileirão' }
     }
 ];
 
@@ -442,6 +465,7 @@ function renderSBStep1() {
     if (ch && ch.pool === 'one-club' && ch.clubName) metaChips.push('Sole supplier: ' + ch.clubName);
     if (challengeLeague) metaChips.push('🔒 Competition: ' + challengeLeague.name);
     if (ch && ch.minLeagues) metaChips.push(`🗂️ ${ch.minLeagues} leagues in the XI`);
+    if (ch && ch.modifierLabel) metaChips.push('🎲 Modifier: ' + ch.modifierLabel);
     if (ch && ch.goal) metaChips.push(`Goal: ${ch.goal.label}`);
 
     const challengeHtml = ch ? `
@@ -753,6 +777,10 @@ function sbRequirements() {
     if (ch.minLeagues) {
         const leagues = new Set(SB.xi.filter(Boolean).map(x => x.player.leagueKey));
         reqs.push({ label: `Players from ≥ ${ch.minLeagues} different leagues (currently ${leagues.size})`, ok: leagues.size >= ch.minLeagues });
+    }
+    if (ch.minSourceClubs) {
+        const clubs = new Set(SB.xi.filter(Boolean).map(x => x.player.teamName));
+        reqs.push({ label: `Players from ≥ ${ch.minSourceClubs} source clubs (currently ${clubs.size})`, ok: clubs.size >= ch.minSourceClubs });
     }
     return reqs;
 }
