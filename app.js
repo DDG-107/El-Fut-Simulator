@@ -923,6 +923,9 @@ document.getElementById('create-save-btn').onclick = () => {
     saveState.mode = selectedModeId;
     saveState.competitionType = isRealistic() && formatRadio ? formatRadio.value : 'league';
     saveState.isCompleted = false;
+    // A new setup flow is not an active season. Clear the previous live roster
+    // so pre-launch swaps cannot be mistaken for in-save edits.
+    saveState.teams = [];
 
     // Mode routing: Realistic Career keeps the classic club/team picker; every
     // other mode opens its own setup flow (implemented in modes-*.js).
@@ -1359,6 +1362,10 @@ function applyReverseTransfer(outgoing, incomingOriginal, receivingTeam) {
 }
 
 function openSwapModal(teamItem, playerIdx, onDone) {
+    // Swaps are only available in the pre-launch team configuration. Once the
+    // season has started, the live save roster is locked; the dedicated
+    // transfer window remains the only in-season recruitment path.
+    if (saveState && Array.isArray(saveState.teams) && teamItem && teamItem.teamData && saveState.teams.includes(teamItem.teamData)) return;
     swapContext = { teamItem, playerIdx, onDone: typeof onDone === 'function' ? onDone : null };
     swapApplyTeamRef = teamItem && teamItem.teamData ? teamItem.teamData : null;
     const replaced = teamItem.teamData.players[playerIdx];
@@ -2196,8 +2203,8 @@ document.getElementById('endgame-replay-btn').onclick = () => {
     autoSaveCurrentProgress();
 };
 
-function launchProfileModal(team, opts) {
-    const editable = !!(opts && opts.editable);
+function launchProfileModal(team) {
+    const editable = false;
     profileModalTeam = team;
     const isUser = team.id === saveState.userTeamId;
     const avg = squadAvgRating(team) || '—';
@@ -2229,7 +2236,7 @@ function launchProfileModal(team, opts) {
 // Re-render the open squad profile after an in-modal swap.
 function renderEditableProfile() {
     if (profileModalTeam && document.getElementById('team-modal').style.display !== 'none') {
-        launchProfileModal(profileModalTeam, { editable: true });
+        launchProfileModal(profileModalTeam);
     }
 }
 
@@ -2788,8 +2795,9 @@ document.querySelectorAll('.hub-tab-btn').forEach(b => {
 function viewOwnSquad() {
     const u = saveState.teams.find(t => t.id === saveState.userTeamId) || saveState.teams[0];
     if (!u) return;
-    // Tournament squads are editable from the hub (team-sheet editing).
-    launchProfileModal(u, { editable: !isRealistic() });
+    // In-save squad views are read-only. Squad swaps are only available while
+    // configuring a new competition, before the save/season begins.
+    launchProfileModal(u);
 }
 
 document.getElementById('view-squad-btn').onclick = viewOwnSquad;

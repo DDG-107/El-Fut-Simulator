@@ -19,7 +19,7 @@ Then visit `http://localhost:8080` (or the port your server prints). Opening `in
 ## Game Modes
 
 ### 🏟️ Realistic Career
-The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and manage your club through the season. Swap any database player into your lineup — every swap is a true two-way transfer, so the player you give up joins the other club for the rest of that save — then simulate the whole season or step through it matchday by matchday. Careers autosave as you play and on exit.
+The complete experience. Pick the competing clubs from any leagues in the database, choose a format — **League** (double round robin) or **Knockout Tournament** (2–64 clubs, single elimination) — and configure your lineup before launching the season. Once play begins, rosters are locked apart from the dedicated transfer-window system. Simulate the whole season or step through it matchday by matchday. Careers autosave as you play and on exit.
 
 ### 📋 Single Season Draft
 A one-session run. Choose a formation, name a club, and take over an existing club's slot in a league. Every position deals **five real players** drawn from clubs across the entire database — keep one per slot to build your starting XI, or hit auto-pick and let the game choose the best XI.
@@ -38,7 +38,7 @@ Pick any nation from the 48 qualified teams and play the 2026 World Cup: group s
 ### 🏆 UEFA Champions League
 Lead one of the 36 qualified clubs through the authentic 2026/27 Champions League: the Swiss-model league phase using the real draw (eight matchdays, two opponents from each pot, four home and four away), then the knockout phase — top 8 skip straight to the Round of 16 while teams 9–24 contest two-legged playoffs, with single-leg ties and penalties from there to the final.
 
-As in the draft modes, your squad is a team sheet you can edit: open **View Squad** from the hub and swap any player for anyone in the database between matchdays.
+Configure your squad before launch, then use **View Squad** from the hub as a read-only team profile. Realistic Careers can change the roster only through the dedicated transfer window; tournament and draft rosters remain fixed once play begins.
 
 One-session modes (draft, World Cup, Champions League) end when you leave them — they are never written to the save list.
 
