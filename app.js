@@ -94,6 +94,7 @@ function assignAutoSaveName(clubName, modeId) {
     saveState.seasonSummaryRecorded = false;
     saveState.seasonNumber = 1;
     saveState.reputation = 0;
+    saveState.reputationSchema = REP_SCHEMA_VERSION;
     saveState.academyEvents = [];
     saveState.boardObjective = null;
     saveState.cupWins = 0;
@@ -130,6 +131,13 @@ function getModeName() {
 }
 // Old saves stored the competition format directly on 'mode'; migrate them so
 // they load as a Realistic Career with the format preserved.
+// Bump when starting-reputation semantics change: saves stamped below this
+// version were written by an older build and get their starting reputation
+// re-derived from the club's real-world stature exactly once. Without this,
+// a legacy save's stored reputation:0 (stamped before stature existed) would
+// keep Real Madrid a Minnow forever.
+const REP_SCHEMA_VERSION = 2;
+
 function migrateSaveState(data) {
     if (!data || typeof data !== 'object') return data;
     if (data.mode === 'league' || data.mode === 'tournament') {
@@ -147,10 +155,24 @@ function migrateSaveState(data) {
     if (typeof data.legacyScore !== 'number') data.legacyScore = 0;
     // Saves predating the reputation system (or missing the field) are seeded
     // from the user's club stature — a Real Madrid save must not load as Minnow.
+    // Saves stamped by an older schema are reseeded too: their reputation:0 was
+    // written by the old build, not earned by the player. The stamp makes this
+    // a one-time migration, so progression earned afterwards is never reset.
+    if (data.mode === 'realistic' && data.reputationSchema !== REP_SCHEMA_VERSION) {
+        const userClub = Array.isArray(data.teams) ? data.teams.find(t => t.id === data.userTeamId) : null;
+        if (userClub) {
+            data.reputation = initialCareerReputation(userClub);
+            // Old builds also left mid-season saves without a board objective.
+            if (!data.boardObjective || typeof data.boardObjective !== 'object') {
+                data.boardObjective = Object.assign(objectiveForTier(Math.max(0, Math.min(3, Math.round(data.reputation)))), { season: Number(data.seasonNumber) || 1 });
+            }
+        }
+    }
     if (!Number.isFinite(data.reputation)) {
         const userClub = Array.isArray(data.teams) ? data.teams.find(t => t.id === data.userTeamId) : null;
         data.reputation = userClub ? initialCareerReputation(userClub) : 0;
     }
+    data.reputationSchema = REP_SCHEMA_VERSION;
     data.reputation = Math.max(0, Math.min(3, Math.round(data.reputation)));
     if (!Array.isArray(data.academyEvents)) data.academyEvents = [];
     if (!data.boardObjective || typeof data.boardObjective !== 'object') data.boardObjective = null;
