@@ -93,7 +93,7 @@ function assignAutoSaveName(clubName, modeId) {
     saveState.legacyScore = 0;
     saveState.seasonSummaryRecorded = false;
     saveState.seasonNumber = 1;
-    saveState.reputation = 0;
+    saveState.reputation = initialCareerReputation(saveState.teams.find(t => t.id === saveState.userTeamId)) || 0;
     saveState.reputationSchema = REP_SCHEMA_VERSION;
     saveState.academyEvents = [];
     saveState.boardObjective = null;
