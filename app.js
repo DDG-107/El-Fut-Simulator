@@ -145,7 +145,12 @@ function migrateSaveState(data) {
     delete data.youthAcademy;
     if (!Array.isArray(data.transferHistory)) data.transferHistory = [];
     if (typeof data.legacyScore !== 'number') data.legacyScore = 0;
-    if (!Number.isFinite(data.reputation)) data.reputation = 0;
+    // Saves predating the reputation system (or missing the field) are seeded
+    // from the user's club stature — a Real Madrid save must not load as Minnow.
+    if (!Number.isFinite(data.reputation)) {
+        const userClub = Array.isArray(data.teams) ? data.teams.find(t => t.id === data.userTeamId) : null;
+        data.reputation = userClub ? initialCareerReputation(userClub) : 0;
+    }
     data.reputation = Math.max(0, Math.min(3, Math.round(data.reputation)));
     if (!Array.isArray(data.academyEvents)) data.academyEvents = [];
     if (!data.boardObjective || typeof data.boardObjective !== 'object') data.boardObjective = null;
@@ -715,7 +720,123 @@ function reputationTargetRating(value) {
 function reputationBadgeHtml() {
     return `<span class="reputation-badge reputation-${saveState.reputation || 0}">🏷️ ${esc(reputationTier(saveState.reputation))}</span>`;
 }
+// Real-world club stature → starting reputation (0 Minnow … 3 Elite). Squad
+// averages drift with form and database edits, but a club's standing does not:
+// Manchester City at 85.6 OVR is still a world-class club, not a Contender.
+// Matched by longest substring so aliases and name variants resolve to one
+// tier. Clubs without an entry fall back to squad strength below.
+const CLUB_REPUTATION_TIERS = {
+    // --- Elite: genuine world-class pull ---
+    'real madrid': 3,
+    'barcelona': 3,
+    'manchester city': 3,
+    'man city': 3,
+    'liverpool': 3,
+    'arsenal': 3,
+    'chelsea': 3,
+    'manchester united': 3,
+    'man united': 3,
+    'bayern': 3,
+    'paris saint-germain': 3,
+    'psg': 3,
+    'inter milan': 3,
+    'juventus': 3,
+    'ac milan': 3,
+    'atlético madrid': 3,
+    'atletico madrid': 3,
+    'atletico de madrid': 3,
+    'borussia dortmund': 3,
+    // --- Contenders: European regulars and big-league powers ---
+    'tottenham': 2,
+    'newcastle': 2,
+    'aston villa': 2,
+    'real sociedad': 2,
+    'athletic bilbao': 2,
+    'villarreal': 2,
+    'real betis': 2,
+    'sevilla': 2,
+    'napoli': 2,
+    'roma': 2,
+    'lazio': 2,
+    'atalanta': 2,
+    'fiorentina': 2,
+    'rb leipzig': 2,
+    'leverkusen': 2,
+    'stuttgart': 2,
+    'frankfurt': 2,
+    'marseille': 2,
+    'monaco': 2,
+    'lyon': 2,
+    'lille': 2,
+    'saint-étienne': 2,
+    'benfica': 2,
+    'fc porto': 2,
+    'sporting cp': 2,
+    'ajax': 2,
+    'psv': 2,
+    'feyenoord': 2,
+    'club brugge': 2,
+    'anderlecht': 2,
+    'flamengo': 2,
+    'palmeiras': 2,
+    'corinthians': 2,
+    'são paulo': 2,
+    'sao paulo': 2,
+    'river plate': 2,
+    'club américa': 2,
+    'club america': 2,
+    'monterrey': 2,
+    'tigres': 2,
+    'cruz azul': 2,
+    'guadalajara': 2,
+    'al hilal': 2,
+    'al nassr': 2,
+    'al ittihad': 2,
+    'al ahli': 2,
+    'inter miami': 2,
+    'la galaxy': 2,
+    'los angeles fc': 2,
+    'fenerbahçe': 2,
+    'fenerbahce': 2,
+    'galatasaray': 2,
+    'shakhtar': 2,
+    // --- National teams (World Cup league) ---
+    'brazil': 3,
+    'france': 3,
+    'spain': 3,
+    'england': 3,
+    'argentina': 3,
+    'germany': 3,
+    'portugal': 3,
+    'netherlands': 3,
+    'belgium': 3,
+    'uruguay': 2,
+    'croatia': 2,
+    'morocco': 2,
+    'colombia': 2,
+    'mexico': 2,
+    'united states': 2,
+    'japan': 2,
+    'south korea': 2,
+    'switzerland': 2,
+    'senegal': 2,
+    'ivory coast': 2,
+    'egypt': 2,
+    'algeria': 2
+};
+
 function initialCareerReputation(team) {
+    // An explicit per-club value always wins (e.g. custom database edits).
+    if (team && Number.isFinite(team.reputation)) {
+        return Math.max(0, Math.min(3, Math.round(team.reputation)));
+    }
+    const name = String((team && team.name) || '').toLowerCase();
+    let bestKey = null;
+    for (const key in CLUB_REPUTATION_TIERS) {
+        if (name.includes(key) && (!bestKey || key.length > bestKey.length)) bestKey = key;
+    }
+    if (bestKey) return CLUB_REPUTATION_TIERS[bestKey];
+    // Unlisted clubs (including custom teams) keep the squad-strength read.
     const avg = teamAverageRating(team);
     return avg >= 86 ? 3 : avg >= 82 ? 2 : avg >= 77 ? 1 : 0;
 }
@@ -1719,9 +1840,9 @@ function refreshHubDashboardUI() {
         if (posLabel) posLabel.innerText = 'Position';
         if (posValue) posValue.innerText = ordinal(position);
         if (ptsLabel) ptsLabel.innerText = 'Points';
-        if (ptsValue) ptsValue.innerText = userTeamObj.points;
+        if (ptsValue) ptsValue.innerText = Number.isFinite(userTeamObj.points) ? userTeamObj.points : 0;
         if (gdLabel) gdLabel.innerText = 'Goal Diff';
-        const gd = userTeamObj.gd;
+        const gd = Number(userTeamObj.gd) || 0;
         if (gdValue) gdValue.innerText = (gd > 0 ? '+' : '') + gd;
     }
 
@@ -1793,8 +1914,8 @@ function renderActiveStandings() {
 <td>${l}</td>
 <td>${t.gf || 0}</td>
 <td>${t.ga || 0}</td>
-<td>${t.gd > 0 ? '+' : ''}${t.gd}</td>
-<td><strong>${t.points}</strong></td>`;
+<td>${(Number(t.gd) || 0) > 0 ? '+' : ''}${Number(t.gd) || 0}</td>
+<td><strong>${Number(t.points) || 0}</strong></td>`;
             tr.querySelector('.clickable-row-team').onclick = () => launchProfileModal(t);
             tbody.appendChild(tr);
         });
@@ -2206,7 +2327,10 @@ document.getElementById('step-matchday-btn').onclick = () => {
 // until a player is transferred in — take the risk, then find out.
 // ============================================================
 function twOpeningsAllowed() {
-    if (!isLeagueFormat() || saveState.isCompleted) return 0;
+    // The transfer window is a Realistic Career system. Draft/Omnipotent runs
+    // use the league engine but keep fixed squads (see README), and their
+    // saveState would otherwise reuse state left over from a club career.
+    if (!isRealistic() || !isLeagueFormat() || saveState.isCompleted) return 0;
     const total = saveState.totalMatchdays || 0;
     if (total < 4) return 0;
     const half = Math.floor(total / 2);
@@ -2218,7 +2342,9 @@ function twOpeningsAllowed() {
 
 function twEligibleOutgoing(userTeam, pos) {
     const roster = userTeam.players || [];
-    return roster.map((p, i) => ({ p, i })).filter(x => x.p && (!pos || x.p.pos === pos));
+    // 'pos' may be an exact position (LB) or a group chip (DEF/MID/FWD from
+    // the approach dropdown) — match either way.
+    return roster.map((p, i) => ({ p, i })).filter(x => x.p && (!pos || x.p.pos === pos || (POS_GROUPS[x.p.pos] || '') === pos));
 }
 
 function twIncomingPool(userTeam, pos) {
@@ -2227,7 +2353,7 @@ function twIncomingPool(userTeam, pos) {
     const pool = [];
     saveState.teams.forEach(t => {
         if (t.id === userTeam.id) return;
-        const sourceTier = teamAverageRating(t) >= 86 ? 3 : teamAverageRating(t) >= 82 ? 2 : teamAverageRating(t) >= 77 ? 1 : 0;
+        const sourceTier = initialCareerReputation(t);
         // Reputation gates the mystery market: a Minnow mostly sees Minnows,
         // while an Elite club can reach Contender and Elite squads.
         if (sourceTier > Math.max(0, userTier)) return;
@@ -2252,18 +2378,49 @@ function twIncomingPool(userTeam, pos) {
 function twApproachClub() {
     if (!twState || twState.approached) return;
     const userTeam = saveState.teams.find(t => t.id === saveState.userTeamId);
+    if (!userTeam) return;
+    const feed = document.getElementById('ticker-feed-box');
+    const note = (html) => {
+        if (feed) {
+            feed.innerHTML += `<br>${html}<br>`;
+            if (typeof scrollFeedToBottom === 'function') scrollFeedToBottom();
+        }
+    };
     const clubId = document.getElementById('tw-club-picker')?.value;
     const rival = saveState.teams.find(t => t.id === clubId && t.id !== userTeam.id);
-    if (!userTeam || !rival) return;
-    const outgoing = twEligibleOutgoing(userTeam, document.getElementById('tw-approach-pos')?.value || null)
+    if (!rival) {
+        // Stale or invalid selection (e.g. a picker left over from a previous
+        // career in the same session). Rebuild it and keep the attempt usable.
+        note('🤝 That club is not in this competition — pick a different target.');
+        twRenderWindow();
+        return;
+    }
+    const posFilter = document.getElementById('tw-approach-pos')?.value || null;
+    let outgoingList = twEligibleOutgoing(userTeam, posFilter);
+    // Squads can lack an exact position (e.g. LM instead of LB) — fall back to
+    // any player rather than silently dead-ending the button.
+    if (outgoingList.length === 0 && posFilter) outgoingList = twEligibleOutgoing(userTeam, null);
+    const outgoing = outgoingList
         .sort((a, b) => (Number(a.p.age || 99) - 30) - (Number(b.p.age || 99) - 30) || Number(a.p.form || 0) - Number(b.p.form || 0))[0];
-    const candidates = (rival.players || []).filter(p => p.pos === outgoing?.p?.pos && !userTeam.players.some(q => q.name === p.name));
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-    if (!outgoing || !chosen) return;
-    const rivalTier = teamAverageRating(rival) >= 86 ? 3 : teamAverageRating(rival) >= 82 ? 2 : teamAverageRating(rival) >= 77 ? 1 : 0;
+    if (!outgoing) {
+        note('🤝 No player available to offer — the approach was not made.');
+        return;
+    }
+    // Prefer an exact-position match, then the same position group, then any
+    // rival player not already in the user's XI. The incoming rating stays
+    // blind either way.
+    const inUserXI = new Set((userTeam.players || []).map(q => q.name));
+    const rivalPlayers = (rival.players || []).filter(p => p && p.name && !inUserXI.has(p.name));
+    const chosen = rivalPlayers.find(p => p.pos === outgoing.p.pos)
+        || rivalPlayers.find(p => (POS_GROUPS[p.pos] || '') === (POS_GROUPS[outgoing.p.pos] || ''))
+        || rivalPlayers[0];
+    if (!chosen) {
+        note(`🤝 ${esc(rival.name)} have nobody to offer in exchange — pick another club.`);
+        return;
+    }
+    const rivalTier = initialCareerReputation(rival);
     if (rivalTier > Number(saveState.reputation || 0) && Math.random() < 0.2 + (rivalTier - Number(saveState.reputation || 0)) * 0.15) {
-        const feed = document.getElementById('ticker-feed-box');
-        if (feed) feed.innerHTML += `<br>🤝 ${esc(rival.name)} rejected the approach — their player demanded a higher counter-offer.<br>`;
+        note(`🤝 ${esc(rival.name)} rejected the approach — their player demanded a higher counter-offer.`);
         twState.approached = true;
         twRenderWindow();
         return;
@@ -2276,8 +2433,7 @@ function twApproachClub() {
     twState.approached = true;
     recordTransferEvent(outgoing.p.name, incoming.name, userTeam.name, rival.name);
     recordCareerEvent(`🤝 Approached ${rival.name}: ${incoming.name} joined in a directed swap.`, 'transfer');
-    const feed = document.getElementById('ticker-feed-box');
-    if (feed) feed.innerHTML += `<br><strong>🤝 Directed approach:</strong> ${esc(incoming.name)} arrives from ${esc(rival.name)}.<br>`;
+    note(`<strong>🤝 Directed approach:</strong> ${esc(incoming.name)} (${esc(incoming.pos)}, OVR ${esc(incoming.rating)}) arrives from ${esc(rival.name)} for ${esc(outgoing.p.name)}.`);
     twRenderWindow(); refreshHubDashboardUI(); autoSaveCurrentProgress();
 }
 
@@ -2323,8 +2479,14 @@ function twRenderWindow() {
     const listEl = document.getElementById('tw-slots');
     if (!listEl || !twState) return;
     const clubPicker = document.getElementById('tw-club-picker');
-    if (clubPicker && !clubPicker.options.length) {
-        clubPicker.innerHTML = saveState.teams.filter(t => t.id !== saveState.userTeamId).map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+    if (clubPicker) {
+        // Rebuild for THIS save on every render. The modal is static HTML, so a
+        // picker filled by a previous career must never leak into a new run —
+        // stale ids made the approach tool silently do nothing.
+        const previous = clubPicker.value;
+        const rivals = saveState.teams.filter(t => t.id !== saveState.userTeamId);
+        clubPicker.innerHTML = rivals.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+        if (previous && rivals.some(t => t.id === previous)) clubPicker.value = previous;
     }
     const approachBtn = document.getElementById('tw-approach-btn');
     if (approachBtn) { approachBtn.disabled = !!twState.approached; approachBtn.innerText = twState.approached ? 'Approach used' : 'Offer swap'; }

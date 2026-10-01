@@ -1473,14 +1473,35 @@ tr.user-row td { background: rgba(139, 92, 246, 0.08); }
     .club-card-stats { grid-template-columns: repeat(2, 1fr); }
     .screen-container { padding: 20px 14px; }
     .menu-box { padding: 22px; }
-    #hub-screen { flex-direction: column; height: auto; min-height: 0; overflow: visible; }
+    /* The hub is position:fixed with inset:0, so it can never grow the page.
+       On phones it must be its own scrolling surface — overflow:visible here
+       left the standings table clipped below the viewport with no way to
+       reach it. */
+    #hub-screen { flex-direction: column; height: 100vh; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
     .sidebar { width: 100%; flex: 0 0 auto; border-right: none; border-bottom: 1px solid var(--border); overflow-y: visible; padding: 15px 20px; }
     .hub-screen-main { flex: 0 0 auto; }
-    .main-content { padding: 16px; }
+    .main-content { padding: 16px; overflow-y: visible; }
+    .table-scroll { flex: 0 0 auto; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
+    /* Grid panes must be allowed to shrink below their content's min-width,
+       or wide rows force the whole page sideways on phones. */
+    .db-pane { min-width: 0; }
+    .db-row { flex-wrap: wrap; }
+    .db-list { overflow-x: hidden; }
 }
 
 @media (max-width: 600px) {
     .mode-picker-grid { grid-template-columns: 1fr; }
+    /* Squad/insights tables inside modals can exceed the modal's content box
+       at phone width — let the window pan instead of clipping. */
+    .modal-window { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* A 10-column standings table cannot be readable at phone width — give it
+       a comfortable width and let the wrapper pan sideways instead of
+       squeezing every cell to ~29px. Scoped to .table-scroll so tables inside
+       modals keep their natural width. */
+    .table-scroll table { min-width: 540px; }
+    .main-content { padding: 12px; }
+    .menu-box { padding: 16px 14px; }
+    .btn-primary, .btn-secondary, .mini-btn, .tool-btn { min-height: 44px; }
 }
 
 /* --- Achievements ------------------------------------------------------- */
