@@ -49,6 +49,7 @@
     --r-sm: 6px;
     --r-md: 10px;
     --r-lg: 14px;
+    --footer-h: 38px;
     --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.45);
 
@@ -110,6 +111,7 @@ body {
     display: flex;
     height: 100vh;
     min-height: 100vh;
+    padding-bottom: var(--footer-h);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -294,7 +296,7 @@ input[type="range"] { accent-color: var(--accent); cursor: pointer; }
    SCREENS & SHELLS
    ============================================================ */
 .screen-container {
-    min-height: 100vh;
+    min-height: calc(100vh - var(--footer-h));
     padding: 24px;
     flex-direction: column;
     align-items: center;
@@ -310,7 +312,7 @@ input[type="range"] { accent-color: var(--accent); cursor: pointer; }
 .menu-box {
     width: 100%;
     max-width: none;
-    min-height: calc(100vh - 48px);
+    min-height: calc(100vh - 48px - var(--footer-h));
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
@@ -752,8 +754,8 @@ input[type="range"] { accent-color: var(--accent); cursor: pointer; }
     padding: 0;
     flex-direction: row;
     align-items: stretch;
-    height: 100vh;
-    min-height: 100vh;
+    height: calc(100vh - var(--footer-h));
+    min-height: calc(100vh - var(--footer-h));
     overflow: hidden;
     display: flex;
 }
@@ -1477,7 +1479,7 @@ tr.user-row td { background: rgba(139, 92, 246, 0.08); }
        On phones it must be its own scrolling surface — overflow:visible here
        left the standings table clipped below the viewport with no way to
        reach it. */
-    #hub-screen { flex-direction: column; height: 100vh; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+    #hub-screen { flex-direction: column; height: calc(100vh - var(--footer-h)); min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
     .sidebar { width: 100%; flex: 0 0 auto; border-right: none; border-bottom: 1px solid var(--border); overflow-y: visible; padding: 15px 20px; }
     .hub-screen-main { flex: 0 0 auto; }
     .main-content { padding: 16px; overflow-y: visible; }
@@ -1743,3 +1745,42 @@ tr.user-row td { background: rgba(139, 92, 246, 0.08); }
 .tw-approach-controls button { padding: 8px 10px; white-space: nowrap; }
 .tw-approach-box > small { display: block; color: var(--text-2); font-size: .72rem; margin-top: 7px; }
 @media (max-width: 560px) { .tw-approach-controls { grid-template-columns: 1fr 1fr; } .tw-approach-controls button { grid-column: 1 / -1; } }
+
+/* ============================================================
+   SITE FOOTER — studio credit shown on every screen
+   ============================================================ */
+.site-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    height: var(--footer-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-3);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    text-align: center;
+}
+.site-footer a {
+    color: var(--accent-hi);
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.site-footer a:hover {
+    color: var(--accent);
+    border-bottom-color: currentColor;
+}
+.site-footer a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
